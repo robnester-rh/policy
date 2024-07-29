@@ -3,7 +3,7 @@ module github.com/enterprise-contract/ec-policies
 go 1.22.2
 
 require (
-	github.com/enterprise-contract/ec-cli v0.5.46
+	github.com/enterprise-contract/ec-cli v0.5.68
 	github.com/google/addlicense v1.1.1
 	github.com/open-policy-agent/conftest v0.54.0
 	github.com/styrainc/regal v0.23.1
@@ -107,6 +107,7 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/chainguard-dev/git-urls v1.0.2 // indirect
 	github.com/chrismellard/docker-credential-acr-env v0.0.0-20230304212654-82a0ddb27589 // indirect
 	github.com/clbanning/mxj/v2 v2.7.0 // indirect
 	github.com/cloudflare/circl v1.3.8 // indirect
@@ -138,19 +139,19 @@ require (
 	github.com/eapache/queue v1.1.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.2 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
-	github.com/enterprise-contract/enterprise-contract-controller/api v0.1.48 // indirect
+	github.com/enterprise-contract/enterprise-contract-controller/api v0.1.49 // indirect
 	github.com/enterprise-contract/go-gather v0.0.3 // indirect
 	github.com/enterprise-contract/go-gather/expander v0.0.1 // indirect
 	github.com/enterprise-contract/go-gather/gather v0.0.2 // indirect
 	github.com/enterprise-contract/go-gather/gather/file v0.0.1 // indirect
-	github.com/enterprise-contract/go-gather/gather/git v0.0.3 // indirect
+	github.com/enterprise-contract/go-gather/gather/git v0.0.4 // indirect
 	github.com/enterprise-contract/go-gather/gather/http v0.0.1 // indirect
 	github.com/enterprise-contract/go-gather/gather/oci v0.0.3 // indirect
 	github.com/enterprise-contract/go-gather/metadata v0.0.2 // indirect
 	github.com/enterprise-contract/go-gather/metadata/file v0.0.1 // indirect
-	github.com/enterprise-contract/go-gather/metadata/git v0.0.1 // indirect
+	github.com/enterprise-contract/go-gather/metadata/git v0.0.2 // indirect
 	github.com/enterprise-contract/go-gather/metadata/http v0.0.1 // indirect
-	github.com/enterprise-contract/go-gather/metadata/oci v0.0.2 // indirect
+	github.com/enterprise-contract/go-gather/metadata/oci v0.0.3 // indirect
 	github.com/enterprise-contract/go-gather/saver v0.0.1 // indirect
 	github.com/enterprise-contract/go-gather/saver/file v0.0.1 // indirect
 	github.com/evanphx/json-patch v5.9.0+incompatible // indirect
@@ -368,7 +369,6 @@ require (
 	github.com/transparency-dev/merkle v0.0.2 // indirect
 	github.com/ulikunitz/xz v0.5.11 // indirect
 	github.com/vbatts/tar-split v0.11.5 // indirect
-	github.com/whilp/git-urls v1.0.0 // indirect
 	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect
 	github.com/xanzy/go-gitlab v0.102.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
@@ -427,11 +427,11 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.29.6 // indirect
-	k8s.io/apiextensions-apiserver v0.29.6 // indirect
-	k8s.io/apimachinery v0.29.6 // indirect
+	k8s.io/api v0.29.7 // indirect
+	k8s.io/apiextensions-apiserver v0.29.7 // indirect
+	k8s.io/apimachinery v0.29.7 // indirect
 	k8s.io/cli-runtime v0.29.1 // indirect
-	k8s.io/client-go v0.29.6 // indirect
+	k8s.io/client-go v0.29.7 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240126223410-2919ad4fcfec // indirect
 	k8s.io/utils v0.0.0-20240102154912-e7106e64919e // indirect
