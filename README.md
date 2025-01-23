@@ -1,11 +1,8 @@
-ec-policies
-===========
+# ec-policies
 
 [Rego][rego] policies related to the Enterprise Contract.
 
-
-Getting started for developers
-------------------------------
+## Getting started for developers
 
 ### Makefile
 
@@ -14,23 +11,14 @@ The [`Makefile`](Makefile) contains a lot of useful scripts and commands. Run
 
 ### Dependencies
 
-Three tools are required, [`conftest`][conftest], [`opa`][opa], and [`gomplate`][gomplate].
+Go is required for development. Tools like [`conftest`][conftest] and [`opa`][opa] are executed with
+the Go binary - they do not need to be installed in your system. See the top of the [go.mod](./go.mod)
+file for the minimum version of Go required.
 
-You should be able to install them like this:
+Most of the maintainers use [asdf][asdf] to seamlessly use the right version of Go.
 
-    make install-tools
-
-If that doesn't work, installing them manually and making sure they're
-available in your path should be fine.
-
-An optional but useful tool for running tests while developing, (with `make
-live-test`), is [`entr`][entr]. You can install it with `dnf`:
-
-    sudo dnf install entr
-
-And of course you need make if you don't have it already:
-
-    sudo dnf install make
+Some, optional, make targets may require additional tooling. For example, `make live-test` requires
+[entr][entr] to be installed.
 
 ### Formatting
 
@@ -45,9 +33,11 @@ The documentation is built using [Antora][antora].
 
 Those docs are published [here][docs].
 
-To build the documentation locally:
+When making changes to policy rules, the docs will likely need to be re-generated. To do so run:
 
-    make docs-preview
+    make generate-docs
+
+Commit all of the modified files.
 
 ### Running tests
 
@@ -58,7 +48,11 @@ well as check that the docs are up to date, like this:
 
 You can run a single test like this:
 
-    opa test . -r <test_name_matcher>
+    ec opa test ./policy -r <test_name_matcher>
+
+or
+
+    go run github.com/enterprise-contract/ec-cli opa test ./policy -r <test_name_matcher>
 
 The `<test_name_matcher>` is a regex, so you can use it to run more than one
 test.
@@ -108,7 +102,7 @@ For example to fetch a pipeline definition from your local cluster:
     make fetch-pipeline PIPELINE=<some-pipeline-name>
     more input/input.json # to look at it
 
-For a realistic Red Hat Trusted Application Pipeline pipeline definition that
+For a realistic Konflux pipeline definition that
 doesn't require cluster access, if you have the [build-definitions][builddefs]
 repo checked out nearby you can do something like this:
 
@@ -118,9 +112,28 @@ Then to verify the pipeline definition using the defined policies:
 
     make check-pipeline
 
+### Running policies against local [ec-cli] build
 
-Policy bundles
---------------
+Build a local version of `ec-cli` in your local ec-cli repo:
+
+    make build
+
+Create a `policy.yaml` file in your local `ec-cli` repo with something like:
+
+    ---
+    sources:
+      - policy:
+        - <path-to>/ec-policies/policy/lib
+        - <path-to>/ec-policies/policy/release
+      data:
+        - oci::quay.io/konflux-ci/tekton-catalog/data-acceptable-bundles:latest
+        - github.com/release-engineering/rhtap-ec-policy//data
+
+Run the locally built `ec-cli` command
+
+    dist/ec_<arch> validate image --verbose --images '{"components": [{"containerImage": "<container-image>", "name":"my-image", "source":{"git":{"url":"<repository-url>","revision":"<commit-id>"}}}]}' --policy 'policy.yaml' --public-key <public-key-to-verify-the-image> --strict false  --ignore-rekor --verbose --output=text
+
+## Policy bundles
 
 The policies defined here are bundled and pushed as OCI artifacts using
 `conftest`. There are three bundles, one for each of the release and pipeline
@@ -133,34 +146,31 @@ latest bundles are used.
 
 See also the [policy bundle documentation](./antora/docs/modules/ROOT/pages/policy_bundles.adoc).
 
-
-Getting started for policy authors
-----------------------------------
+## Getting started for policy authors
 
 See the [Policy Authoring][authoring] documentation for guidance on
 contributing to the definition of policy rules.
 
-
-See also
---------
+## See also
 
 * [Policy rule documentation][policydocs]
 * ["Verify Enterprise Contract" task definition][taskdef]
 * [github.com/enterprise-contract][contract]
-* [github.com/redhat-appstudio][appstudio]
+* [github.com/konflux-ci][konflux-ci]
 
+[asdf]: https://asdf-vm.com/
 [rego]: https://www.openpolicyagent.org/docs/latest/policy-language/
 [conftest]: https://www.conftest.dev/
 [opa]: https://www.openpolicyagent.org/docs/latest/
-[gomplate]: https://docs.gomplate.ca/
 [entr]: https://github.com/eradman/entr
 [testing]: https://www.openpolicyagent.org/docs/latest/policy-testing/
 [docs]: https://enterprisecontract.dev/
 [policydocs]: https://enterprisecontract.dev/docs/ec-policies/release_policy.html
 [taskdef]: https://github.com/enterprise-contract/ec-cli/blob/main/tasks/verify-enterprise-contract/0.1/verify-enterprise-contract.yaml
 [contract]: https://github.com/enterprise-contract
-[appstudio]: https://github.com/redhat-appstudio
-[builddefs]: https://github.com/redhat-appstudio/build-definitions
+[ec-cli]: https://github.com/enterprise-contract/ec-cli
+[konflux-ci]: https://github.com/konflux-ci
+[builddefs]: https://github.com/konflux-ci/build-definitions
 [authoring]: https://enterprisecontract.dev/docs/ec-policies/authoring.html
 [antora]: https://docs.antora.org/antora/latest/install-and-run-quickstart/
 [quay]: https://quay.io/

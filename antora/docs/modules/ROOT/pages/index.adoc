@@ -2,8 +2,8 @@
 
 :numbered:
 
-The Enterprise Contract is a set of tools for verifing the provenance of container
-images built in Red Hat Trusted Application Pipeline and validating them against a
+The Enterprise Contract is a tool for verifing the provenance of container
+images built in Konflux CI, and validating them against a
 clearly defined Enterprise Contract policy.
 
 The Enterprise Contract policy is defined using the
@@ -13,13 +13,12 @@ xref:pipeline_policy.adoc[Pipeline Policy].
 
 == Additional Documentation
 
-* https://redhat-appstudio.github.io/appstudio.docs.ui.io/[Stonesoup Documentation]
-* xref:main@ec-cli::index.adoc[EC CLI Documentation]
+* https://konflux-ci.dev/docs/[Konflux Documentation]
+* xref:ec-cli::index.adoc[EC CLI Documentation]
 
 == Code
 
-* https://github.com/redhat-appstudio/build-definitions/blob/main/tasks/verify-enterprise-contract-v2.yaml["Verify Enterprise Contract" task definition]
 * https://github.com/enterprise-contract/ec-policies[github.com/enterprise-contract/ec-policies]
 * https://github.com/enterprise-contract/ec-cli[github.com/enterprise-contract/ec-cli]
 * https://github.com/enterprise-contract[github.com/enterprise-contract]
-* https://github.com/redhat-appstudio[github.com/redhat-appstudio]
+* https://github.com/konflux-ci[github.com/konflux-ci]

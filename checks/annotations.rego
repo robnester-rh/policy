@@ -1,8 +1,6 @@
 package checks
 
-import future.keywords.contains
-import future.keywords.if
-import future.keywords.in
+import rego.v1
 
 # Required annotations on policy rules
 required_annotations := {
@@ -47,6 +45,26 @@ flat(annotation_name, annotation_definition) := result if {
 	}
 }
 
+all_rule_names contains name if {
+	some policy_files in policy_rule_files(input.namespaces)
+	some file in policy_files.files
+	some annotation in input.annotations
+
+	annotation.location.file == file
+
+	name := sprintf("%s.%s", [policy_files.namespace, annotation.annotations.custom.short_name])
+}
+
+all_rule_names_ary := [name |
+	some policy_files in policy_rule_files(input.namespaces)
+	some file in policy_files.files
+	some annotation in input.annotations
+
+	annotation.location.file == file
+
+	name := sprintf("%s.%s", [policy_files.namespace, annotation.annotations.custom.short_name])
+]
+
 # Validates that the policy rules have all required annotations
 violation contains msg if {
 	some policy_files in policy_rule_files(input.namespaces)
@@ -78,16 +96,6 @@ violation contains msg if {
 	])
 }
 
-all_rule_names contains name if {
-	some policy_files in policy_rule_files(input.namespaces)
-	some file in policy_files.files
-	some annotation in input.annotations
-
-	annotation.location.file == file
-
-	name := sprintf("%s.%s", [policy_files.namespace, annotation.annotations.custom.short_name])
-}
-
 # Validates that the `depends_op` annotation points to an existing rule
 violation contains msg if {
 	some policy_files in policy_rule_files(input.namespaces)
@@ -103,16 +111,6 @@ violation contains msg if {
 	count({dependency_rule_name} & all_rule_names) == 0
 	msg := sprintf("ERROR: Missing dependency rule %q at %s:%d", [dependency_rule_name, file, annotation.location.row])
 }
-
-all_rule_names_ary := [name |
-	some policy_files in policy_rule_files(input.namespaces)
-	some file in policy_files.files
-	some annotation in input.annotations
-
-	annotation.location.file == file
-
-	name := sprintf("%s.%s", [policy_files.namespace, annotation.annotations.custom.short_name])
-]
 
 # Validates that package.short_name is unique
 violation contains msg if {
@@ -130,4 +128,19 @@ violation contains msg if {
 	count(duplicates) > 1
 
 	msg := sprintf("ERROR: Found non-unique code %q at %s:%d", [code, file, annotation.location.row])
+}
+
+# Validates that the `effective_on` annotation has the correct syntax
+violation contains msg if {
+	some policy_files in policy_rule_files(input.namespaces)
+
+	some file in policy_files.files
+	some annotation in input.annotations
+
+	annotation.location.file == file
+
+	effective_on := annotation.annotations.custom.effective_on
+	not time.parse_rfc3339_ns(effective_on)
+
+	msg := sprintf("ERROR: wrong syntax of effective_on value %q at %s:%d", [effective_on, file, annotation.location.row])
 }

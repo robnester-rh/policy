@@ -1,4 +1,20 @@
 ---
+# Copyright The Enterprise Contract Contributors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 rule_data:
   # Usage: https://enterprisecontract.dev/docs/ec-policies/release_policy.html#base_image_registries__allowed_registries_provided
   allowed_registry_prefixes:
@@ -6,6 +22,7 @@ rule_data:
   - registry.local/namespace/repo/
   - registry.redhat.io/
   - docker.io/
+  - registry.access.redhat.com
 
   # Usage: https://enterprisecontract.dev/docs/ec-policies/release_policy.html#step_image_registries_package
   allowed_step_image_registry_prefixes:
@@ -13,6 +30,7 @@ rule_data:
   - registry.local/namespace/repo/
   - registry.redhat.io/
   - docker.io/
+  - quay.io/
 
   # Usage: https://enterprisecontract.dev/docs/ec-policies/release_policy.html#java__no_foreign_dependencies
   # TODO: Document in the policy docs which values are expected here.
@@ -74,3 +92,24 @@ rule_data:
   fbc_disallowed_inherited_labels:
   - name: description
   - name: summary
+
+  disallowed_packages:
+  # Any version of the package greater than or equal to v50.28.3 will not be allowed.
+  - purl: pkg:golang/k8s.io/client-go
+    # "semverv" is a made up name to describe golang's variation of the semver standard. The format
+    # "semver" is also supported. Both behave exactly the same.
+    format: semverv
+    min: v50.28.3
+  # Any version of the package lower than or equal to v50.28.3 will not be allowed.
+  - purl: pkg:golang/k8s.io/client-go
+    format: semverv
+    max: v50.28.3
+  # Any version of the package greater than or equal to v50.20.2, AND lower than or equal to
+  # v50.28.3 will be not allowed.
+  - purl: pkg:golang/k8s.io/client-go
+    format: semverv
+    min: v50.20.2
+    max: v50.28.3
+
+  allowed_rpm_signature_keys:
+  - 199e2f91fd431d51

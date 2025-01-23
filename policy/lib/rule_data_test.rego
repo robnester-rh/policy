@@ -1,8 +1,10 @@
 package lib_test
 
+import rego.v1
+
 import data.lib
 
-test_rule_data {
+test_rule_data if {
 	lib.assert_equal(
 		[
 			40, # key0 value comes from data.rule_data__configuration__
@@ -25,6 +27,6 @@ test_rule_data {
 }
 
 # Need this for 100% coverage
-test_rule_data_defaults {
+test_rule_data_defaults if {
 	lib.assert_not_empty(lib.rule_data_defaults)
 }

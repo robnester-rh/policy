@@ -1,13 +1,39 @@
 SHELL := /bin/bash
 
+COPY:=The Enterprise Contract Contributors
+
 DATA_DIR=./example/data
 CONFIG_DATA_FILE=$(DATA_DIR)/config.json
 
 POLICY_DIR=./policy
 
-OPA=go run github.com/open-policy-agent/opa
-CONFTEST=go run github.com/open-policy-agent/conftest
+# Use go run so we use the exact pinned versions from the mod file.
+# Use ec for the opa and conftest commands so that our custom rego
+# functions are available.
+ifndef EC_REF
+  EC_MOD=github.com/enterprise-contract/ec-cli
+else
+  # EC_REF can be set to use ec built from a particular ref, e.g.:
+  #   EC_REF=release-v0.2 make ec-version quiet-test
+  EC_MOD=github.com/enterprise-contract/ec-cli@$(EC_REF)
+endif
+
+EC=go run $(EC_MOD)
+
+OPA=$(EC) opa
+CONFTEST=EC_EXPERIMENTAL=1 $(EC)
 TKN=go run github.com/tektoncd/cli/cmd/tkn
+TEST_CMD_DEFAULT=$(OPA) test $(TEST_FILES) $(TEST_FILTER)
+# if unshare is available we isolate the process to run without network access,
+# if it is not we run as is; building ec will require network access to download
+# the dependencies, for this we run `ec version` to have it built first
+ifeq ($(shell command -v unshare),)
+  TEST_CMD=$(TEST_CMD_DEFAULT)
+else
+  TEST_CMD=$(EC) version > /dev/null && unshare -r -n $(TEST_CMD_DEFAULT)
+endif
+
+LICENSE_IGNORE=-ignore '.git/**'
 
 TEST_FILES = $(DATA_DIR)/rule_data.yml $(POLICY_DIR) checks
 define COVERAGE
@@ -58,45 +84,47 @@ help: ## Display this help.
 
 ##@ Development
 
+ec-version:
+	@echo $(EC_MOD)
+	@# To confirm that EC_REF is doing what you think it's doing
+	@go list -m -json $(EC_MOD) | jq -r .Version
+	@# Actually we get "development" as the version and "0001-01-01"
+	@# as the change date but let's show it anyhow
+	@$(EC) version
+
+# Set TEST to only run tests that match the given string. It does a regex match
+# on the fully qualified name iiuc, e.g. "policy.release.foo_test.test_thing"
+# so you could use TEST=test_thing or TEST=release.foo_", etc
+TEST_FILTER=$(if $(TEST),--run $(TEST))
+
+# Todo maybe: Run tests with conftest verify instead
 .PHONY: test
 test: ## Run all tests in verbose mode and check coverage
-	@$(OPA) test $(TEST_FILES) -v
+	@$(TEST_CMD) --verbose
 	$(COVERAGE)
-
-.PHONY: coverage
-# The cat does nothing but avoids a non-zero exit code from grep -v
-coverage: ## Show which lines of rego are not covered by tests
-	@$(OPA) test $(TEST_FILES) --coverage --format json | jq -r '.files | to_entries | map("\(.key): Uncovered:\(.value.not_covered)") | .[]' | grep -v "Uncovered:null" | cat
 
 .PHONY: quiet-test
 quiet-test: ## Run all tests in quiet mode and check coverage
-	@$(OPA) test $(TEST_FILES)
+	@$(TEST_CMD)
 	$(COVERAGE)
 
+.PHONY: watch
+watch: ## Run tests in watch mode, use TEST=package or TEST=test to focus on a single package or test
+	@$(TEST_CMD) --verbose --watch
+
 # Do `dnf install entr` then run this a separate terminal or split window while hacking
+# (live-test and watch do similar things in different ways. Use whichever one you like better.)
 .PHONY: live-test
 live-test: ## Continuously run tests on changes to any `*.rego` files, `entr` needs to be installed
 	@trap exit SIGINT; \
 	while true; do \
-	  git ls-files -c -o '*.rego' | entr -d -c $(MAKE) --no-print-directory quiet-test; \
+	  git ls-files -c -o '*.rego' | entr -r -d -c $(MAKE) --no-print-directory quiet-test; \
 	done
 
-##
-## Fixme: Currently conftest verify produces a error:
-##   "rego_type_error: package annotation redeclared"
-## In these two files:
-##   policy/release/examples/time_based.rego
-##   policy/lib/time_test.rego:1
-## The error only appears when running the tests.
-##
-## Since the metadata support is a new feature in opa, it might be this
-## is a bug that will go away in a future release of conftest. So for now
-## we will ignore the error and not use conftest verify in the CI.
-##
-.PHONY: conftest-test
-conftest-test: ## Run all tests with conftest instead of opa
-	@$(CONFTEST) verify \
-	  --policy $(POLICY_DIR)
+.PHONY: coverage
+# The cat does nothing but avoids a non-zero exit code from grep -v
+coverage: ## Show which lines of rego are not covered by tests
+	@$(TEST_CMD) --coverage --format json | jq -r '.files | to_entries | map("\(.key): Uncovered:\(.value.not_covered)") | .[]' | grep -v "Uncovered:null" | cat
 
 .PHONY: fmt
 fmt: ## Apply default formatting to all rego files. Use before you commit
@@ -122,6 +150,44 @@ conventions-check: ## Check Rego policy files for convention violations
 .PHONY: ready
 ready: fmt-amend ## Amend current commit with fmt changes
 
+#--------------------------------------------------------------------
+# The idea here is to use some real live recorded attestations in our tests.
+# If the attestation files in https://github.com/enterprise-contract/hacks/provenance/recordings
+# change, you can use `make sync-test-data` to sync the changes to this one local rego file.
+RECORDED_ATT_DATA=policy/lib/tekton/recorded_att_data_test.rego
+
+# Clears the file, adds the package command and some other preamble.
+_init-test-data:
+	@echo Initializing $(RECORDED_ATT_DATA)
+	@( \
+	  echo '# ** Do not edit this file. Regenerate it using `make sync-test-data` **'; \
+	  echo ''; \
+	  echo 'package lib.tekton_test'; \
+	  echo 'import rego.v1'; \
+	) > $(RECORDED_ATT_DATA)
+
+# Appends one assignment to the file and then uses opa fmt to tidy it up.
+# Use some bash tricks to convert to lowercase and to replace '-' chars with '_'.
+_test-data-%:
+	@echo Adding data from $*
+	@( FILE="$*" && \
+	   FILE_LOWER="$${FILE,,}" && \
+	   REGO_VAR="att_$${FILE_LOWER//-/_}" && \
+	   echo -n "$$REGO_VAR := " && \
+	   curl -sL https://raw.githubusercontent.com/enterprise-contract/hacks/main/provenance/recordings/$*/attestation.json | jq . \
+	) >> $(RECORDED_ATT_DATA)
+	@opa fmt --write $(RECORDED_ATT_DATA)
+
+# There are some other attestation files in https://github.com/enterprise-contract/hacks/provenance/recordings
+# but these two are the most useful for testing currently
+_sync-test-data-01: _test-data-01-SLSA-v0-2-Pipeline-in-cluster
+_sync-test-data-05: _test-data-05-SLSA-v1-0-tekton-build-type-Pipeline-in-cluster
+
+sync-test-data: _init-test-data _sync-test-data-01 _sync-test-data-05 ## Refresh policy/lib/tekton/test_data.rego
+	@echo Done updating $(RECORDED_ATT_DATA)
+
+#--------------------------------------------------------------------
+
 ##@ Documentation
 
 .PHONY: annotations-opa
@@ -130,29 +196,8 @@ annotations-opa:
 
 SHORT_SHA=$(shell git rev-parse --short HEAD)
 
-# (The git checkout is so we don't leave the preid diff in package.json)
-npm-publish: ## Publish the antora extension npm package. Requires a suitable NPM_TOKEN env var
-	cd antora/ec-policies-antora-extension && \
-	  npm version prerelease --preid $(SHORT_SHA) && \
-	  npm publish --access=public && \
-	  git checkout package.json
-
-EC_DOCS_DIR=../enterprise-contract.github.io
-EC_DOCS_REPO=git@github.com:enterprise-contract/enterprise-contract.github.io.git
-$(EC_DOCS_DIR):
-	mkdir $(EC_DOCS_DIR) && cd $(EC_DOCS_DIR) && git clone $(EC_DOCS_REPO) .
-
-# See also the hack/local-build.sh script in the
-# enterprise-contract.github.io repo which does something similar
-CURRENT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
-docs-preview: $(EC_DOCS_DIR) ## Build a preview of the documentation
-	cd antora/ec-policies-antora-extension && \
-	  npm ci
-	cd $(EC_DOCS_DIR)/antora && \
-	  yq e -i '.content.sources[] |= select(.url == "*ec-policies*").url |= "../../ec-policies"' antora-playbook.yml && \
-	  yq e -i '.content.sources[] |= select(.url == "*ec-policies*").branches |= "$(CURRENT_BRANCH)"' antora-playbook.yml && \
-	  yq e -i '.antora.extensions[] |= select(.require == "*ec-policies-antora-extension").require |= "../../ec-policies/antora/ec-policies-antora-extension"' antora-playbook.yml && \
-	  npm ci && npm run build
+generate-docs:  ## Generate static docs
+	@cd docs && go run github.com/enterprise-contract/ec-policies/docs -adoc ../antora/docs/modules/ROOT -rego .. -rego "$$(go list -modfile ../go.mod -f '{{.Dir}}' github.com/enterprise-contract/ec-cli)/docs/policy/release"
 
 ##@ CI
 
@@ -161,12 +206,21 @@ fmt-check: ## Check formatting of Rego files
 	@$(OPA) fmt . --list | xargs -r -n1 echo 'FAIL: Incorrect formatting found in'
 	@$(OPA) fmt . --list --fail >/dev/null 2>&1
 
+# See config in .regal/config.yaml
 .PHONY: lint
 lint: ## Runs Rego linter
-	@go run github.com/styrainc/regal lint . --ignore-files 'antora/docs/policy/**' $(if $(GITHUB_ACTIONS),--format=github)
+# addlicense doesn't give us a nice explanation so we prefix it with one
+	@go run github.com/google/addlicense -c '$(COPY)' -y '' -s -check $(LICENSE_IGNORE) . | sed 's/^/Missing license header in: /g'
+# piping to sed above looses the exit code, luckily addlicense is fast so we invoke it for the second time to exit 1 in case of issues
+	@go run github.com/google/addlicense -c '$(COPY)' -y '' -s -check $(LICENSE_IGNORE) . >/dev/null 2>&1
+	@go run github.com/styrainc/regal lint . $(if $(GITHUB_ACTIONS),--format=github)
+
+.PHONY: lint-fix
+lint-fix: ## Fix linting issues automagically
+	@go run github.com/google/addlicense -c '$(COPY)' -y '' -s $(LICENSE_IGNORE) .
 
 .PHONY: ci
-ci: quiet-test opa-check conventions-check fmt-check lint ## Runs all checks and tests
+ci: quiet-test acceptance opa-check conventions-check fmt-check lint generate-docs ## Runs all checks and tests
 
 #--------------------------------------------------------------------
 
@@ -185,32 +239,26 @@ clean-data: ## Removes ephemeral files from the `./data` directory
 dummy-config: ## Create an empty configuration
 	@echo '{"config":{"policy":{}}}' | jq > $(CONFIG_DATA_FILE)
 
-# Set IMAGE as required like this:
-#   make fetch-att IMAGE=<someimage>
+# Use ec's policy-input output format to produce an accurate input.json for use when
+# hacking on rego rules. Add jq for extra readability even though it's less correct.
+# A public key is required here because ec has no --ignore-sig option.
+#
+# Set IMAGE and KEY as required like this:
+#   make fetch-att IMAGE=<imageref> KEY=<publickeyfile>
 #
 ifndef IMAGE
-  IMAGE="quay.io/redhat-appstudio/ec-golden-image:latest"
+  IMAGE="quay.io/konflux-ci/ec-golden-image:latest"
 endif
 
-# jq snippets to massage the various pieces of data into the shape we want.
-# Each part gets deep merged together into a single object similar to the
-# input that ec-cli would present to the conftest evaluator. (Note that it
-# doesn't include everything - the `attestations[].extra.signatures` and
-# `image.signatures` fields are missing.)
-#
-JQ_COSIGN={"attestations": [.[].payload | @base64d | fromjson]}
-JQ_SKOPEO={"image": {"ref": "\(.Name)@\(.Digest)"}}
-JQ_SKOPEO_CONFIG={"image": {"config": .config}}
-JQ_SKOPEO_RAW={"image": {"parent": {"ref": .annotations["org.opencontainers.image.base.name"]}}}
+ifndef KEY
+  KEY="../ec-cli/key.pub"
+endif
 
 .PHONY: fetch-att
-fetch-att: clean-input ## Fetches attestation data and metadata for IMAGE, use `make fetch-att IMAGE=<ref>`
-	jq -s '.[0] * .[1] * .[2] * .[3]' \
-	  <( cosign download attestation $(IMAGE)       | jq -s '$(JQ_COSIGN)'     ) \
-	  <( skopeo inspect --no-tags docker://$(IMAGE) | jq '$(JQ_SKOPEO)'        ) \
-	  <( skopeo inspect --config  docker://$(IMAGE) | jq '$(JQ_SKOPEO_CONFIG)' ) \
-	  <( skopeo inspect --raw     docker://$(IMAGE) | jq '$(JQ_SKOPEO_RAW)'    ) \
-	  > $(INPUT_FILE)
+fetch-att: clean-input ## Fetches attestation data and metadata for IMAGE, use `make fetch-att IMAGE=<ref> KEY=<keyfile>`
+	@$(EC) validate image --image $(IMAGE) \
+	  --public-key <(cat $(KEY)) --ignore-rekor \
+	  --output policy-input | jq > $(INPUT_FILE)
 
 #--------------------------------------------------------------------
 
@@ -218,7 +266,7 @@ fetch-att: clean-input ## Fetches attestation data and metadata for IMAGE, use `
 # Specify PIPELINE as an environment var to use something other than the default.
 #
 ifndef PIPELINE
-  PIPELINE=quay.io/redhat-appstudio-tekton-catalog/pipeline-docker-build:devel
+  PIPELINE=quay.io/konflux-ci/tekton-catalog/pipeline-docker-build:devel
 endif
 
 .PHONY: fetch-pipeline
@@ -232,10 +280,16 @@ fetch-pipeline: clean-input ## Fetches pipeline data for PIPELINE from your loca
 INPUT_DIR=./input
 INPUT_FILE=$(INPUT_DIR)/input.json
 
+ifndef NAMESPACE
+	NAMESPACE_FLAG=--all-namespaces
+else
+	NAMESPACE_FLAG=--namespace $(NAMESPACE)
+endif
+
 .PHONY: check-release
 check-release: ## Run policy evaluation for release
 	@$(CONFTEST) test $(INPUT_FILE) \
-	  --all-namespaces \
+	  $(NAMESPACE_FLAG) \
 	  --policy $(POLICY_DIR) \
 	  --data $(DATA_DIR) \
 	  --no-fail \
@@ -259,5 +313,13 @@ check: check-release
 
 update-bundles: ## Push policy bundles to quay.io and generate infra-deployments PRs if required
 	@hack/update-bundles.sh
+
+#--------------------------------------------------------------------
+
+##@ Acceptance Tests
+
+.PHONY: acceptance
+acceptance: ## Run acceptance tests
+	@cd acceptance && go test ./...
 
 #--------------------------------------------------------------------

@@ -1,5 +1,7 @@
 package lib
 
+import rego.v1
+
 # Values in data.rule_data_custom or data.rule_data
 # will take precedence over these defaults.
 #
@@ -22,10 +24,8 @@ rule_data_defaults := {
 		"SKIPPED",
 		"WARNING",
 	],
-	"failed_tests_results": [
-		"FAILURE",
-		"ERROR",
-	],
+	"failed_tests_results": ["FAILURE"],
+	"erred_tests_results": ["ERROR"],
 	"skipped_tests_results": ["SKIPPED"],
 	"warned_tests_results": ["WARNING"],
 	#
@@ -33,6 +33,15 @@ rule_data_defaults := {
 	# Valid levels: "critical", "high", "medium", "low", and "unknown"
 	"restrict_cve_security_levels": ["critical", "high"],
 	"warn_cve_security_levels": [],
+	"restrict_unpatched_cve_security_levels": [],
+	"warn_unpatched_cve_security_levels": ["critical", "high"],
+	"cve_leeway": {
+		"critical": 0,
+		"high": 0,
+		"medium": 0,
+		"low": 0,
+		"unknown": 0,
+	},
 	# Used in policy/release/slsa_source_correlated.rego
 	# According to https://pip.pypa.io/en/latest/topics/vcs-support/#vcs-support
 	# and https://spdx.dev/spdx-specification-20-web-version/#h.49x2ik5
@@ -65,6 +74,31 @@ rule_data_defaults := {
 		"gitBlob",
 		"gitTag",
 	],
+	# Used in release/olm.rego
+	"required_olm_features_annotations": [
+		"features.operators.openshift.io/disconnected",
+		"features.operators.openshift.io/fips-compliant",
+		"features.operators.openshift.io/proxy-aware",
+		"features.operators.openshift.io/cnf",
+		"features.operators.openshift.io/cni",
+		"features.operators.openshift.io/csi",
+		"features.operators.openshift.io/tls-profiles",
+		"features.operators.openshift.io/token-auth-aws",
+		"features.operators.openshift.io/token-auth-azure",
+		"features.operators.openshift.io/token-auth-gcp",
+	],
+	# This will be set to "release" in Konflux release pipelines defined at
+	# https://github.com/konflux-ci/release-service-catalog/tree/development/pipelines
+	# Some checks are influenced by this value. Let's use null as a default instead
+	# of the usual empty list.
+	"pipeline_intention": null,
+	# The big list of trusted_tasks (from the acceptable tasks bundle) is at
+	# data.trusted_tasks but we want to allow people to add their own trusted_tasks
+	# using the ruleData key. Make this default to an empty dict so we can conveniently
+	# merge it with with `data.trusted_tasks`
+	"trusted_tasks": {},
+	# Number of days before a version of the Task expires that warnings are reported
+	"task_expiry_warning_days": 0,
 }
 
 # Returns the "first found" of the following:
@@ -75,22 +109,22 @@ rule_data_defaults := {
 #
 # And falls back to an empty list if the key is not found anywhere.
 #
-rule_data(key_name) := value {
+rule_data(key_name) := value if {
 	# Expected to be defined under `configuration.rule_data` in the
 	# ECP configuration data being used when EC is run.
 	value := data.rule_data__configuration__[key_name]
-} else := value {
+} else := value if {
 	# Expected to be defined in a users custom data source accessed
 	# via an oci bundle or (more likely) a git url.
 	value := data.rule_data_custom[key_name]
-} else := value {
+} else := value if {
 	# Expected to be defined in a default data source accessed via
 	# an oci bundle or a maybe a git url. See example/data/rule_data.yml.
 	value := data.rule_data[key_name]
-} else := value {
+} else := value if {
 	# Default values defined in this file. See above.
 	value := rule_data_defaults[key_name]
-} else := value {
+} else := value if {
 	# If the key is not found, default to an empty list
 	value := []
 }
