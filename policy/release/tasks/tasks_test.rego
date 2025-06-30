@@ -470,24 +470,36 @@ test_future_one_of_required_tasks_missing if {
 		with input.attestations as attestation_v1
 }
 
-test_required_task_from_untrusted if {
+test_future_required_tasks if {
 	attestations := _attestations_with_tasks(_expected_required_tasks - {"buildah"}, [{
 		"name": "buildah",
 		"ref": {"name": "buildah", "kind": "Task", "bundle": "registry.io/repository/unacceptable:0.1"},
 	}])
-	expected := {
-		{
-			"code": "tasks.future_required_tasks_found",
-			"msg": "Task \"conftest-clair\" is missing and will be required on 2099-01-02T00:00:00Z",
-			"term": "conftest-clair",
-		},
-		{
-			"code": "tasks.required_untrusted_task_found",
-			"msg": "Required task \"buildah\" is required and present but not from a trusted task",
-			"term": "buildah",
-		},
-	}
+	expected := {{
+		"code": "tasks.future_required_tasks_found",
+		"msg": "Task \"conftest-clair\" is missing and will be required on 2099-01-02T00:00:00Z",
+		"term": "conftest-clair",
+	}}
+
 	lib.assert_equal_results(expected, tasks.warn) with data["pipeline-required-tasks"] as _required_pipeline_tasks
+		with data.trusted_tasks as _trusted_tasks
+		with input.attestations as attestations
+}
+
+test_required_task_from_untrusted if {
+	# regal ignore:line-length
+	untrusted_bundle := "registry.io/repository/unacceptable:0.1@sha256:4e388ab32b10dc8dbc7e28144f552830adc74787c1e2c0824032078a79f227fb"
+	attestations := _attestations_with_tasks(_expected_required_tasks - {"buildah"}, [{
+		"name": "buildah",
+		"status": "Succeeded",
+		"ref": {"name": "buildah", "kind": "Task", "bundle": untrusted_bundle},
+	}])
+	expected := {{
+		"code": "tasks.required_untrusted_task_found",
+		"msg": "Required task \"buildah\" is required and present but not from a trusted task",
+		"term": "buildah",
+	}}
+	lib.assert_equal_results(expected, tasks.deny) with data["pipeline-required-tasks"] as _required_pipeline_tasks
 		with data.trusted_tasks as _trusted_tasks
 		with input.attestations as attestations
 }
