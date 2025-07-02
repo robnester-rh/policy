@@ -54,16 +54,14 @@ jobs:
         go-version-file: go.mod
         cache: true
 
-    - name: Docker login (quay.io/enterprise-contract)
-      uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
-      with:
-        # See also BUNDLE_REPO defined in Makefile
-        registry: quay.io
-        username: ${{ secrets.BUNDLE_PUSH_USER_EC }}
-        password: ${{ secrets.BUNDLE_PUSH_PASS_EC }}
-
-    - name: Push bundles (quay.io/enterprise-contract)
+    - name: Push bundles
       env:
         EC_AUTOMATION_KEY: ${{ secrets.EC_AUTOMATION_KEY }}
         APP_INSTALL_ID: 32872589
-      run: hack/update-bundles.sh
+        # Enterprise Contract credentials
+        EC_REGISTRY_USER: ${{ secrets.BUNDLE_PUSH_USER_EC }}
+        EC_REGISTRY_PASS: ${{ secrets.BUNDLE_PUSH_PASS_EC }}
+        # Conforma credentials  
+        CONFORMA_REGISTRY_USER: ${{ secrets.BUNDLE_PUSH_USER_CONFORMA }}
+        CONFORMA_REGISTRY_PASS: ${{ secrets.BUNDLE_PUSH_PASS_CONFORMA }}
+      run: hack/update-bundles.sh "quay.io/enterprise-contract/" "quay.io/conforma/"
