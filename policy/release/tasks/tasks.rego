@@ -316,15 +316,13 @@ _missing_tasks(required_tasks) := {task |
 	tasks := tekton.tasks(att)
 	count(tasks) > 0
 
-	# only tasks that are trusted, i.e. tasks that have a record in the trusted_tasks data
-	trusted := [task_name |
+	tasks_in_user_pipeline := [task_name |
 		some task in tasks
-		tekton.is_trusted_task(task)
 		some task_name in tekton.task_names(task)
 	]
 
 	some required_task in required_tasks
-	some task in _any_missing(required_task, trusted)
+	some task in _any_missing(required_task, tasks_in_user_pipeline)
 }
 
 _any_missing(required, tasks) := missing if {
