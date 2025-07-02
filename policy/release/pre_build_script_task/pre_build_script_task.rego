@@ -106,6 +106,9 @@ deny contains result if {
 #   - redhat
 #
 deny contains result if {
+	# This check does not apply to the image index for multi-arch builds
+	# because its sbom is different to the sbom for the per-arch images
+	not image.is_image_index(input.image.ref)
 	some pre_build_image in _script_runner_image_refs
 	image.parse(pre_build_image)
 	not _is_image_in_sbom(pre_build_image)
