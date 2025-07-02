@@ -82,7 +82,7 @@ function exclusions() {
 }
 
 function repo_name() {
-  echo "ec-$1-policy"
+  echo "${1//_/-}-policy"
 }
 
 tmp_oci_dirs=()
