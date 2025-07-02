@@ -82,7 +82,14 @@ function exclusions() {
 }
 
 function repo_name() {
-  echo "${1//_/-}-policy"
+  local bundle_name="$1"
+  local repo_prefix="$2"
+  
+  if [[ "$repo_prefix" == *"enterprise-contract"* ]]; then
+    echo "ec-$bundle_name-policy"
+  else
+    echo "${bundle_name//_/-}-policy"
+  fi
 }
 
 tmp_oci_dirs=()
@@ -104,7 +111,6 @@ for b in $BUNDLES; do
   mapfile -t src_dirs < <(bundle_src_dirs "$b")
   last_update_sha=$(git log -n 1 --pretty=format:%h -- "${src_dirs[@]}")
 
-  repo=$(repo_name "$b")
   tag=git-$last_update_sha
 
   # Check all repositories to see if any need the bundle
@@ -112,6 +118,7 @@ for b in $BUNDLES; do
   all_repos_have_bundle=true
 
   for repo_prefix in $REPO_PREFIXES; do
+    repo=$(repo_name "$b" "$repo_prefix")
     push_repo="${repo_prefix}$repo"
     
     # Login with correct credentials for tag checking
@@ -143,9 +150,9 @@ for b in $BUNDLES; do
   done
 
   if [[ "$all_repos_have_bundle" == 'true' ]]; then
-    echo "All repositories have bundle $repo:$tag, no push needed"
+    echo "All repositories have bundle for $b:$tag, no push needed"
   else
-    echo "Building and pushing policy bundle $repo:$tag to ${#repos_needing_push[@]} repositories"
+    echo "Building and pushing policy bundle for $b:$tag to ${#repos_needing_push[@]} repositories"
 
     # Prepare a temp dir with the bundle's content
     tmp_dir=$(mktemp -d -t "ec-bundle-$b.XXXXXXXXXX")
