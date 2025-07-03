@@ -79,6 +79,7 @@ function bundle_subdir() {
 
 function exclusions() {
   echo "artifacthub-pkg.yml"
+  echo "*_test.rego"
 }
 
 function repo_name() {
