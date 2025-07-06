@@ -116,32 +116,6 @@ mock_slsav1_attestation_with_tasks(tasks) := {"statement": {
 	}},
 }}
 
-mock_slsav1_attestation_bundles(bundles, task_name) := a if {
-	tasks := [task |
-		some bundle in bundles
-		task := tekton_test.slsav1_task_bundle(task_name, bundle)
-	]
-	a := mock_slsav1_attestation_with_tasks(tasks)
-}
-
-mock_slsav02_attestation_bundles(bundles) := a if {
-	tasks := [task |
-		some index, bundle in bundles
-		task := {
-			"name": sprintf("task-run-%d", [index]),
-			"ref": {
-				"name": "my-task",
-				"bundle": bundle,
-			},
-		}
-	]
-
-	a := {"statement": {"predicate": {
-		"buildConfig": {"tasks": tasks},
-		"buildType": lib.tekton_pipeline_run,
-	}}}
-}
-
 test_tasks_from_pipelinerun if {
 	slsa1_task := tekton_test.slsav1_task("buildah")
 	slsa1_att := [json.patch(valid_slsav1_att, [{

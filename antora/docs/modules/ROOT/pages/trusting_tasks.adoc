@@ -1,7 +1,6 @@
 = Trusting Tasks
 
 :trusted-tasks: trusted_tasks.adoc
-:attestation-task-bundle: release_policy#attestation_task_bundle_package
 :image-built-by-trusted-task: release_policy#slsa_build_scripted_build__image_built_by_trusted_task
 :build-definitions: https://github.com/konflux-ci/build-definitions
 :policy: https://github.com/conforma/policy
@@ -25,8 +24,7 @@ solely on the new format.
 ====
 
 When evaluating a certain input, certain policy rules enforce that only trusted
-tasks were used. The xref:{attestation-task-bundle}[Attestation Task Bundle]
-package and the xref:{:image-built-by-trusted-task:}[Image built by trusted
+tasks were used. The xref:{:image-built-by-trusted-task:}[Image built by trusted
 Task], for example, performs this check on SLSA Provenance attestations.
 
 To reduce errors, use the link:{ec-track-bundle}[ec track bundle] command to
