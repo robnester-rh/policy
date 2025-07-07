@@ -23,7 +23,7 @@ import data.lib.tekton
 #   failure_msg: >-
 #     Task '%s' was not invoked with the hermetic parameter set
 #   solution: >-
-#     Make sure the task '%s' has the input parameter 'HERMETIC' set to
+#     Make sure the task has the input parameter 'HERMETIC' set to
 #     'true'.
 #   collections:
 #   - redhat
