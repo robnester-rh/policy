@@ -4,6 +4,16 @@ import rego.v1
 
 import data.lib.time as time_lib
 
+# The first entry in the chain always points to the active rule, even if it has
+# no declared annotations (in which case the annotations member is not present).
+# Thus, result_helper assumes every rule defines annotations. At the very least
+# custom.short_name must be present.
+_rule_annotations(chain) := chain[0].annotations
+
+pipeline_intention_match(chain) if {
+	rule_data("pipeline_intention") in _rule_annotations(chain).custom.pipeline_intention
+} else := false
+
 result_helper(chain, failure_sprintf_params) := result if {
 	with_collections := {"collections": _rule_annotations(chain).custom.collections}
 	result := object.union(_basic_result(chain, failure_sprintf_params), with_collections)
@@ -38,12 +48,6 @@ _code(chain) := code if {
 	# Put them together
 	code := sprintf("%s.%s", [pkg_name, rule_name])
 }
-
-# The first entry in the chain always points to the active rule, even if it has
-# no declared annotations (in which case the annotations member is not present).
-# Thus, result_helper assumes every rule defines annotations. At the very least
-# custom.short_name must be present.
-_rule_annotations(chain) := chain[0].annotations
 
 _pkg_name(rule_path) := name if {
 	# "data" is automatically added by rego.
