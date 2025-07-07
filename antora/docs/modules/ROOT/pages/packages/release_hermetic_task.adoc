@@ -13,7 +13,7 @@ This package verifies that all the tasks in the attestation that are required to
 
 Verify the task in the PipelineRun attestation was invoked with the proper parameters to make the task execution hermetic.
 
-*Solution*: Make sure the task '%s' has the input parameter 'HERMETIC' set to 'true'.
+*Solution*: Make sure the task has the input parameter 'HERMETIC' set to 'true'.
 
 * Rule type: [rule-type-indicator failure]#FAILURE#
 * FAILURE message: `Task '%s' was not invoked with the hermetic parameter set`
