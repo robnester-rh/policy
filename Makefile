@@ -41,7 +41,7 @@ define COVERAGE
 	T=$$(mktemp); tee "$${T}"; $(OPA) eval --format pretty \
 	--input "$${T}" \
 	--data hack/simplecov.rego \
-	data.simplecov.from_opa > coverage.json; \
+	data.hack.from_opa > coverage.json; \
 	rm -f "$${T}" || true ;\
 } \
 | jq -j -r 'if .coverage < 100 then "ERROR: Code coverage threshold not met: got \(.coverage) instead of 100.00\n" | halt_error(1) else "" end'
