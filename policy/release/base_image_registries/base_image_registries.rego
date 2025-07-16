@@ -108,7 +108,7 @@ _image_ref_permitted(image_ref) if {
 	image.parse(image_ref).digest in allowed_digests
 }
 
-_cyclonedx_base_images := [component.name |
+_cyclonedx_base_images := [_cyclonedx_image_ref(component) |
 	some s in sbom.cyclonedx_sboms
 	some formulation in s.formulation
 	some component in formulation.components
@@ -163,6 +163,12 @@ _spdx_image_ref(pkg) := image_ref if {
 	some ref in pkg.externalRefs
 	ref.referenceType == "purl"
 	image_ref := sbom.image_ref_from_purl(ref.referenceLocator)
+}
+
+# Extract the image ref from the purl in the CycloneDX component
+_cyclonedx_image_ref(component) := image_ref if {
+	purl := component.purl
+	image_ref := sbom.image_ref_from_purl(purl)
 }
 
 # Verify allowed_registry_prefixes is a non-empty list of strings
