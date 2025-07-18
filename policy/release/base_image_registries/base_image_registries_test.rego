@@ -14,20 +14,22 @@ import data.lib
 test_allowed_base_images if {
 	sboms := [{"formulation": [
 		{"components": [{
-			"name": "registry.redhat.io/ubi7:latest@sha256:abc",
+			"name": "ubi7",
 			"type": "container",
 			"properties": [{
 				"name": "konflux:container:is_base_image",
 				"value": "true",
 			}],
+			"purl": "pkg:oci/ubi@sha256:abc?repository_url=registry.redhat.io/ubi7",
 		}]},
 		{"components": [{
-			"name": "docker.io/library/registry:latest@sha256:bcd",
+			"name": "registry",
 			"type": "container",
 			"properties": [{
 				"name": "konflux:container:is_builder_image:for_stage",
 				"value": "0",
 			}],
+			"purl": "pkg:oci/registry@sha256:bcd?repository_url=docker.io/library/registry",
 		}]},
 	]}]
 
@@ -38,20 +40,22 @@ test_allowed_base_images if {
 test_allowed_base_images_from_snapshot if {
 	sboms := [{"formulation": [
 		{"components": [{
-			"name": "registry.redhat.io/ubi7:latest@sha256:abc",
+			"name": "ubi7",
 			"type": "container",
 			"properties": [{
 				"name": "konflux:container:is_base_image",
 				"value": "true",
 			}],
+			"purl": "pkg:oci/ubi@sha256:abc?repository_url=registry.redhat.io/ubi7",
 		}]},
 		{"components": [{
-			"name": "docker.io/library/registry:latest@sha256:bcd",
+			"name": "registry",
 			"type": "container",
 			"properties": [{
 				"name": "konflux:container:is_builder_image:for_stage",
 				"value": "0",
 			}],
+			"purl": "pkg:oci/registry@sha256:bcd?repository_url=docker.io/library/registry",
 		}]},
 	]}]
 
@@ -73,28 +77,31 @@ test_empty_base_images_result if {
 test_disallowed_base_images if {
 	sboms := [{"formulation": [
 		{"components": [{
-			"name": "registry.redhat.yo/ubi7/3",
+			"name": "3",
 			"type": "container",
 			"properties": [{
 				"name": "konflux:container:is_base_image",
 				"value": "true",
 			}],
+			"purl": "pkg:oci/3@sha256:6123?repository_url=registry.redhat.yo/ubi7/3",
 		}]},
 		{"components": [{
-			"name": "dockery.io/busybox/3",
+			"name": "3",
 			"type": "container",
 			"properties": [{
 				"name": "konflux:container:is_builder_image:for_stage",
 				"value": "0",
 			}],
+			"purl": "pkg:oci/3@sha256:6123?repository_url=dockery.io/busybox/3",
 		}]},
 		{"components": [{
-			"name": "registry.redhat.ioo/spam/3",
+			"name": "3",
 			"type": "container",
 			"properties": [{
 				"name": "konflux:container:is_builder_image:for_stage",
 				"value": "1",
 			}],
+			"purl": "pkg:oci/3@sha256:6123?repository_url=registry.redhat.ioo/spam/3",
 		}]},
 	]}]
 
@@ -112,17 +119,17 @@ test_disallowed_base_images if {
 	expected := {
 		{
 			"code": "base_image_registries.base_image_permitted",
-			"msg": "Base image \"registry.redhat.yo/ubi7/3\" is from a disallowed registry",
+			"msg": "Base image \"registry.redhat.yo/ubi7/3@sha256:6123\" is from a disallowed registry",
 			"term": "registry.redhat.yo/ubi7/3",
 		},
 		{
 			"code": "base_image_registries.base_image_permitted",
-			"msg": "Base image \"registry.redhat.ioo/spam/3\" is from a disallowed registry",
+			"msg": "Base image \"registry.redhat.ioo/spam/3@sha256:6123\" is from a disallowed registry",
 			"term": "registry.redhat.ioo/spam/3",
 		},
 		{
 			"code": "base_image_registries.base_image_permitted",
-			"msg": "Base image \"dockery.io/busybox/3\" is from a disallowed registry",
+			"msg": "Base image \"dockery.io/busybox/3@sha256:6123\" is from a disallowed registry",
 			"term": "dockery.io/busybox/3",
 		},
 		{
@@ -143,32 +150,34 @@ test_disallowed_base_images if {
 test_disallowed_base_images_with_snapshot if {
 	sboms := [{"formulation": [
 		{"components": [{
-			"name": "registry.redhat.io/ubi7:latest@sha256:abc",
+			"name": "ubi7",
 			"type": "container",
 			"properties": [{
 				"name": "konflux:container:is_base_image",
 				"value": "true",
 			}],
+			"purl": "pkg:oci/ubi@sha256:abc?repository_url=registry.redhat.io/ubi7",
 		}]},
 		{"components": [{
-			"name": "docker.io/library/registry:latest@sha256:bcd",
+			"name": "registry",
 			"type": "container",
 			"properties": [{
 				"name": "konflux:container:is_builder_image:for_stage",
 				"value": "0",
 			}],
+			"purl": "pkg:oci/registry@sha256:bcd?repository_url=docker.io/library/registry",
 		}]},
 	]}]
 
 	bad_spdx_sbom := json.patch(_spdx_sbom, [
 		# Tweak the repository_url so they're no longer allowed
 		# regal ignore:line-length
-		{"op": "replace", "path": "/0/packages/0/externalRefs/0/referenceLocator", "value": "pkg:oci/whatever@sha256:ccc?repository_url=registry.redhat.blah/ubi7/3"},
+		{"op": "replace", "path": "/0/packages/0/externalRefs/0/referenceLocator", "value": "pkg:oci/3@sha256:ccc?repository_url=registry.redhat.blah/ubi7/3"},
 		# regal ignore:line-length
-		{"op": "replace", "path": "/0/packages/1/externalRefs/0/referenceLocator", "value": "pkg:oci/whatever@sha256:ddd?repository_url=registry.redhat.whatever/ubi7/3"},
+		{"op": "replace", "path": "/0/packages/1/externalRefs/0/referenceLocator", "value": "pkg:oci/3@sha256:ddd?repository_url=registry.redhat.whatever/ubi7/3"},
 		# Actually these two won't matter, but let's change them anyhow so the name and repository_url are consistent
-		{"op": "replace", "path": "/0/packages/0/name", "value": "registry.redhat.blah/ubi7/3"},
-		{"op": "replace", "path": "/0/packages/1/name", "value": "registry.redhat.whatever/ubi7/3"},
+		{"op": "replace", "path": "/0/packages/0/name", "value": "3"},
+		{"op": "replace", "path": "/0/packages/1/name", "value": "3"},
 	])
 
 	snapshot := {"components": [
@@ -179,12 +188,12 @@ test_disallowed_base_images_with_snapshot if {
 	expected := {
 		{
 			"code": "base_image_registries.base_image_permitted",
-			"msg": "Base image \"docker.io/library/registry:latest@sha256:bcd\" is from a disallowed registry",
+			"msg": "Base image \"docker.io/library/registry@sha256:bcd\" is from a disallowed registry",
 			"term": "docker.io/library/registry",
 		},
 		{
 			"code": "base_image_registries.base_image_permitted",
-			"msg": "Base image \"registry.redhat.io/ubi7:latest@sha256:abc\" is from a disallowed registry",
+			"msg": "Base image \"registry.redhat.io/ubi7@sha256:abc\" is from a disallowed registry",
 			"term": "registry.redhat.io/ubi7",
 		},
 		{
@@ -208,19 +217,21 @@ test_disallowed_base_images_with_snapshot if {
 test_sbom_base_image_selection if {
 	sboms := [{"formulation": [
 		{"components": [{
-			"name": "registry.ignore.me/no-properties",
+			"name": "no-properties",
 			"type": "container",
+			"purl": "pkg:oci/no-properties@sha256:6123?repository_url=registry.ignore.me/no-properties",
 		}]},
 		{"components": [{
-			"name": "registry.ignore.me/is_base_image/false/value",
+			"name": "value",
 			"type": "container",
 			"properties": [{
 				"name": "konflux:container:is_base_image",
 				"value": "false",
 			}],
+			"purl": "pkg:oci/value@sha256:6123?repository_url=registry.ignore.me/is_base_image/false/value",
 		}]},
 		{"components": [{
-			"name": "registry.ignore.me/is_base_image/0/value",
+			"name": "value",
 			"type": "container",
 			"properties": [{
 				"name": "konflux:container:is_base_image",
@@ -234,32 +245,37 @@ test_sbom_base_image_selection if {
 				"name": "konflux:container:is_base_image",
 				"value": true,
 			}],
+			"purl": "pkg:oci/value@sha256:6123?repository_url=registry.ignore.me/is_base_image/non-marshaled-json/value",
 		}]},
 		{"components": [{
-			"name": "registry.ignore.me/is_base_image/missing/value",
+			"name": "value",
 			"type": "container",
 			"properties": [{"name": "konflux:container:is_base_image"}],
+			"purl": "pkg:oci/value@sha256:6123?repository_url=registry.ignore.me/is_base_image/missing/value",
 		}]},
 		{"components": [{
-			"name": "registry.ignore.me/for_stage/false/value",
+			"name": "value",
 			"type": "container",
 			"properties": [{
 				"name": "konflux:container:is_builder_image:for_stage",
 				"value": "false",
 			}],
+			"purl": "pkg:oci/value@sha256:6123?repository_url=registry.ignore.me/for_stage/false/value",
 		}]},
 		{"components": [{
-			"name": "registry.ignore.me/for_stage/non-marshaled-json/value",
+			"name": "value",
 			"type": "container",
 			"properties": [{
 				"name": "konflux:container:is_builder_image:for_stage",
 				"value": 1,
 			}],
+			"purl": "pkg:oci/value@sha256:6123?repository_url=registry.ignore.me/for_stage/non-marshaled-json/value",
 		}]},
 		{"components": [{
-			"name": "registry.ignore.me/for_stage/missing/value",
+			"name": "value",
 			"type": "container",
 			"properties": [{"name": "konflux:container:is_builder_image:for_stage"}],
+			"purl": "pkg:oci/value@sha256:6123?repository_url=registry.ignore.me/for_stage/missing/value",
 		}]},
 	]}]
 
@@ -351,7 +367,7 @@ _spdx_sbom := [{"packages": [
 	{
 		# regal ignore:line-length
 		"SPDXID": "SPDXRef-image-registry.redhat.io/single-container-app-9520a72cbb69edfca5cac88ea2a9e0e09142ec934952b9420d686e77765f002c",
-		"name": "registry.redhat.io/single-container-app",
+		"name": "single-container-app",
 		"downloadLocation": "NOASSERTION",
 		"externalRefs": [{
 			"referenceCategory": "PACKAGE-MANAGER",
@@ -369,7 +385,7 @@ _spdx_sbom := [{"packages": [
 	{
 		# regal ignore:line-length
 		"SPDXID": "SPDXRef-image-docker.io/single-container-app-9520a72cbb69edfca5cac88ea2a9e0e09142ec934952b9420d686e77765f002c",
-		"name": "docker.io/single-container-app",
+		"name": "single-container-app",
 		"downloadLocation": "NOASSERTION",
 		"externalRefs": [{
 			"referenceCategory": "PACKAGE-MANAGER",
