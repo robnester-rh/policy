@@ -152,7 +152,7 @@ _purls_from_sbom(s) := purls if {
 		some pkg in s.packages
 		some ref in pkg.externalRefs
 		ref.referenceType == "purl"
-		ref.referenceCategory == "PACKAGE-MANAGER"
+		ref.referenceCategory in {"PACKAGE-MANAGER", "PACKAGE_MANAGER"}
 	}
 	count(purls) > 0
 }
