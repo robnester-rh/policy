@@ -194,7 +194,8 @@ _spdx_sbom_attestation := {"statement": {
 			"referenceLocator": "pkg:oci/ubi7@sha256:bcd?repository_url=registry.redhat.io/ubi7",
 		},
 		{
-			"referenceCategory": "PACKAGE-MANAGER",
+			# Intentionally different referenceCategory here
+			"referenceCategory": "PACKAGE_MANAGER",
 			"referenceType": "purl",
 			"referenceLocator": "pkg:oci/bazel6-ubi9@sha256:def?repository_url=quay.io/konflux-ci/bazel6-ubi9",
 		},
