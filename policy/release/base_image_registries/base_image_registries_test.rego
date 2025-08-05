@@ -313,13 +313,14 @@ test_base_image_not_found_image_index if {
 		]}]},
 	}}}
 
-	lib.assert_empty(base_image_registries.deny) with input.attestations as [att]
-		with input.image.ref as "registry.local/ham@sha256:fff"
-
 	expected := {{
 		"code": "base_image_registries.base_image_info_found",
 		"msg": "Base images information is missing",
 	}}
+
+	lib.assert_equal_results(base_image_registries.deny, expected) with input.attestations as [att]
+		with input.image.ref as "registry.local/ham@sha256:fff"
+
 	lib.assert_equal_results(base_image_registries.deny, expected) with input.attestations as [att]
 		with input.image.ref as "registry.local/ham@sha256:aaa"
 }
