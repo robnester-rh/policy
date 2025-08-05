@@ -47,6 +47,7 @@ test_cyclonedx_sboms if {
 	lib.assert_equal(sbom.cyclonedx_sboms, expected) with input.attestations as attestations
 		with input.image as _cyclonedx_image
 		with ec.oci.blob as mock_ec_oci_cyclonedx_blob
+		with ec.oci.descriptor as {"mediaType": "application/vnd.oci.image.manifest.v1+json"}
 }
 
 # test from attestation and fallback to oci image
@@ -85,6 +86,7 @@ test_spdx_sboms if {
 	lib.assert_equal(sbom.spdx_sboms, expected) with input.attestations as attestations
 		with input.image as _spdx_image
 		with ec.oci.blob as mock_ec_oci_spdx_blob
+		with ec.oci.descriptor as {"mediaType": "application/vnd.oci.image.manifest.v1+json"}
 }
 
 test_ignore_unrelated_sboms if {
@@ -134,6 +136,7 @@ test_ignore_unrelated_sboms if {
 	lib.assert_equal(sbom.all_sboms, []) with input.attestations as attestations
 		with input.image as {"ref": "registry.io/repository/image@sha256:284e3029"}
 		with ec.oci.blob as ""
+		with ec.oci.descriptor as {"mediaType": "application/vnd.oci.image.manifest.v1+json"}
 }
 
 test_image_ref_from_purl if {
