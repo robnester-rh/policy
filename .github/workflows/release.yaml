@@ -1,0 +1,162 @@
+# Copyright The Conforma Contributors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+name: Release
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 9 * * 3' # every Wednesday
+
+permissions:
+  contents: read
+
+env:
+  TRACKED_PATHS: "acceptance/ policy/"
+  
+jobs:
+
+  get_info:
+
+    runs-on: ubuntu-latest
+    outputs:
+      latest_tag: ${{ steps.get_info.outputs.latest_tag }}
+      latest_tag_sha: ${{ steps.get_info.outputs.latest_tag_sha }}
+      changed: ${{ steps.get_info.outputs.changed }}
+      next_version: ${{ steps.get_info.outputs.next_version }}
+
+    steps:
+
+      - name: Harden Runner
+        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+        with:
+          egress-policy: audit
+          disable-telemetry: true
+
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Get info
+        id: get_info
+        run: |
+          set -e
+          git fetch --tags
+          source hack/derive-version.sh $TRACKED_PATHS
+          
+          echo latest_tag=$LATEST_TAG | tee -a "$GITHUB_OUTPUT"
+          echo latest_tag_sha=$LATEST_TAG_SHA | tee -a "$GITHUB_OUTPUT"
+          echo changed=$HAVE_CHANGED | tee -a "$GITHUB_OUTPUT"
+          echo next_version=$NEXT_VERSION | tee -a "$GITHUB_OUTPUT"
+
+  generate_release_notes:
+
+    needs: get_info
+    if: needs.get_info.outputs.changed == 'true'
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+
+      - name: Harden Runner
+        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+        with:
+          egress-policy: audit
+          disable-telemetry: true
+
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Fetch tags
+        id: fetch_tags
+        run: |
+          git fetch --tags
+
+      - name: Generate release notes
+        uses: google-gemini/gemini-cli-action@main
+        with:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          version: latest
+          settings_json: |
+            {
+              "sandbox": true,
+              "autoAccept": true
+            }
+          prompt: |
+            Make a list of all notable changes since the tag ${{needs.get_info.outputs.latest_tag}}
+            and categorize it nicely with emojis, output as Markdown and a
+            one liner of the change. Add a jira link for each change if 
+            specified in the commit message. put the link in the begining 
+            of the line.
+            Preface the release notes with a brief summary of the release.
+            Don't create a title for the release.
+            Also save the release notes in a file named "release-notes.md".
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release-notes.md
+
+
+  create_release:
+    needs: [get_info, generate_release_notes]
+    if: ${{ needs.get_info.outputs.changed == 'true' && needs.generate_release_notes.result == 'success'}}
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Harden Runner
+        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+        with:
+          egress-policy: audit
+          disable-telemetry: true
+
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Tag
+        run: |
+          set -e
+          git fetch --tags
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"          
+          
+          source hack/add-auto-tag.sh
+          git push -f --tags
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+
+      - name: Create a release
+        uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8 # v2.3.2
+        with:
+          name: ${{ needs.get_info.outputs.next_version }}
+          tag_name: ${{ needs.get_info.outputs.next_version }}
+          body_path: "release-notes.md"
+          make_latest: false
+          generate_release_notes: false
