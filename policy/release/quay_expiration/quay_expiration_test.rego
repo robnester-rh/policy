@@ -20,13 +20,14 @@ test_release_pipeline if {
 	lib.assert_empty(quay_expiration.deny) with input.image as _image_expires_none
 		with data.rule_data as _rule_data_for_release
 
-	lib.assert_empty(quay_expiration.deny) with input.image as _image_expires_blank
-		with data.rule_data as _rule_data_for_release
-
 	expected := {{
 		"code": "quay_expiration.expires_label",
-		"msg": "The image has a 'quay.expires-after' label set to '5d'",
+		"msg": "The label 'quay.expires-after' is not allowed in the released image",
 	}}
+
+	lib.assert_equal_results(expected, quay_expiration.deny) with input.image as _image_expires_blank
+		with data.rule_data as _rule_data_for_release
+
 	lib.assert_equal_results(expected, quay_expiration.deny) with input.image as _image_expires_5d
 		with data.rule_data as _rule_data_for_release
 }
