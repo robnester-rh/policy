@@ -26,7 +26,7 @@ import data.lib
 #   - release
 #   - production
 #   - staging
-#   failure_msg: The image has a 'quay.expires-after' label set to '%s'
+#   failure_msg: The label 'quay.expires-after' is not allowed in the released image
 #   solution: >-
 #     Make sure the image is built without setting the "quay.expires-after" label. This
 #     label is usually set if the container image was built by an "on-pr" pipeline
@@ -43,11 +43,6 @@ deny contains result if {
 	# The quay.expires-after label is present
 	label_name == "quay.expires-after"
 
-	# This is an edge case that may never happen, but let's assume that if
-	# the value is an empty string then it is not an expiration and therefore
-	# can be permitted
-	count(label_value) > 0
-
 	# Send up the violation the details
-	result := lib.result_helper(rego.metadata.chain(), [label_value])
+	result := lib.result_helper(rego.metadata.chain(), [])
 }
