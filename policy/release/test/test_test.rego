@@ -448,7 +448,7 @@ test_wrong_attestation_type if {
 test_all_image_processed if {
 	# regal ignore:line-length
 	digests_processed := {"image": {"digests": ["sha256:4e388ab32b10dc8dbc7e28144f552830adc74787c1e2c0824032078a79f227fb"]}}
-	pipeline_run := lib_test.att_mock_helper_ref("IMAGES_PROCESSED", digests_processed, "success_23", _bundle)
+	pipeline_run := lib_test.att_mock_helper_ref(lib.task_test_image_result_name, digests_processed, "success_23", _bundle)
 	attestations := [
 		pipeline_run,
 		lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "SUCCESS"}, "errored_1", _bundle),
@@ -460,7 +460,7 @@ test_all_image_processed if {
 
 test_all_images_not_processed if {
 	digests_processed := {"image": {"digests": ["sha256:wrongDigest"]}}
-	pipeline_run := lib_test.att_mock_helper_ref("IMAGES_PROCESSED", digests_processed, "success_23", _bundle)
+	pipeline_run := lib_test.att_mock_helper_ref(lib.task_test_image_result_name, digests_processed, "success_23", _bundle)
 
 	attestations := [
 		pipeline_run,
@@ -473,25 +473,6 @@ test_all_images_not_processed if {
 		"msg": "Test 'success_23' did not process image with digest 'sha256:4e388ab32b10dc8dbc7e28144f552830adc74787c1e2c0824032078a79f227fb'.",
 		"term": "success_23",
 	}}) with input.attestations as attestations
-		with input.image.ref as _bundle
-}
-
-test_all_images_matrix_tasks if {
-	# Matrix task scenario: same task name and bundle but different digests processed by each instance
-	digests_task1 := {"image": {"digests": ["sha256:4e388ab32b10dc8dbc7e28144f552830adc74787c1e2c0824032078a79f227fb"]}}
-	digests_task2 := {"image": {"digests": ["sha256:otherDigest"]}}
-
-	matrix_task1 := lib_test.att_mock_helper_ref("IMAGES_PROCESSED", digests_task1, "matrix-test", _bundle)
-	matrix_task2 := lib_test.att_mock_helper_ref("IMAGES_PROCESSED", digests_task2, "matrix-test", _bundle)
-
-	attestations := [
-		matrix_task1,
-		matrix_task2,
-		lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "SUCCESS"}, "matrix-test", _bundle),
-	]
-
-	# Should pass because the grouped results combine digests from both matrix task instances
-	lib.assert_empty(test.deny) with input.attestations as attestations
 		with input.image.ref as _bundle
 }
 

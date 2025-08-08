@@ -35,6 +35,8 @@ taskrun_att_build_types := {
 # with test_ is treated as though it was a test.)
 task_test_result_name := "TEST_OUTPUT"
 
+task_test_image_result_name := "IMAGES_PROCESSED"
+
 slsa_provenance_attestations := [att |
 	some att in input.attestations
 	att.statement.predicateType in {slsa_provenance_predicate_type_v1, slsa_provenance_predicate_type_v02}
@@ -119,6 +121,8 @@ unmarshal(raw) := value if {
 # (Don't call it test_results since test_ means a unit test)
 # First find results using the new task result name
 results_from_tests := results_named(task_test_result_name)
+
+images_processed_results_from_tests := results_named(task_test_image_result_name)
 
 # Check for a task by name. Return the task if found
 task_in_pipelinerun(name) := task if {
