@@ -257,7 +257,8 @@ deny contains result if {
 	img := image.parse(input.image.ref)
 	img_digest := img.digest
 
-	some task in lib.images_processed_results_from_tests
+	some task in _grouped_processed_results_from_tests
+
 	not img_digest in object.get(task.value, ["image", "digests"], [])
 	result := lib.result_helper_with_term(
 		rego.metadata.chain(),
@@ -265,6 +266,36 @@ deny contains result if {
 		task.name,
 	)
 }
+
+# For a multi-arch matrix task we get records of multiple tasks with
+# the same name and bundle. Combine digest lists from each them into
+# one single list otherwise we get violations for matrix test tasks.
+#
+# We're making the assumption that there's no reason, other than matrix
+# tasks, we would see the same task with the same name more than once
+# in the pipelinerun.
+#
+_grouped_processed_results_from_tests contains result if {
+	images_processed_results := lib.results_named(_task_test_image_result_name)
+
+	some r1 in images_processed_results
+
+	combined_digest_list := [digest |
+		some r2 in images_processed_results
+		r2.name == r1.name
+		r2.bundle == r2.bundle
+		some digest in r2.value.image.digests
+	]
+
+	# There is also a "pullspec" attribute alongside the "digests"
+	# attribute in the original task result. I think it's identical
+	# for each of the matrix tasks, so we could put it back in, but
+	# we don't need it for the policy check so let's leave it out.
+
+	result := object.union(r1, {"value": {"image": {"digests": combined_digest_list}}})
+}
+
+_task_test_image_result_name := "IMAGES_PROCESSED"
 
 _did_result(test, results, _) if {
 	test.result in results
