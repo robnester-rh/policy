@@ -96,8 +96,14 @@ _task_expires_on(task) := expires if {
 	ref := task_ref(task)
 	records := _trusted_tasks[ref.key]
 
-	some record in records
-	record.ref == ref.pinned_ref
+	matching_records := [r |
+		some r in records
+		r.ref == ref.pinned_ref
+	]
+
+	# Avoid an "eval_conflict_error: functions must not produce multiple
+	# outputs..." error if the data has duplicate records for this ref
+	record := matching_records[0]
 
 	expires = time.parse_rfc3339_ns(record.expires_on)
 }
