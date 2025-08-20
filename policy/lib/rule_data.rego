@@ -89,6 +89,31 @@ rule_data_defaults := {
 		"registry.access.redhat.com/",
 		"registry.redhat.io/",
 	],
+	# Used in release/olm.rego
+	# The NetworkPolicy resource kind is temporarily not allowed for all OCP versions until OLM releases a backport
+	# More information here:https://groups.google.com/a/redhat.com/g/aos-devel/c/yaWHjkj-tuA/m/RZh2YSQgBgAJ
+	"allowed_olm_resource_kinds": [
+		"ClusterServiceVersion",
+		"CustomResourceDefinition",
+		"Secret",
+		"ClusterRole",
+		"ClusterRoleBinding",
+		"ConfigMap",
+		"ServiceAccount",
+		"Service",
+		"Role",
+		"RoleBinding",
+		"PrometheusRule",
+		"ServiceMonitor",
+		"PodDisruptionBudget",
+		"PriorityClass",
+		"VerticalPodAutoscaler",
+		"ConsoleYAMLSample",
+		"ConsoleQuickStart",
+		"ConsoleCLIDownload",
+		"ConsoleLink",
+		"ConsolePlugin",
+	],
 	#
 	# Used in release/hermetic_task/hermetic_task.rego
 	"required_hermetic_tasks": [
