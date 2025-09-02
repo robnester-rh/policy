@@ -59,6 +59,7 @@
 **** xref:packages/release_olm.adoc#olm__csv_semver_format[ClusterServiceVersion semver format]
 **** xref:packages/release_olm.adoc#olm__feature_annotations_format[Feature annotations have expected value]
 **** xref:packages/release_olm.adoc#olm__allowed_registries[Images referenced by OLM bundle are from allowed registries]
+**** xref:packages/release_olm.adoc#olm__allowed_resource_kinds[OLM bundle image manifests contain only allowed resource kinds]
 **** xref:packages/release_olm.adoc#olm__olm_bundle_multi_arch[OLM bundle images are not multi-arch]
 **** xref:packages/release_olm.adoc#olm__allowed_registries_related[Related images references are from allowed registries]
 **** xref:packages/release_olm.adoc#olm__required_olm_features_annotations_provided[Required OLM feature annotations list provided]
