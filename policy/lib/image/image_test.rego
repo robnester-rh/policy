@@ -9,6 +9,7 @@ import data.lib.image
 test_parse if {
 	repository := "registry.com/re/po"
 	repository_with_port := "registry.com:8443/re/po"
+	local_repository := "localhost:9000/re/po"
 	tag := "latest"
 	digest := "sha256:01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
 
@@ -45,6 +46,10 @@ test_parse if {
 	lib.assert_equal(
 		image.parse(concat("", [repository_with_port, ":", tag, " "])),
 		{"repo": repository_with_port, "tag": tag, "digest": ""},
+	)
+	lib.assert_equal(
+		image.parse(concat("", [local_repository, ":", tag, "@", digest])),
+		{"repo": local_repository, "tag": tag, "digest": digest},
 	)
 }
 
