@@ -104,8 +104,10 @@ _rule_data_errors contains error if {
 }
 
 _builder_id(att) := builder_id if {
+	# slsa v0.2
 	builder_id := att.statement.predicate.builder.id
 } else := builder_id if {
+	# slsa v1.0
 	builder_id := att.statement.predicate.runDetails.builder.id
 }
 

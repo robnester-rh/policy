@@ -7,13 +7,13 @@ import data.slsa_build_build_service
 
 test_all_good if {
 	builder_id := lib.rule_data("allowed_builder_ids")[0]
-	lib.assert_empty(slsa_build_build_service.deny) with input.attestations as [_mock_attestation(builder_id)]
+	lib.assert_empty(slsa_build_build_service.deny) with input.attestations as [_mock_slsa_v02_attestation(builder_id)]
 
 	lib.assert_empty(slsa_build_build_service.deny) with input.attestations as [_mock_slsa_v1_attestation(builder_id)]
 }
 
 test_slsa_builder_id_found if {
-	attestations := [
+	slsa_v02_attestations := [
 		# Missing predicate.builder.id
 		{"statement": {"predicate": {
 			"builder": {},
@@ -53,7 +53,7 @@ test_slsa_builder_id_found if {
 		"msg": "Builder ID not set in attestation",
 	}}
 
-	lib.assert_equal_results(expected, slsa_build_build_service.deny) with input.attestations as attestations
+	lib.assert_equal_results(expected, slsa_build_build_service.deny) with input.attestations as slsa_v02_attestations
 
 	lib.assert_equal_results(expected, slsa_build_build_service.deny) with input.attestations as slsa_v1_attestations
 }
@@ -67,7 +67,7 @@ test_accepted_slsa_builder_id if {
 	lib.assert_equal_results(
 		expected,
 		slsa_build_build_service.deny,
-	) with input.attestations as [_mock_attestation(builder_id)]
+	) with input.attestations as [_mock_slsa_v02_attestation(builder_id)]
 
 	lib.assert_equal_results(
 		expected,
@@ -98,10 +98,10 @@ test_rule_data_format if {
 	}
 
 	lib.assert_equal_results(slsa_build_build_service.deny, expected) with data.rule_data as d
-		with input.attestations as [_mock_attestation("foo")]
+		with input.attestations as [_mock_slsa_v02_attestation("foo")]
 }
 
-_mock_attestation(builder_id) := {"statement": {"predicate": {
+_mock_slsa_v02_attestation(builder_id) := {"statement": {"predicate": {
 	"builder": {"id": builder_id},
 	"buildType": lib.tekton_pipeline_run,
 }}}
