@@ -8,7 +8,7 @@ single_test_case(branch, expected_results) if {
 	# regal ignore:line-length
 	mock_input := {"attestations": [{"statement": {"predicate": {"buildConfig": {"tasks": [{"invocation": {"environment": {"annotations": {"build.appstudio.redhat.com/target_branch": branch}}}}]}}}}]}
 
-	mock_rule_data := ["^refs/heads/main$", "^refs/heads/release-[23]$"]
+	mock_rule_data := ["^refs/heads/main$", "^refs/heads/release-[23]$", "^c10s$"]
 
 	mock_tasks := mock_input.attestations[0].statement.predicate.buildConfig.tasks
 
@@ -24,6 +24,10 @@ test_allow_with_main_branch if {
 
 test_allow_with_release_branch if {
 	single_test_case("refs/heads/release-2", [])
+}
+
+test_allow_with_c10s_branch if {
+	single_test_case("c10s", [])
 }
 
 test_deny_with_disallowed_branch if {
