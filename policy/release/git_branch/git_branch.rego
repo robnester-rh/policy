@@ -25,7 +25,7 @@ deny contains result if {
 
 	# Note that we're assuming that the annotation exists.
 	# This will not produce a violation if the annotation is missing
-	branch := task.invocation.environment.annotations["pipelinesascode.tekton.dev/source-branch"]
+	branch := task.invocation.environment.annotations["build.appstudio.redhat.com/target_branch"]
 	not matches_any(branch)
 	result := lib.result_helper(rego.metadata.chain(), [branch])
 }
