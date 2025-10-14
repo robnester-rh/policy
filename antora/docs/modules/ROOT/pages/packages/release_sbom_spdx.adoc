@@ -35,12 +35,12 @@ Confirm the SPDX SBOM contains only packages with explicitly allowed external re
 [#sbom_spdx__allowed_package_sources]
 === link:#sbom_spdx__allowed_package_sources[Allowed package sources]
 
-For each of the packages fetched by Cachi2 which define externalReferences, verify they are allowed based on the allowed_package_sources rule data key. By default, allowed_package_sources is empty, which means no components with such references are allowed.
+For each of the packages fetched by Hermeto which define externalReferences, verify they are allowed based on the allowed_package_sources rule data key. By default, allowed_package_sources is empty, which means no components with such references are allowed.
 
 *Solution*: Update the image to not use a package from a disallowed source.
 
 * Rule type: [rule-type-indicator failure]#FAILURE#
-* FAILURE message: `Package %s fetched by cachi2 was sourced from %q which is not allowed`
+* FAILURE message: `Package %s fetched by Hermeto was sourced from %q which is not allowed`
 * Code: `sbom_spdx.allowed_package_sources`
 * Effective from: `2025-02-17T00:00:00Z`
 * https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/sbom_spdx/sbom_spdx.rego#L170[Source, window="_blank"]
@@ -80,7 +80,7 @@ Confirm the SPDX SBOM contains only packages without disallowed attributes. By d
 * FAILURE message: `Package %s has the attribute %q set%s`
 * Code: `sbom_spdx.disallowed_package_attributes`
 * Effective from: `2025-02-04T00:00:00Z`
-* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/sbom_spdx/sbom_spdx.rego#L215[Source, window="_blank"]
+* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/sbom_spdx/sbom_spdx.rego#L216[Source, window="_blank"]
 
 [#sbom_spdx__disallowed_package_external_references]
 === link:#sbom_spdx__disallowed_package_external_references[Disallowed package external references]
