@@ -67,7 +67,7 @@ OLM bundle images should be built for a single architecture. They should not be 
 * Rule type: [rule-type-indicator failure]#FAILURE#
 * FAILURE message: `The %q bundle image is a multi-arch reference.`
 * Code: `olm.olm_bundle_multi_arch`
-* Effective from: `2025-5-01T00:00:00Z`
+* Effective from: `2025-05-01T00:00:00Z`
 * https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/olm/olm.rego#L337[Source, window="_blank"]
 
 [#olm__allowed_registries_related]

@@ -26,9 +26,9 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/open-policy-agent/opa/ast"
-	"github.com/open-policy-agent/opa/ast/json"
 )
 
 type doc struct {
@@ -112,10 +112,9 @@ func (d doc) generatePackage(module string, p pkg) error {
 		return fmt.Errorf("creating file %q: %w", navpath, err)
 	}
 	defer nav.Close()
-	
+
 	return packageTemplate.Execute(nav, &p)
 }
-
 
 type col struct {
 	*ast.Annotations
@@ -227,6 +226,7 @@ func init() {
 		"toTitle":          strings.ToTitle,
 		"isBuiltIn":        isBuiltIn,
 		"policyOrigin":     policyOrigin,
+		"formatTime":       formatTime,
 	}
 
 	navTemplate = template.Must(template.New("nav").Funcs(funcs).Parse(navTemplateText))
@@ -289,16 +289,36 @@ func isBuiltIn(a *ast.Annotations) bool {
 	return false
 }
 
+// formatTime converts time values to RFC3339 format strings.
+//
+// In OPA v1.6.0, the ast.ParserOptions.JSONOptions field was removed. This field
+// previously controlled how annotations were marshaled/unmarshaled. Without it,
+// RFC3339 timestamp strings in annotations (e.g., "2023-08-31T00:00:00Z") are
+// parsed into time.Time objects by OPA's annotation processor. When time.Time
+// values are later converted to strings using fmt.Sprint or similar methods, Go
+// formats them as "2006-01-02 15:04:05.999999999 -0700 MST" instead of RFC3339.
+//
+// This function ensures all time values in documentation are consistently formatted
+// as RFC3339, regardless of whether they arrive as time.Time objects or strings.
+func formatTime(v any) string {
+	// Handle time.Time objects by formatting as RFC3339
+	if t, ok := v.(time.Time); ok {
+		return t.Format(time.RFC3339)
+	}
+	// Handle string values: parse and reformat as RFC3339 if valid, otherwise return as-is
+	if s, ok := v.(string); ok {
+		if t, err := time.Parse(time.RFC3339, s); err == nil {
+			return t.Format(time.RFC3339)
+		}
+		return s
+	}
+	// Handle all other types with default string representation
+	return fmt.Sprint(v)
+}
+
 func inspect(rego []string) ([]ast.FlatAnnotationsRefSet, error) {
 	options := ast.ParserOptions{
 		ProcessAnnotation: true,
-		JSONOptions: &json.Options{
-			MarshalOptions: json.MarshalOptions{
-				IncludeLocation: json.NodeToggle{
-					AnnotationsRef: true,
-				},
-			},
-		},
 	}
 
 	annotations := make([]ast.FlatAnnotationsRefSet, 0, 50)
