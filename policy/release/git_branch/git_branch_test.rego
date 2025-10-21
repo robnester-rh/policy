@@ -8,7 +8,7 @@ single_test_case(branch, expected_results) if {
 	# regal ignore:line-length
 	mock_input := {"attestations": [{"statement": {"predicate": {"buildConfig": {"tasks": [{"invocation": {"environment": {"annotations": {"build.appstudio.redhat.com/target_branch": branch}}}}]}}}}]}
 
-	mock_rule_data := ["^c10s$", "^rhel-10.[0-9]+$", "^rhel-[0-9]+-main$"]
+	mock_rule_data := ["^c10s$", "^rhel-10.[0-9]+$", "^rhel-[0-9]+-main$", "branch[0-9]+-rhel-[0-9]+.[0-9]+.[0-9]+$"]
 
 	mock_tasks := mock_input.attestations[0].statement.predicate.buildConfig.tasks
 
@@ -28,6 +28,13 @@ test_allow_with_release_branch if {
 
 test_allow_with_c10s_branch if {
 	single_test_case("c10s", [])
+}
+
+test_allow_with_hotfixbranch if {
+	single_test_case("kernel-5.14.0-570.42.1.el9_6-branch1-rhel-9.6.0", [])
+	single_test_case("kernel-5.14.0-570.42.1.el9_6-branch1-rhel-9.6.0", [])
+	single_test_case("kernel-5.14.0-570.42.1.el10_3-branch1-rhel-10.3.1", [])
+	single_test_case("kernel-5.14.0-570.42.1.el11_2-branch13-rhel-11.2.9", [])
 }
 
 test_deny_with_disallowed_branch if {
