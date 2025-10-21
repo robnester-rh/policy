@@ -25,7 +25,7 @@
 * {{ toTitle (warningOrFailure .) }} message: `{{ index .Custom "failure_msg" }}`
 * Code: `{{ packageName $pkg }}.{{ index .Custom "short_name" }}`
 {{- with index .Custom "effective_on" }}
-* Effective from: `{{ . }}`
+* Effective from: `{{ formatTime . }}`
 {{- end }}{{/* index .Custom "effective_on" */}}
 {{- if not (isBuiltIn .) }}
 * https://github.com/conforma/policy/blob/{page-origin-refhash}/{{ .Location.File }}#L{{ .Location.Row }}[Source, window="_blank"]

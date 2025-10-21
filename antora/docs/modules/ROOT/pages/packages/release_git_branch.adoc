@@ -16,5 +16,5 @@ Build must originate from a configured branch pattern (e.g., 'refs/heads/main')
 * Rule type: [rule-type-indicator failure]#FAILURE#
 * FAILURE message: `Build is from a branch %s which is not a trusted branch`
 * Code: `git_branch.git_branch`
-* Effective from: `2025-07-01`
+* Effective from: `2025-07-01T00:00:00Z`
 * https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/git_branch/git_branch.rego#L14[Source, window="_blank"]
