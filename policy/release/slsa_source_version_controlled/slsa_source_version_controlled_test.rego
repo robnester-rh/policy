@@ -17,7 +17,8 @@ test_all_good if {
 		},
 	]
 
-	lib.assert_empty(slsa_source_version_controlled.deny) with input.attestations as [_mock_attestation(materials)]
+	lib.assert_empty(slsa_source_version_controlled.deny) with input.attestations as [_mock_slsa_v02_attestation(materials)] # regal ignore:line-length
+	lib.assert_empty(slsa_source_version_controlled.deny) with input.attestations as [_mock_slsa_v1_attestation(materials)]
 }
 
 test_non_git_uri if {
@@ -46,7 +47,12 @@ test_non_git_uri if {
 	lib.assert_equal_results(
 		expected,
 		slsa_source_version_controlled.deny,
-	) with input.attestations as [_mock_attestation(materials)]
+	) with input.attestations as [_mock_slsa_v02_attestation(materials)]
+
+	lib.assert_equal_results(
+		expected,
+		slsa_source_version_controlled.deny,
+	) with input.attestations as [_mock_slsa_v1_attestation(materials)]
 }
 
 # regal ignore:rule-length
@@ -87,7 +93,12 @@ test_non_git_commit if {
 	lib.assert_equal_results(
 		expected,
 		slsa_source_version_controlled.deny,
-	) with input.attestations as [_mock_attestation(materials)]
+	) with input.attestations as [_mock_slsa_v02_attestation(materials)]
+
+	lib.assert_equal_results(
+		expected,
+		slsa_source_version_controlled.deny,
+	) with input.attestations as [_mock_slsa_v1_attestation(materials)]
 }
 
 test_invalid_materials if {
@@ -108,10 +119,24 @@ test_invalid_materials if {
 	lib.assert_equal_results(
 		expected,
 		slsa_source_version_controlled.deny,
-	) with input.attestations as [_mock_attestation(materials)]
+	) with input.attestations as [_mock_slsa_v02_attestation(materials)]
+
+	lib.assert_equal_results(
+		expected,
+		slsa_source_version_controlled.deny,
+	) with input.attestations as [_mock_slsa_v1_attestation(materials)]
 }
 
-_mock_attestation(materials) := {"statement": {"predicate": {
+_mock_slsa_v02_attestation(materials) := {"statement": {"predicate": {
 	"buildType": lib.tekton_pipeline_run,
 	"materials": materials,
 }}}
+
+_mock_slsa_v1_attestation(materials) := {"statement": {
+	"predicateType": "https://slsa.dev/provenance/v1",
+	"predicate": {"buildDefinition": {
+		"buildType": "https://tekton.dev/chains/v2/slsa",
+		"externalParameters": {"runSpec": {"pipelineSpec": {}}},
+		"resolvedDependencies": materials,
+	}},
+}}
