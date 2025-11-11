@@ -140,6 +140,7 @@ Rules included:
 * xref:packages/release_pre_build_script_task.adoc#pre_build_script_task__valid_pre_build_script_task_runner_image_ref[Pre-build-script task checks: Script runner image is a valid image reference]        
 * xref:packages/release_pre_build_script_task.adoc#pre_build_script_task__pre_build_script_task_runner_image_in_sbom[Pre-build-script task checks: Script runner image is included in the sbom]        
 * xref:packages/release_pre_build_script_task.adoc#pre_build_script_task__pre_build_script_task_runner_image_in_results[Pre-build-script task checks: Script runner image is listed in the task results]        
+* xref:packages/release_prefetch_dependencies.adoc#prefetch_dependencies__mode_not_permissive[Prefetch Dependencies Task: Prefetch dependencies mode parameter check]        
 * xref:packages/release_provenance_materials.adoc#provenance_materials__git_clone_source_matches_provenance[Provenance Materials: Git clone source matches materials provenance]        
 * xref:packages/release_provenance_materials.adoc#provenance_materials__git_clone_task_found[Provenance Materials: Git clone task found]        
 * xref:packages/release_quay_expiration.adoc#quay_expiration__expires_label[Quay expiration: Expires label]        
@@ -380,6 +381,9 @@ a| Checks for Operator Lifecycle Manager (OLM) bundles.
 
 | xref:packages/release_pre_build_script_task.adoc[pre_build_script_task]
 a| This package verifies that the pre-build-script tasks in the attestation are executed in a controlled environment
+
+| xref:packages/release_prefetch_dependencies.adoc[prefetch_dependencies]
+a| This package verifies that the prefetch-dependencies task is invoked with appropriate parameters to ensure secure dependency fetching.
 
 | xref:packages/release_provenance_materials.adoc[provenance_materials]
 a| This package provides rules for verifying the contents of the materials section of the SLSA Provenance attestation.
