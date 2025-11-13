@@ -8,11 +8,12 @@ slsa_provenance_predicate_type_v1 := "https://slsa.dev/provenance/v1"
 
 slsa_provenance_predicate_type_v02 := "https://slsa.dev/provenance/v0.2"
 
-tekton_pipeline_run := "tekton.dev/v1beta1/PipelineRun"
+tekton_pipeline_run := "tekton.dev/v1/PipelineRun"
 
 pipelinerun_att_build_types := {
 	tekton_pipeline_run,
-	# Legacy build type
+	# Legacy build types
+	"tekton.dev/v1beta1/PipelineRun",
 	"https://tekton.dev/attestations/chains/pipelinerun@v2",
 }
 
@@ -23,11 +24,12 @@ slsav1_pipelinerun_att_build_types := {
 	tekton_slsav1_pipeline_run,
 }
 
-tekton_task_run := "tekton.dev/v1beta1/TaskRun"
+tekton_task_run := "tekton.dev/v1/TaskRun"
 
 taskrun_att_build_types := {
 	tekton_task_run,
-	# Legacy build type
+	# Legacy build types
+	"tekton.dev/v1beta1/TaskRun",
 	"https://tekton.dev/attestations/chains@v2",
 }
 
