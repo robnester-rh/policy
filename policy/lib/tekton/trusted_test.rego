@@ -262,9 +262,7 @@ test_trusted_task_rules_data_errors if {
 	lib.assert_empty(tekton.data_errors) with data.rule_data.trusted_task_rules as valid_rules
 
 	# Missing required fields
-	invalid_rules := {
-		"allow": [{}], # missing name and pattern
-	}
+	invalid_rules := {"allow": [{}]} # missing name and pattern
 	expected := {
 		{
 			"message": "trusted_task_rules data has unexpected format: allow.0: name is required",
@@ -283,13 +281,11 @@ test_trusted_task_rules_data_errors if {
 	# rule evaluation logic when trusted_task_rules is used.
 
 	# Invalid effective_on date format
-	invalid_date_rules := {
-		"allow": [{
-			"name": "Invalid date",
-			"pattern": "oci://quay.io/konflux-ci/tekton-catalog/*",
-			"effective_on": "not-a-date",
-		}],
-	}
+	invalid_date_rules := {"allow": [{
+		"name": "Invalid date",
+		"pattern": "oci://quay.io/konflux-ci/tekton-catalog/*",
+		"effective_on": "not-a-date",
+	}]}
 	expected_date := {{
 		# regal ignore:line-length
 		"message": "trusted_task_rules data has unexpected format: allow.0.effective_on: Does not match format 'date'",
@@ -315,13 +311,11 @@ test_trusted_task_rules_data_errors if {
 	lib.assert_equal(tekton.data_errors, expected_structure) with data.rule_data.trusted_task_rules as invalid_structure
 
 	# Empty versions array (should fail minItems: 1)
-	invalid_versions := {
-		"allow": [{
-			"name": "Empty versions",
-			"pattern": "oci://quay.io/konflux-ci/tekton-catalog/*",
-			"versions": [],
-		}],
-	}
+	invalid_versions := {"allow": [{
+		"name": "Empty versions",
+		"pattern": "oci://quay.io/konflux-ci/tekton-catalog/*",
+		"versions": [],
+	}]}
 	expected_versions := {{
 		"message": "trusted_task_rules data has unexpected format: allow.0.versions: Array must have at least 1 items",
 		"severity": "failure",

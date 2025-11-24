@@ -240,16 +240,19 @@ _trusted_task_rules_schema := {
 					},
 					"pattern": {
 						"type": "string",
+						# regal ignore:line-length
 						"description": "URL pattern to match task references. Must not include version tags (e.g., 'oci://quay.io/konflux-ci/tekton-catalog/*' not 'oci://quay.io/konflux-ci/tekton-catalog/task-buildah:0.4*'). Supports wildcards (*).",
 						"pattern": "^(oci://|git\\+)",
 					},
 					"effective_on": {
 						"type": "string",
 						"format": "date",
+						# regal ignore:line-length
 						"description": "Date when this rule becomes effective (e.g., '2025-02-01'). Rules with future effective_on dates are not considered. If omitted, rule is effective immediately.",
 					},
 					"versions": {
 						"type": "array",
+						# regal ignore:line-length
 						"description": "Version constraints to apply. Only tasks matching these version constraints are allowed. Non-semver tags never match version constraints.",
 						"items": {
 							"type": "string",
@@ -275,12 +278,14 @@ _trusted_task_rules_schema := {
 					},
 					"pattern": {
 						"type": "string",
+						# regal ignore:line-length
 						"description": "URL pattern to match task references. Must not include version tags (e.g., 'oci://quay.io/konflux-ci/tekton-catalog/task-buildah*' not 'oci://quay.io/konflux-ci/tekton-catalog/task-buildah:0.4*'). Supports wildcards (*).",
 						"pattern": "^(oci://|git\\+)",
 					},
 					"effective_on": {
 						"type": "string",
 						"format": "date",
+						# regal ignore:line-length
 						"description": "Date when this rule becomes effective (e.g., '2025-11-15'). Rules with future effective_on dates are not considered. If omitted, rule is effective immediately.",
 					},
 					"message": {
@@ -289,6 +294,7 @@ _trusted_task_rules_schema := {
 					},
 					"versions": {
 						"type": "array",
+						# regal ignore:line-length
 						"description": "Version constraints to apply. Only tasks matching these version constraints are denied. Non-semver tags never match version constraints.",
 						"items": {
 							"type": "string",
