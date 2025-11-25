@@ -202,3 +202,111 @@ data_errors contains error if {
 		},
 	)
 }
+
+# Validate trusted_task_rules data format using the schema defined in
+# trusted_tasks/trusted_task_rules.schema.json
+# Skip validation if trusted_task_rules is not provided (null or empty list []).
+# lib_rule_data returns [] when a key is not found, so we only validate when
+# the value is actually an object (the expected type).
+data_errors contains error if {
+	trusted_task_rules_data := lib_rule_data("trusted_task_rules")
+	is_object(trusted_task_rules_data) # Only validate if it's an object (skip null and [])
+	some e in j.validate_schema(trusted_task_rules_data, _trusted_task_rules_schema)
+	error := {
+		"message": sprintf("trusted_task_rules data has unexpected format: %s", [e.message]),
+		"severity": e.severity,
+	}
+}
+
+# Schema for trusted_task_rules as defined in trusted_tasks/trusted_task_rules.schema.json
+# This schema validates the rule-based trusted tasks configuration (ADR 53)
+_trusted_task_rules_schema := {
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "https://konflux.io/schemas/trusted_task_rules.json",
+	"title": "Trusted Task Rules Schema",
+	"description": "Schema for trusted_task_rules configuration as defined in ADR 53",
+	"type": "object",
+	"properties": {
+		"allow": {
+			"type": "array",
+			"description": "Rules that allow tasks matching the pattern",
+			"items": {
+				"type": "object",
+				"required": ["name", "pattern"],
+				"properties": {
+					"name": {
+						"type": "string",
+						"description": "Human-readable name for the rule",
+					},
+					"pattern": {
+						"type": "string",
+						# regal ignore:line-length
+						"description": "URL pattern to match task references. Must not include version tags (e.g., 'oci://quay.io/konflux-ci/tekton-catalog/*' not 'oci://quay.io/konflux-ci/tekton-catalog/task-buildah:0.4*'). Supports wildcards (*).",
+						"pattern": "^(oci://|git\\+)",
+					},
+					"effective_on": {
+						"type": "string",
+						"format": "date",
+						# regal ignore:line-length
+						"description": "Date when this rule becomes effective (e.g., '2025-02-01'). Rules with future effective_on dates are not considered. If omitted, rule is effective immediately.",
+					},
+					"versions": {
+						"type": "array",
+						# regal ignore:line-length
+						"description": "Version constraints to apply. Only tasks matching these version constraints are allowed. Non-semver tags never match version constraints.",
+						"items": {
+							"type": "string",
+							"description": "Version constraint using semver syntax (e.g., '<0.5', '>=2,<2.1.0')",
+						},
+						"minItems": 1,
+					},
+				},
+				"additionalProperties": true,
+			},
+			"default": [],
+		},
+		"deny": {
+			"type": "array",
+			"description": "Rules that deny tasks matching the pattern. Deny rules take precedence over allow rules.",
+			"items": {
+				"type": "object",
+				"required": ["name", "pattern"],
+				"properties": {
+					"name": {
+						"type": "string",
+						"description": "Human-readable name for the rule",
+					},
+					"pattern": {
+						"type": "string",
+						# regal ignore:line-length
+						"description": "URL pattern to match task references. Must not include version tags (e.g., 'oci://quay.io/konflux-ci/tekton-catalog/task-buildah*' not 'oci://quay.io/konflux-ci/tekton-catalog/task-buildah:0.4*'). Supports wildcards (*).",
+						"pattern": "^(oci://|git\\+)",
+					},
+					"effective_on": {
+						"type": "string",
+						"format": "date",
+						# regal ignore:line-length
+						"description": "Date when this rule becomes effective (e.g., '2025-11-15'). Rules with future effective_on dates are not considered. If omitted, rule is effective immediately.",
+					},
+					"message": {
+						"type": "string",
+						"description": "User-visible message explaining why the task is denied (e.g., deprecation notice)",
+					},
+					"versions": {
+						"type": "array",
+						# regal ignore:line-length
+						"description": "Version constraints to apply. Only tasks matching these version constraints are denied. Non-semver tags never match version constraints.",
+						"items": {
+							"type": "string",
+							"description": "Version constraint using semver syntax (e.g., '<0.5', '>=2,<2.1.0')",
+						},
+						"minItems": 1,
+					},
+				},
+				"additionalProperties": true,
+			},
+			"default": [],
+		},
+	},
+	"additionalProperties": false,
+}
