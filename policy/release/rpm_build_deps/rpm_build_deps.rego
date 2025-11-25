@@ -9,7 +9,6 @@ package rpm_build_deps
 import rego.v1
 
 import data.lib
-import data.lib.image
 import data.lib.sbom
 
 # METADATA
