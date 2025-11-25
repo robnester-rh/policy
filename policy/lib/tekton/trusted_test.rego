@@ -238,6 +238,91 @@ test_task_expiry_warning_days_data if {
 	lib.assert_empty(tekton.data_errors) with data.rule_data.task_expiry_warning_days as 14
 }
 
+test_trusted_task_rules_data_errors if {
+	# When trusted_task_rules is not provided (defaults to []), validation should be skipped
+	lib.assert_empty(tekton.data_errors)
+
+	# Valid empty object should pass
+	lib.assert_empty(tekton.data_errors) with data.rule_data.trusted_task_rules as {}
+
+	# Valid trusted_task_rules should pass
+	valid_rules := {
+		"allow": [{
+			"name": "Allow all konflux tasks",
+			"pattern": "oci://quay.io/konflux-ci/tekton-catalog/*",
+		}],
+		"deny": [{
+			"name": "Deny old buildah",
+			"pattern": "oci://quay.io/konflux-ci/tekton-catalog/task-buildah*",
+			"versions": ["<0.5"],
+			"effective_on": "2025-11-15",
+			"message": "Deprecated",
+		}],
+	}
+	lib.assert_empty(tekton.data_errors) with data.rule_data.trusted_task_rules as valid_rules
+
+	# Missing required fields
+	invalid_rules := {"allow": [{}]} # missing name and pattern
+	expected := {
+		{
+			"message": "trusted_task_rules data has unexpected format: allow.0: name is required",
+			"severity": "failure",
+		},
+		{
+			"message": "trusted_task_rules data has unexpected format: allow.0: pattern is required",
+			"severity": "failure",
+		},
+	}
+	lib.assert_equal(tekton.data_errors, expected) with data.rule_data.trusted_task_rules as invalid_rules
+
+	# Invalid pattern validation is not tested here because JSON schema
+	# pattern validation may not be enforced by the OPA json.match_schema
+	# function. Pattern validation should be implemented separately in the
+	# rule evaluation logic when trusted_task_rules is used.
+
+	# Invalid effective_on date format
+	invalid_date_rules := {"allow": [{
+		"name": "Invalid date",
+		"pattern": "oci://quay.io/konflux-ci/tekton-catalog/*",
+		"effective_on": "not-a-date",
+	}]}
+	expected_date := {{
+		# regal ignore:line-length
+		"message": "trusted_task_rules data has unexpected format: allow.0.effective_on: Does not match format 'date'",
+		"severity": "failure",
+	}}
+	lib.assert_equal(tekton.data_errors, expected_date) with data.rule_data.trusted_task_rules as invalid_date_rules
+
+	# Invalid structure - not an object
+	lib.assert_empty(tekton.data_errors) with data.rule_data.trusted_task_rules as [] # Empty list is skipped
+
+	# Invalid allow/deny - not arrays
+	invalid_structure := {
+		"allow": "not-an-array",
+		"deny": [{
+			"name": "Valid deny",
+			"pattern": "oci://quay.io/konflux-ci/tekton-catalog/*",
+		}],
+	}
+	expected_structure := {{
+		"message": "trusted_task_rules data has unexpected format: allow: Invalid type. Expected: array, given: string",
+		"severity": "failure",
+	}}
+	lib.assert_equal(tekton.data_errors, expected_structure) with data.rule_data.trusted_task_rules as invalid_structure
+
+	# Empty versions array (should fail minItems: 1)
+	invalid_versions := {"allow": [{
+		"name": "Empty versions",
+		"pattern": "oci://quay.io/konflux-ci/tekton-catalog/*",
+		"versions": [],
+	}]}
+	expected_versions := {{
+		"message": "trusted_task_rules data has unexpected format: allow.0.versions: Array must have at least 1 items",
+		"severity": "failure",
+	}}
+	lib.assert_equal(tekton.data_errors, expected_versions) with data.rule_data.trusted_task_rules as invalid_versions
+}
+
 trusted_bundle_task := {"spec": {"taskRef": {"resolver": "bundles", "params": [
 	{"name": "bundle", "value": "registry.local/trusty:1.0@sha256:digest"},
 	{"name": "name", "value": "trusty"},
