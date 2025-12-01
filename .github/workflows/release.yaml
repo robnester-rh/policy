@@ -38,6 +38,7 @@ jobs:
       latest_tag_sha: ${{ steps.get_info.outputs.latest_tag_sha }}
       changed: ${{ steps.get_info.outputs.changed }}
       next_version: ${{ steps.get_info.outputs.next_version }}
+      changelog: ${{ steps.get_changelog.outputs.changelog }}
 
     steps:
 
@@ -64,14 +65,31 @@ jobs:
           echo changed=$HAVE_CHANGED | tee -a "$GITHUB_OUTPUT"
           echo next_version=$NEXT_VERSION | tee -a "$GITHUB_OUTPUT"
 
+      - name: Get changelog
+        id: get_changelog
+        run: |
+          set -e
+          git fetch --tags
+
+          # Define a unique delimiter (e.g., EOF or a random string)
+          DELIMITER=$(openssl rand -hex 8)
+
+          # Assemble the multiline content
+          echo "changelog<<$DELIMITER" | tee -a "$GITHUB_OUTPUT"
+          git log ${{ steps.get_info.outputs.latest_tag_sha }}..HEAD | tee -a "$GITHUB_OUTPUT"
+          echo "$DELIMITER" >> "$GITHUB_OUTPUT"
+
+
   generate_release_notes:
 
     needs: get_info
-    if: needs.get_info.outputs.changed == 'true'
-    timeout-minutes: 15
+    if: ${{ needs.get_info.outputs.changed == 'true' && needs.get_info.outputs.changelog != '' }}
+    timeout-minutes: 60
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    permissions: {}
+    outputs:
+      release_notes: ${{ steps.run_gemini.outputs.summary }}
+
     steps:
 
       - name: Harden Runner
@@ -80,28 +98,21 @@ jobs:
           egress-policy: audit
           disable-telemetry: true
 
-      - name: Checkout
-        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
-        with:
-          fetch-depth: 0
-
-      - name: Fetch tags
-        id: fetch_tags
-        run: |
-          git fetch --tags
-
-      - name: Generate release notes
+      - name: Run Gemini
+        id: run_gemini
         uses: google-github-actions/run-gemini-cli@v0
         with:
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
           settings: |-
             {
-              "sandbox": true,
-              "autoAccept": true
+              "sandbox": false,
+              "autoAccept": false,
+              "coreTools": []
             }
           prompt: |
             Make a release notes based on all notable changes since the tag
-            ${{needs.get_info.outputs.latest_tag}}.
+            ${{needs.get_info.outputs.latest_tag}}. I will provide you with 
+            the changelog.
             Categorize it nicely with emojis, output as Markdown.
             For each change that you mention in the release notes:
               - Summarize the change in one line
@@ -111,19 +122,15 @@ jobs:
             Don't create a title for the release.
             Preface the release notes with a brief summary of the release.
             The summary should also refer to changes in policies and policy rules.
-            Also save the release notes in a file named "release-notes.md".
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v5
-        with:
-          name: release-notes
-          path: release-notes.md
-          if-no-files-found: error
+            The changelog is following below:
+
+            ${{ needs.get_info.outputs.changelog}}
 
 
   create_release:
     needs: [get_info, generate_release_notes]
-    if: ${{ needs.get_info.outputs.changed == 'true' && needs.generate_release_notes.result == 'success'}}
+    if: ${{ needs.get_info.outputs.changed == 'true' && needs.generate_release_notes.result == 'success' && needs.generate_release_notes.outputs.release_notes != '' }}
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -151,16 +158,11 @@ jobs:
           source hack/add-auto-tag.sh
           git push -f --tags
 
-      - name: Download artifact
-        uses: actions/download-artifact@v6
-        with:
-          name: release-notes
-
       - name: Create a release
         uses: softprops/action-gh-release@5be0e66d93ac7ed76da52eca8bb058f665c3a5fe # v2.4.2
         with:
           name: ${{ needs.get_info.outputs.next_version }}
           tag_name: ${{ needs.get_info.outputs.next_version }}
-          body_path: "release-notes.md"
+          body: ${{ needs.generate_release_notes.outputs.release_notes}}
           make_latest: false
           generate_release_notes: false
