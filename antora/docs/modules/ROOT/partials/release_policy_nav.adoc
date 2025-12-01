@@ -167,6 +167,7 @@
 **** xref:packages/release_test.adoc#test__test_results_found[Test data includes results key]
 *** xref:packages/release_trusted_task.adoc[Trusted Task checks]
 **** xref:packages/release_trusted_task.adoc#trusted_task__data_format[Data format]
+**** xref:packages/release_trusted_task.adoc#trusted_task__future_deny_rule[Future deny rule will apply]
 **** xref:packages/release_trusted_task.adoc#trusted_task__pinned[Task references are pinned]
 **** xref:packages/release_trusted_task.adoc#trusted_task__tagged[Task references are tagged]
 **** xref:packages/release_trusted_task.adoc#trusted_task__data[Task tracking data was provided]

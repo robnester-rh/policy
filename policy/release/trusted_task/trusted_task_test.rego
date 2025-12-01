@@ -199,6 +199,129 @@ test_trusted_artifact_outdated if {
 		with input.attestations as [attestation_with_outdated_task]
 }
 
+# Test trusted artifacts with deny rules - covers _format_trust_error_rules_ta function
+test_trusted_artifact_denied_by_rules if {
+	# Deny all trusty tasks via trusted_task_rules
+	task_rules := {
+		"allow": [{
+			"name": "Allow all trusty tasks",
+			"pattern": "oci://registry.local/trusty*",
+		}],
+		"deny": [{
+			"name": "Deny trusty 1.0",
+			"pattern": "oci://registry.local/trusty:1.0",
+			"message": "Version 1.0 is deprecated",
+		}],
+	}
+
+	# Use the full TA attestation - all tasks use the same bundle so all chains are denied
+	# Multiple violations are expected due to overlapping dependency chains
+	expected := {
+		{
+			"code": "trusted_task.trusted",
+			# regal ignore:line-length
+			"msg": "Untrusted version of PipelineTask \"task_a\" (Task \"TaskA\") was included in build chain comprised of: task_a, task_b, task_c. The denial reason is: deny_rule\n  - oci://registry.local/trusty:1.0\nMessages:\n  - Version 1.0 is deprecated",
+			"term": "TaskA",
+		},
+		{
+			"code": "trusted_task.trusted",
+			# regal ignore:line-length
+			"msg": "Untrusted version of PipelineTask \"task_b\" (Task \"TaskB\") was included in build chain comprised of: task_a, task_b, task_c. The denial reason is: deny_rule\n  - oci://registry.local/trusty:1.0\nMessages:\n  - Version 1.0 is deprecated",
+			"term": "TaskB",
+		},
+		{
+			"code": "trusted_task.trusted",
+			# regal ignore:line-length
+			"msg": "Untrusted version of PipelineTask \"task_c\" (Task \"TaskC\") was included in build chain comprised of: task_a, task_b, task_c. The denial reason is: deny_rule\n  - oci://registry.local/trusty:1.0\nMessages:\n  - Version 1.0 is deprecated",
+			"term": "TaskC",
+		},
+		{
+			"code": "trusted_task.trusted",
+			# regal ignore:line-length
+			"msg": "Untrusted version of PipelineTask \"task_b\" (Task \"TaskB\") was included in build chain comprised of: task_b, task_c, task_test_a. The denial reason is: deny_rule\n  - oci://registry.local/trusty:1.0\nMessages:\n  - Version 1.0 is deprecated",
+			"term": "TaskB",
+		},
+		{
+			"code": "trusted_task.trusted",
+			# regal ignore:line-length
+			"msg": "Untrusted version of PipelineTask \"task_c\" (Task \"TaskC\") was included in build chain comprised of: task_b, task_c, task_test_a. The denial reason is: deny_rule\n  - oci://registry.local/trusty:1.0\nMessages:\n  - Version 1.0 is deprecated",
+			"term": "TaskC",
+		},
+		{
+			"code": "trusted_task.trusted",
+			# regal ignore:line-length
+			"msg": "Untrusted version of PipelineTask \"task_test_a\" (Task \"TaskTestA\") was included in build chain comprised of: task_b, task_c, task_test_a. The denial reason is: deny_rule\n  - oci://registry.local/trusty:1.0\nMessages:\n  - Version 1.0 is deprecated",
+			"term": "TaskTestA",
+		},
+		{
+			"code": "trusted_task.trusted",
+			# regal ignore:line-length
+			"msg": "Untrusted version of PipelineTask \"task_image_index\" (Task \"TaskA\") was included in build chain comprised of: task_image_index. The denial reason is: deny_rule\n  - oci://registry.local/trusty:1.0\nMessages:\n  - Version 1.0 is deprecated",
+			"term": "TaskA",
+		},
+		{
+			"code": "trusted_task.trusted_parameters",
+			# regal ignore:line-length
+			"msg": "The \"image\" parameter of the \"task_image_index\" PipelineTask includes an untrusted digest: sha256:49a6fd43239ae41643426daefc5239857a1cc1a6f2c1595f88965d7de88efcb9",
+		},
+	}
+
+	lib.assert_equal_results(trusted_task.deny, expected) with data.trusted_tasks as trusted_tasks_data
+		with data.rule_data.trusted_task_rules as task_rules
+		with input.attestations as [attestation_ta]
+}
+
+# Test that future deny rules produce a warning
+test_future_deny_rule_warning if {
+	att := {"statement": {"predicate": {
+		"buildType": lib.tekton_pipeline_run,
+		"buildConfig": {"tasks": [trusted_bundle_pipeline_task]},
+	}}}
+
+	# Task is allowed but a deny rule with future effective_on is present
+	task_rules := {
+		"allow": [{"name": "Allow all trusty tasks", "pattern": "oci://registry.local/trusty*"}],
+		"deny": [{
+			"name": "Deny trusty 1.0 in the future",
+			"pattern": "oci://registry.local/trusty:1.0*",
+			"effective_on": "2099-01-01",
+		}],
+	}
+
+	expected := {{
+		"code": "trusted_task.future_deny_rule",
+		# regal ignore:line-length
+		"msg": `Task "trusty-p" will be denied by rule pattern "oci://registry.local/trusty:1.0*" starting on 2099-01-01.`,
+		"term": "trusty",
+	}}
+
+	lib.assert_equal_results(trusted_task.warn, expected) with data.rule_data.trusted_task_rules as task_rules
+		with input.attestations as [att]
+}
+
+# Test that deny rules without effective_on do not produce a future deny warning
+test_future_deny_rule_no_warning_when_already_effective if {
+	att := {"statement": {"predicate": {
+		"buildType": lib.tekton_pipeline_run,
+		"buildConfig": {"tasks": [trusted_bundle_pipeline_task]},
+	}}}
+
+	# Deny rule has no effective_on, so it's already effective (no warning)
+	task_rules := {
+		"allow": [{"name": "Allow all trusty tasks", "pattern": "oci://registry.local/trusty*"}],
+		"deny": [{
+			"name": "Deny trusty 1.0",
+			"pattern": "oci://registry.local/trusty:1.0*",
+		}],
+	}
+
+	# No future_deny_rule warning expected (the deny itself will fire, but not the warning)
+	results := trusted_task.warn with data.rule_data.trusted_task_rules as task_rules
+		with input.attestations as [att]
+
+	count([r | some r in results; r.code == "trusted_task.future_deny_rule"]) == 0
+}
+
 test_trusted_artifact_test_tasks if {
 	lib.assert_empty(trusted_task.deny) with data.trusted_tasks as trusted_tasks_data
 		with input.attestations as [attestation_ta]
@@ -668,4 +791,515 @@ trusted_tasks_data := {
 			"expires_on": "2024-01-01T00:00:00Z",
 		},
 	],
+}
+
+#####################################################
+# Functional tests for trusted_task_rules
+# Based on test cases defined in https://github.com/konflux-ci/architecture/blob/main/ADR/0053-trusted-task-model.md
+#
+# Note: Version-based tests (E1, E2, E3, I1) are skipped as versioning is not yet implemented.
+# Git reference test (J1) is marked as TODO/TBD.
+#####################################################
+
+#####################################################
+# 1. Coexistence With trusted_tasks (A1-A3)
+#####################################################
+
+# A1 — On trusted_tasks, no rules → trusted
+# Task is in trusted_tasks, trusted_task_rules is empty → should be trusted via legacy fallback
+test_on_trusted_tasks_no_rules_trusted if {
+	rules_trusted_tasks_data := {"oci://quay.io/konflux-ci/tekton-catalog/task-buildah:0.4": [{"ref": "sha256:abc123"}]}
+
+	trusted_task_rules_data := {
+		"allow": [],
+		"deny": [],
+	}
+
+	att := _rules_make_attestation([_rules_make_task(
+		"buildah-task",
+		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123",
+		"task-buildah",
+	)])
+
+	# Should NOT produce any deny results (task is trusted via legacy)
+	lib.assert_empty(trusted_task.deny) with input.attestations as [att]
+		with data.trusted_tasks as rules_trusted_tasks_data
+		with data.rule_data.trusted_task_rules as trusted_task_rules_data
+}
+
+# A2 — On trusted_tasks, but expired → untrusted
+# Task is in trusted_tasks with expired date → should produce deny
+test_on_trusted_tasks_expired_untrusted if {
+	rules_trusted_tasks_data := {"oci://quay.io/konflux-ci/tekton-catalog/task-buildah:0.4": [{
+		"ref": "sha256:abc123",
+		"expires_on": "2024-12-31T00:00:00Z",
+	}]}
+
+	trusted_task_rules_data := {
+		"allow": [],
+		"deny": [],
+	}
+
+	att := _rules_make_attestation([_rules_make_task(
+		"buildah-task",
+		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123",
+		"task-buildah",
+	)])
+
+	expected := {{
+		"code": "trusted_task.trusted",
+		# regal ignore:line-length
+		"msg": `PipelineTask "buildah-task" uses an untrusted task reference: oci://quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123`,
+		"term": "task-buildah",
+	}}
+
+	# Should produce deny result (task expired in trusted_tasks, no upgrade path available)
+	lib.assert_equal_results(trusted_task.deny, expected) with input.attestations as [att]
+		with data.trusted_tasks as rules_trusted_tasks_data
+		with data.rule_data.trusted_task_rules as trusted_task_rules_data
+		with data.config.policy.when_ns as time.parse_rfc3339_ns("2025-01-10T00:00:00Z")
+}
+
+# A3 — Not on trusted_tasks, no rules → missing data error
+# Task is not in trusted_tasks, no rules → should produce deny for missing data
+test_not_on_trusted_tasks_no_rules_untrusted if {
+	rules_trusted_tasks_data := {}
+
+	trusted_task_rules_data := {
+		"allow": [],
+		"deny": [],
+	}
+
+	att := _rules_make_attestation([_rules_make_task(
+		"other-task",
+		"quay.io/myorg/other/task:1.0@sha256:abc123",
+		"other-task",
+	)])
+
+	expected := {{
+		"code": "trusted_task.data",
+		"msg": "Missing required trusted_tasks data",
+	}}
+
+	# When both trusted_tasks and trusted_task_rules are empty, should produce data error
+	lib.assert_equal_results(trusted_task.deny, expected) with input.attestations as [att]
+		with data.trusted_tasks as rules_trusted_tasks_data
+		with data.rule_data.trusted_task_rules as trusted_task_rules_data
+}
+
+#####################################################
+# 2. Basic Allow Rules (B1-B2)
+#####################################################
+
+# B1 — Allow by location
+# Task matches allow pattern → should NOT produce warn
+test_allow_by_location if {
+	trusted_task_rules_data := {
+		"allow": [{
+			"name": "Trust all tekton-catalog",
+			"pattern": "oci://quay.io/konflux-ci/tekton-catalog/*",
+		}],
+		"deny": [],
+	}
+
+	att := _rules_make_attestation([_rules_make_task(
+		"buildah-task",
+		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123",
+		"task-buildah",
+	)])
+
+	# Should NOT produce any deny results (task allowed by rules)
+	# With trusted_task_rules provided, uses deny rule (trusted_rules)
+	lib.assert_empty(trusted_task.deny) with input.attestations as [att]
+		with data.trusted_tasks as {}
+		with data.rule_data.trusted_task_rules as trusted_task_rules_data
+}
+
+# B2 — Outside pattern → not trusted
+# Task does NOT match allow pattern → should produce warn
+test_outside_pattern_not_trusted if {
+	trusted_task_rules_data := {
+		"allow": [{
+			"name": "Trust all tekton-catalog",
+			"pattern": "oci://quay.io/konflux-ci/tekton-catalog/*",
+		}],
+		"deny": [],
+	}
+
+	att := _rules_make_attestation([_rules_make_task(
+		"other-task",
+		"quay.io/myorg/other/task:1.0@sha256:abc123",
+		"other-task",
+	)])
+
+	expected := {{
+		"code": "trusted_task.trusted",
+		# regal ignore:line-length
+		"msg": `PipelineTask "other-task" uses an untrusted task reference: oci://quay.io/myorg/other/task:1.0@sha256:abc123. The denial reason is: not_allowed`,
+		"term": "other-task",
+	}}
+
+	# Should produce deny result (task outside allow pattern)
+	lib.assert_equal_results(trusted_task.deny, expected) with input.attestations as [att]
+		with data.trusted_tasks as {}
+		with data.rule_data.trusted_task_rules as trusted_task_rules_data
+}
+
+#####################################################
+# 3. Deny Precedence (C1-C2)
+#####################################################
+
+# Deny rules take precedence over allow rules
+# Task matches allow pattern but also matches deny → should produce deny with message
+test_deny_takes_precedence_over_allow if {
+	task_rules := {
+		"allow": [{
+			"name": "Allow tekton catalog",
+			"pattern": "oci://quay.io/konflux-ci/tekton-catalog/*",
+		}],
+		"deny": [{
+			"name": "Block buildah 0.4",
+			"pattern": "oci://quay.io/konflux-ci/tekton-catalog/task-buildah*",
+			"message": "task-buildah:0.4 is deprecated",
+			"effective_on": "2025-01-01",
+		}],
+	}
+
+	att := _rules_make_attestation([_rules_make_task(
+		"buildah-task",
+		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123",
+		"task-buildah",
+	)])
+
+	expected := {{
+		"code": "trusted_task.trusted",
+		# regal ignore:line-length
+		"msg": "PipelineTask \"buildah-task\" uses an untrusted task reference: oci://quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123. The denial reason is: deny_rule\n  - oci://quay.io/konflux-ci/tekton-catalog/task-buildah*\nMessages:\n  - task-buildah:0.4 is deprecated",
+		"term": "task-buildah",
+	}}
+
+	# Should produce deny result (deny rule takes precedence over allow)
+	lib.assert_equal_results(trusted_task.deny, expected) with input.attestations as [att]
+		with data.trusted_tasks as {}
+		with data.rule_data.trusted_task_rules as task_rules
+		with data.config.policy.when_ns as time.parse_rfc3339_ns("2025-01-10T00:00:00Z")
+}
+
+#####################################################
+# 4. Time-Based Allow Rules (D1)
+#####################################################
+
+# D1 — Allow rule not yet effective → not trusted
+test_allow_rule_not_yet_effective if {
+	trusted_task_rules_data := {
+		"allow": [{
+			"name": "Trust tekton starting Feb",
+			"pattern": "oci://quay.io/konflux-ci/tekton-catalog/*",
+			"effective_on": "2025-02-01",
+		}],
+		"deny": [],
+	}
+
+	att := _rules_make_attestation([_rules_make_task(
+		"buildah-task",
+		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123",
+		"task-buildah",
+	)])
+
+	expected := {{
+		"code": "trusted_task.trusted",
+		# regal ignore:line-length
+		"msg": `PipelineTask "buildah-task" uses an untrusted task reference: oci://quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123. The denial reason is: no_effective_rules`,
+		"term": "task-buildah",
+	}}
+
+	# Before effective date - should produce deny (rule not yet effective)
+	lib.assert_equal_results(trusted_task.deny, expected) with input.attestations as [att]
+		with data.trusted_tasks as {}
+		with data.rule_data.trusted_task_rules as trusted_task_rules_data
+		with data.config.policy.when_ns as time.parse_rfc3339_ns("2025-01-15T00:00:00Z")
+}
+
+# D1 — Allow rule becomes effective → trusted
+test_allow_rule_effective_trusted if {
+	trusted_task_rules_data := {
+		"allow": [{
+			"name": "Trust tekton starting Feb",
+			"pattern": "oci://quay.io/konflux-ci/tekton-catalog/*",
+			"effective_on": "2025-02-01",
+		}],
+		"deny": [],
+	}
+
+	att := _rules_make_attestation([_rules_make_task(
+		"buildah-task",
+		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123",
+		"task-buildah",
+	)])
+
+	# After effective date - should NOT produce deny (rule is now effective)
+	# With trusted_task_rules provided, uses deny rule (trusted_rules)
+	lib.assert_empty(trusted_task.deny) with input.attestations as [att]
+		with data.trusted_tasks as {}
+		with data.rule_data.trusted_task_rules as trusted_task_rules_data
+		with data.config.policy.when_ns as time.parse_rfc3339_ns("2025-02-10T00:00:00Z")
+}
+
+# Time-based deny rule - not yet effective
+test_deny_rule_not_yet_effective if {
+	trusted_task_rules_data := {
+		"allow": [{
+			"name": "Allow tekton catalog",
+			"pattern": "oci://quay.io/konflux-ci/tekton-catalog/*",
+		}],
+		"deny": [{
+			"name": "Expire buildah",
+			"pattern": "oci://quay.io/konflux-ci/tekton-catalog/task-buildah*",
+			"effective_on": "2025-03-01",
+		}],
+	}
+
+	att := _rules_make_attestation([_rules_make_task(
+		"buildah-task",
+		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123",
+		"task-buildah",
+	)])
+
+	# Before deny effective date - should NOT produce deny result (deny rule not yet effective)
+	# With trusted_task_rules provided, uses deny rule (trusted_rules)
+	lib.assert_empty(trusted_task.deny) with input.attestations as [att]
+		with data.trusted_tasks as {}
+		with data.rule_data.trusted_task_rules as trusted_task_rules_data
+		with data.config.policy.when_ns as time.parse_rfc3339_ns("2025-02-15T00:00:00Z")
+}
+
+# Time-based deny rule - becomes effective
+test_deny_rule_becomes_effective if {
+	trusted_task_rules_data := {
+		"allow": [{
+			"name": "Allow tekton catalog",
+			"pattern": "oci://quay.io/konflux-ci/tekton-catalog/*",
+		}],
+		"deny": [{
+			"name": "Expire buildah",
+			"pattern": "oci://quay.io/konflux-ci/tekton-catalog/task-buildah*",
+			"effective_on": "2025-03-01",
+		}],
+	}
+
+	att := _rules_make_attestation([_rules_make_task(
+		"buildah-task",
+		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123",
+		"task-buildah",
+	)])
+
+	expected := {{
+		"code": "trusted_task.trusted",
+		# regal ignore:line-length
+		"msg": "PipelineTask \"buildah-task\" uses an untrusted task reference: oci://quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123. The denial reason is: deny_rule\n  - oci://quay.io/konflux-ci/tekton-catalog/task-buildah*",
+		"term": "task-buildah",
+	}}
+
+	# After deny effective date - should produce deny result
+	lib.assert_equal_results(trusted_task.deny, expected) with input.attestations as [att]
+		with data.trusted_tasks as {}
+		with data.rule_data.trusted_task_rules as trusted_task_rules_data
+		with data.config.policy.when_ns as time.parse_rfc3339_ns("2025-03-15T00:00:00Z")
+}
+
+#####################################################
+# 6. Overlapping Allow Rules (F1)
+#####################################################
+
+# Multiple allow rules with same pattern - task matching any effective rule is trusted
+test_multiple_allow_rules if {
+	trusted_task_rules_data := {
+		"allow": [
+			{
+				"name": "Base allow by location",
+				"pattern": "oci://quay.io/konflux-ci/tekton-catalog/*",
+			},
+			{
+				"name": "Additional allow rule with different scope",
+				"pattern": "oci://quay.io/konflux-ci/*",
+			},
+		],
+		"deny": [],
+	}
+
+	att := _rules_make_attestation([_rules_make_task(
+		"buildah-task",
+		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123",
+		"task-buildah",
+	)])
+
+	# Task matches both allow rules - should be trusted
+	# With trusted_task_rules provided, uses deny rule (trusted_rules)
+	lib.assert_empty(trusted_task.deny) with input.attestations as [att]
+		with data.trusted_tasks as {}
+		with data.rule_data.trusted_task_rules as trusted_task_rules_data
+}
+
+#####################################################
+# 7. Deprecation Deny Rule With Message (G1)
+#####################################################
+
+# G1 — Deny with user-visible message
+test_deny_with_message if {
+	task_rules := {
+		"allow": [{
+			"name": "Allow tekton",
+			"pattern": "oci://quay.io/konflux-ci/tekton-catalog/*",
+		}],
+		"deny": [{
+			"name": "Deprecate manifest",
+			"pattern": "oci://quay.io/konflux-ci/tekton-catalog/task-build-image-manifest*",
+			"message": "This task was renamed to build-image-index.",
+			"effective_on": "2025-10-26",
+		}],
+	}
+
+	att := _rules_make_attestation([_rules_make_task(
+		"manifest-task",
+		"quay.io/konflux-ci/tekton-catalog/task-build-image-manifest:1.0@sha256:abc123",
+		"task-build-image-manifest",
+	)])
+
+	expected := {{
+		"code": "trusted_task.trusted",
+		# regal ignore:line-length
+		"msg": "PipelineTask \"manifest-task\" uses an untrusted task reference: oci://quay.io/konflux-ci/tekton-catalog/task-build-image-manifest:1.0@sha256:abc123. The denial reason is: deny_rule\n  - oci://quay.io/konflux-ci/tekton-catalog/task-build-image-manifest*\nMessages:\n  - This task was renamed to build-image-index.",
+		"term": "task-build-image-manifest",
+	}}
+
+	# Should produce deny result with message
+	lib.assert_equal_results(trusted_task.deny, expected) with input.attestations as [att]
+		with data.trusted_tasks as {}
+		with data.rule_data.trusted_task_rules as task_rules
+		with data.config.policy.when_ns as time.parse_rfc3339_ns("2025-11-01T00:00:00Z")
+}
+
+#####################################################
+# 8. Rules Take Precedence Over trusted_tasks (H1)
+#####################################################
+
+# H1 — Rules allow, trusted_tasks expiry is ignored
+# When allow rules ARE defined and match, the task is trusted via rules
+# regardless of legacy expiry
+test_rules_allow_trusted_tasks_expiry_ignored if {
+	rules_trusted_tasks_data := {"oci://quay.io/konflux-ci/tekton-catalog/task-buildah:0.4": [{
+		"ref": "sha256:abc123",
+		"expires_on": "2025-01-01T00:00:00Z",
+	}]}
+
+	trusted_task_rules_data := {
+		"allow": [{
+			"name": "Allow tekton catalog",
+			"pattern": "oci://quay.io/konflux-ci/tekton-catalog/*",
+		}],
+		"deny": [],
+	}
+
+	att := _rules_make_attestation([_rules_make_task(
+		"buildah-task",
+		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123",
+		"task-buildah",
+	)])
+
+	# Should NOT produce deny (allow rule matches, trusted_tasks expiry is ignored)
+	# With trusted_task_rules provided, uses deny rule (trusted_rules)
+	lib.assert_empty(trusted_task.deny) with input.attestations as [att]
+		with data.trusted_tasks as rules_trusted_tasks_data
+		with data.rule_data.trusted_task_rules as trusted_task_rules_data
+		with data.config.policy.when_ns as time.parse_rfc3339_ns("2025-02-01T00:00:00Z")
+}
+
+#####################################################
+# 11. Unknown Fields Ignored (K1)
+#####################################################
+
+# K1 — Unknown fields ignored
+test_unknown_fields_ignored if {
+	trusted_task_rules_data := {
+		"allow": [{
+			"name": "Allow tekton",
+			"pattern": "oci://quay.io/konflux-ci/tekton-catalog/*",
+			"foo": "bar", # unknown field - should be ignored
+		}],
+		"deny": [],
+	}
+
+	att := _rules_make_attestation([_rules_make_task(
+		"buildah-task",
+		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123",
+		"task-buildah",
+	)])
+
+	# Should NOT produce any deny results (unknown field is ignored)
+	# Unknown fields should be ignored per the JSON schema's additionalProperties: true
+	# With trusted_task_rules provided, uses deny rule (trusted_rules)
+	lib.assert_empty(trusted_task.deny) with input.attestations as [att]
+		with data.trusted_tasks as {}
+		with data.rule_data.trusted_task_rules as trusted_task_rules_data
+}
+
+#####################################################
+# Additional edge case tests
+#####################################################
+
+# Test multiple tasks - some trusted, some not
+test_mixed_trusted_and_untrusted_tasks if {
+	trusted_task_rules_data := {
+		"allow": [{
+			"name": "Allow tekton catalog",
+			"pattern": "oci://quay.io/konflux-ci/tekton-catalog/*",
+		}],
+		"deny": [],
+	}
+
+	att := _rules_make_attestation([
+		_rules_make_task(
+			"trusted-task",
+			"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123",
+			"task-buildah",
+		),
+		_rules_make_task(
+			"untrusted-task",
+			"quay.io/evil/malicious-task:1.0@sha256:evil123",
+			"malicious-task",
+		),
+	])
+
+	expected := {{
+		"code": "trusted_task.trusted",
+		# regal ignore:line-length
+		"msg": `PipelineTask "untrusted-task" uses an untrusted task reference: oci://quay.io/evil/malicious-task:1.0@sha256:evil123. The denial reason is: not_allowed`,
+		"term": "malicious-task",
+	}}
+
+	# Should produce deny for the untrusted task only
+	lib.assert_equal_results(trusted_task.deny, expected) with input.attestations as [att]
+		with data.trusted_tasks as {}
+		with data.rule_data.trusted_task_rules as trusted_task_rules_data
+}
+
+#####################################################
+# Helper Functions for trusted_task_rules tests
+#####################################################
+
+# Create a simple attestation structure for testing
+_rules_make_attestation(tasks) := {"statement": {"predicate": {
+	"buildType": lib.tekton_pipeline_run,
+	"buildConfig": {"tasks": tasks},
+}}}
+
+# Create a bundle task reference for testing
+# Uses the SLSA v0.2 format that lib.tasks_from_pipelinerun expects
+_rules_make_task(pipeline_task_name, bundle, task_name) := {
+	"name": pipeline_task_name,
+	"ref": {"resolver": "bundles", "params": [
+		{"name": "bundle", "value": bundle},
+		{"name": "name", "value": task_name},
+		{"name": "kind", "value": "task"},
+	]},
 }

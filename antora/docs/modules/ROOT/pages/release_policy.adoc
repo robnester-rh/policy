@@ -206,6 +206,7 @@ Rules included:
 * xref:packages/release_test.adoc#test__test_data_found[Test: Test data found in task results]        
 * xref:packages/release_test.adoc#test__test_results_found[Test: Test data includes results key]        
 * xref:packages/release_trusted_task.adoc#trusted_task__data_format[Trusted Task checks: Data format]        
+* xref:packages/release_trusted_task.adoc#trusted_task__future_deny_rule[Trusted Task checks: Future deny rule will apply]        
 * xref:packages/release_trusted_task.adoc#trusted_task__pinned[Trusted Task checks: Task references are pinned]        
 * xref:packages/release_trusted_task.adoc#trusted_task__tagged[Trusted Task checks: Task references are tagged]        
 * xref:packages/release_trusted_task.adoc#trusted_task__data[Trusted Task checks: Task tracking data was provided]        
