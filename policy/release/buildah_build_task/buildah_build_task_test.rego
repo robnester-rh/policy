@@ -213,18 +213,21 @@ test_add_capabilities_param if {
 	lib.assert_empty(buildah_build_task.deny) with input.attestations as [attestation_spaces]
 }
 
-test_platform_param if {
+test_platform_param_disallowed if {
+	# Test v1.0 attestation with disallowed platform pattern
 	expected := {{
 		"code": "buildah_build_task.platform_param",
 		"msg": "PLATFORM parameter value \"linux-root/arm64\" is disallowed by regex \".*root.*\"",
 	}}
+	attestation := _slsav1_attestation("buildah", [{"name": "PLATFORM", "value": "linux-root/arm64"}], _results)
+	lib.assert_equal_results(expected, buildah_build_task.deny) with input.attestations as [attestation]
+		with data.rule_data.disallowed_platform_patterns as [".*root.*"]
+}
 
-	attestations := [
-		_slsav1_attestation("buildah", [{"name": "PLATFORM", "value": "linux-root/arm64"}], _results),
-		_slsav1_attestation("buildah", [{"name": "PLATFORM", "value": "linux/arm64"}], _results),
-	]
-
-	lib.assert_equal_results(expected, buildah_build_task.deny) with input.attestations as attestations
+test_platform_param_allowed if {
+	# Test v1.0 attestation with allowed platform pattern
+	attestation := _slsav1_attestation("buildah", [{"name": "PLATFORM", "value": "linux/arm64"}], _results)
+	lib.assert_empty(buildah_build_task.deny) with input.attestations as [attestation]
 		with data.rule_data.disallowed_platform_patterns as [".*root.*"]
 }
 

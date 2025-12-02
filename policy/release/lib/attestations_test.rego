@@ -149,18 +149,48 @@ test_slsa_provenance_attestations if {
 	lib.assert_equal(lib.slsa_provenance_attestations, expected) with input.attestations as attestations
 }
 
-test_pr_attestations if {
+test_pr_attestations_v1 if {
+	# Test v1.0 PipelineRun attestation
+	lib.assert_equal([mock_pr_att], lib.pipelinerun_attestations) with input.attestations as [
+		mock_tr_att,
+		mock_pr_att,
+		garbage_att,
+	]
+}
+
+test_pr_attestations_v02 if {
+	# Test v0.2 PipelineRun attestation
+	lib.assert_equal([mock_pr_att_legacy], lib.pipelinerun_attestations) with input.attestations as [
+		mock_tr_att_legacy,
+		mock_pr_att_legacy,
+		garbage_att,
+	]
+}
+
+test_pr_attestations_both if {
+	# Test both v0.2 and v1.0 PipelineRun attestations together
+	# Use properly structured v1.0 attestation
+	v1_att := {"statement": {
+		"predicateType": "https://slsa.dev/provenance/v1",
+		"predicate": {"buildDefinition": {
+			"buildType": "https://tekton.dev/chains/v2/slsa-tekton",
+			"externalParameters": {"runSpec": {"pipelineSpec": {}}},
+		}},
+	}}
 	lib.assert_equal(
-		[mock_pr_att, mock_pr_att_legacy],
+		[mock_pr_att_legacy, v1_att],
 		lib.pipelinerun_attestations,
 	) with input.attestations as [
 		mock_tr_att,
 		mock_tr_att_legacy,
-		mock_pr_att,
+		v1_att,
 		mock_pr_att_legacy,
 		garbage_att,
 	]
+}
 
+test_pr_attestations_empty if {
+	# Test that no PipelineRun attestations returns empty list
 	lib.assert_equal([], lib.pipelinerun_attestations) with input.attestations as [
 		mock_tr_att,
 		mock_tr_att_legacy,
@@ -389,4 +419,203 @@ test_result_values if {
 	lib.assert_equal(lib.result_values({"type": "object", "value": {"maps": "spam", "sgge": "eggs"}}), {"spam", "eggs"})
 
 	not lib.result_values(123)
+}
+
+# Helper to create a build task (has IMAGE_URL and IMAGE_DIGEST)
+_build_task := {
+	"name": "buildah",
+	"ref": {"kind": "Task", "name": "buildah", "bundle": trusted_bundle_ref},
+	"results": [
+		{"name": "IMAGE_URL", "value": "quay.io/test/image:tag"},
+		{"name": "IMAGE_DIGEST", "value": "sha256:abc123"},
+	],
+}
+
+# Helper to create a non-build task (no IMAGE_URL/IMAGE_DIGEST)
+_non_build_task := {
+	"name": "git-clone",
+	"ref": {"kind": "Task", "name": "git-clone", "bundle": trusted_bundle_ref},
+	"results": [
+		{"name": "url", "value": "https://github.com/test/repo"},
+		{"name": "commit", "value": "abc123"},
+	],
+}
+
+# Helper to create SLSA v0.2 attestation with metadata
+_attestation_v02_with_metadata(build_finished_on, tasks) := {"statement": {
+	"predicateType": "https://slsa.dev/provenance/v0.2",
+	"predicate": {
+		"buildType": lib.tekton_pipeline_run,
+		"buildConfig": {"tasks": tasks},
+		"metadata": {
+			"buildFinishedOn": build_finished_on,
+			"buildStartedOn": "2025-01-01T00:00:00Z",
+		},
+	},
+}}
+
+# Helper to create SLSA v1.0 attestation with metadata
+_attestation_v1_with_metadata(build_finished_on, tasks) := {"statement": {
+	"predicateType": "https://slsa.dev/provenance/v1",
+	"predicate": {
+		"buildDefinition": {
+			"buildType": lib.tekton_slsav1_pipeline_run,
+			"externalParameters": {"runSpec": {"pipelineSpec": {}}},
+			"resolvedDependencies": tekton_test.resolved_dependencies(tasks),
+		},
+		"runDetails": {"metadata": {
+			"buildFinishedOn": build_finished_on,
+			"buildStartedOn": "2025-01-01T00:00:00Z",
+		}},
+	},
+}}
+
+test_pipelinerun_attestations_single_v02 if {
+	# Test single v0.2 attestation
+	att := _attestation_v02_with_metadata("2025-01-15T10:30:00Z", [_build_task])
+	expected := [att]
+	lib.assert_equal(expected, lib.pipelinerun_attestations) with input.attestations as [att]
+}
+
+test_pipelinerun_attestations_multiple_v02_latest_first if {
+	# Multiple v0.2 attestations, latest is first in list
+	att1 := _attestation_v02_with_metadata("2025-01-20T15:45:00Z", [_build_task])
+	att2 := _attestation_v02_with_metadata("2025-01-15T10:30:00Z", [_build_task])
+	attestations := [att1, att2]
+	expected := [att1]
+	lib.assert_equal(expected, lib.pipelinerun_attestations) with input.attestations as attestations
+}
+
+test_pipelinerun_attestations_multiple_v02_latest_last if {
+	# Multiple v0.2 attestations, latest is last in list
+	att1 := _attestation_v02_with_metadata("2025-01-15T10:30:00Z", [_build_task])
+	att2 := _attestation_v02_with_metadata("2025-01-20T15:45:00Z", [_build_task])
+	attestations := [att1, att2]
+	expected := [att2]
+	lib.assert_equal(expected, lib.pipelinerun_attestations) with input.attestations as attestations
+}
+
+test_pipelinerun_attestations_multiple_v02_middle if {
+	# Multiple v0.2 attestations, latest is in the middle
+	att1 := _attestation_v02_with_metadata("2025-01-15T10:30:00Z", [_build_task])
+	att2 := _attestation_v02_with_metadata("2025-01-25T20:00:00Z", [_build_task])
+	att3 := _attestation_v02_with_metadata("2025-01-20T15:45:00Z", [_build_task])
+	attestations := [att1, att2, att3]
+	expected := [att2]
+	lib.assert_equal(expected, lib.pipelinerun_attestations) with input.attestations as attestations
+}
+
+test_pipelinerun_attestations_multiple_v02_missing_timestamp if {
+	# Multiple v0.2 attestations where at least one doesn't have a timestamp - should return empty
+	att_with_metadata := _attestation_v02_with_metadata("2025-01-20T15:45:00Z", [_build_task])
+	att_without_metadata := json.patch(
+		_attestation_v02_with_metadata("2025-01-25T20:00:00Z", [_build_task]),
+		[{"op": "remove", "path": "/statement/predicate/metadata"}],
+	)
+	attestations := [att_with_metadata, att_without_metadata]
+	expected := []
+	lib.assert_equal(expected, lib.pipelinerun_attestations) with input.attestations as attestations
+}
+
+test_pipelinerun_attestations_multiple_v1_missing_timestamp if {
+	# Multiple v1.0 attestations where at least one doesn't have a timestamp - should return empty
+	v1_task := tekton_test.slsav1_task_bundle(
+		tekton_test.slsav1_task_result(
+			"buildah",
+			[
+				{"name": "IMAGE_URL", "type": "string", "value": "quay.io/test/image:tag"},
+				{"name": "IMAGE_DIGEST", "type": "string", "value": "sha256:abc123"},
+			],
+		),
+		trusted_bundle_ref,
+	)
+	att_with_metadata := _attestation_v1_with_metadata("2025-01-20T15:45:00Z", [v1_task])
+	att_without_metadata := json.patch(
+		_attestation_v1_with_metadata("2025-01-25T20:00:00Z", [v1_task]),
+		[{"op": "remove", "path": "/statement/predicate/runDetails"}],
+	)
+	attestations := [att_with_metadata, att_without_metadata]
+	expected := []
+	lib.assert_equal(expected, lib.pipelinerun_attestations) with input.attestations as attestations
+}
+
+test_pipelinerun_attestations_mixed_formats if {
+	# Test with both v0.2 and v1.0 attestations - should return both (one per type)
+	v02_task := _build_task
+	v1_task := tekton_test.slsav1_task_bundle(
+		tekton_test.slsav1_task_result(
+			"buildah",
+			[
+				{"name": "IMAGE_URL", "type": "string", "value": "quay.io/test/image:tag"},
+				{"name": "IMAGE_DIGEST", "type": "string", "value": "sha256:abc123"},
+			],
+		),
+		trusted_bundle_ref,
+	)
+	att_v02 := _attestation_v02_with_metadata("2025-01-15T10:30:00Z", [v02_task])
+	att_v1 := _attestation_v1_with_metadata("2025-01-20T15:45:00Z", [v1_task])
+	attestations := [att_v02, att_v1]
+	expected := [att_v02, att_v1]
+	lib.assert_equal(expected, lib.pipelinerun_attestations) with input.attestations as attestations
+}
+
+test_pipelinerun_attestations_empty if {
+	# No attestations should return empty list
+	expected := []
+	lib.assert_equal(expected, lib.pipelinerun_attestations) with input.attestations as []
+}
+
+test_pipelinerun_attestations_single_no_timestamp if {
+	# Single attestation without timestamp should still be returned
+	att := _attestation_v02_with_metadata("2025-01-15T10:30:00Z", [_non_build_task])
+	expected := [att]
+	lib.assert_equal(expected, lib.pipelinerun_attestations) with input.attestations as [att]
+}
+
+test_pipelinerun_attestations_multiple_per_type if {
+	# Test scenario: 3 attestations where 2 are v0.2 and 1 is v1.0
+	# Should return the latest v0.2 and the v1.0
+	v02_att1 := _attestation_v02_with_metadata("2025-01-15T10:30:00Z", [_build_task])
+	v02_att2 := _attestation_v02_with_metadata("2025-01-20T15:45:00Z", [_build_task])
+	v1_att := _attestation_v1_with_metadata("2025-01-18T12:00:00Z", [_build_task])
+	attestations := [v02_att1, v02_att2, v1_att]
+
+	# Should return latest v0.2 (v02_att2) and the v1.0 (v1_att)
+	expected := [v02_att2, v1_att]
+	lib.assert_equal(expected, lib.pipelinerun_attestations) with input.attestations as attestations
+}
+
+test_pipelinerun_attestations_v1_multiple if {
+	# Test multiple v1.0 attestations - should return the latest
+	v1_att1 := _attestation_v1_with_metadata("2025-01-15T10:30:00Z", [_build_task])
+	v1_att2 := _attestation_v1_with_metadata("2025-01-20T15:45:00Z", [_build_task])
+	attestations := [v1_att1, v1_att2]
+	expected := [v1_att2]
+	lib.assert_equal(expected, lib.pipelinerun_attestations) with input.attestations as attestations
+}
+
+test_pipelinerun_attestations_v1_single_no_timestamp if {
+	# Test single v1.0 attestation without timestamp - should still return it
+	v1_task := tekton_test.slsav1_task_bundle(
+		tekton_test.slsav1_task_result(
+			"buildah",
+			[
+				{"name": "IMAGE_URL", "type": "string", "value": "quay.io/test/image:tag"},
+				{"name": "IMAGE_DIGEST", "type": "string", "value": "sha256:abc123"},
+			],
+		),
+		trusted_bundle_ref,
+	)
+
+	# Create v1.0 attestation without runDetails.metadata.buildFinishedOn
+	v1_att := {"statement": {
+		"predicateType": "https://slsa.dev/provenance/v1",
+		"predicate": {"buildDefinition": {
+			"buildType": lib.tekton_slsav1_pipeline_run,
+			"externalParameters": {"runSpec": {"pipelineSpec": {}}},
+			"resolvedDependencies": tekton_test.resolved_dependencies([v1_task]),
+		}},
+	}}
+	expected := [v1_att]
+	lib.assert_equal(expected, lib.pipelinerun_attestations) with input.attestations as [v1_att]
 }
