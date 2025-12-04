@@ -28,42 +28,52 @@ test_success if {
 				],
 			},
 		]},
+		"metadata": {
+			"buildFinishedOn": "2025-01-15T10:30:00Z",
+			"buildStartedOn": "2025-01-15T10:00:00Z",
+		},
 	}}}
 
 	slsa_v1_attestation := {"statement": {
 		"predicateType": "https://slsa.dev/provenance/v1",
-		"predicate": {"buildDefinition": {
-			"buildType": "https://tekton.dev/chains/v2/slsa-tekton",
-			"externalParameters": {"runSpec": {"pipelineSpec": {}}},
-			"resolvedDependencies": [
-				{
-					"name": "pipelineTask",
-					"content": base64.encode(json.marshal({
-						"spec": {"taskRef": {
-							"name": "source-build",
-							"kind": "Task",
-						}},
-						"status": {"taskResults": [
-							{"name": "SOURCE_IMAGE_URL", "value": "registry.local/repo:v1.0"},
-							{"name": "SOURCE_IMAGE_DIGEST", "value": _mock_digest},
-						]},
-					})),
-				},
-				{
-					"name": "pipelineTask",
-					"content": base64.encode(json.marshal({
-						"spec": {"taskRef": {
-							"name": "source-build",
-							"kind": "Task",
-						}},
-						"status": {"taskResults": [
-							{"name": "SOURCE_IMAGE_URL", "value": "registry.local/repo:v1.0.newline\n"},
-							{"name": "SOURCE_IMAGE_DIGEST", "value": _mock_digest_nl},
-						]},
-					})),
-				},
-			],
-		}},
+		"predicate": {
+			"buildDefinition": {
+				"buildType": "https://tekton.dev/chains/v2/slsa-tekton",
+				"externalParameters": {"runSpec": {"pipelineSpec": {}}},
+				"resolvedDependencies": [
+					{
+						"name": "pipelineTask",
+						"content": base64.encode(json.marshal({
+							"spec": {"taskRef": {
+								"name": "source-build",
+								"kind": "Task",
+							}},
+							"status": {"taskResults": [
+								{"name": "SOURCE_IMAGE_URL", "value": "registry.local/repo:v1.0"},
+								{"name": "SOURCE_IMAGE_DIGEST", "value": _mock_digest},
+							]},
+						})),
+					},
+					{
+						"name": "pipelineTask",
+						"content": base64.encode(json.marshal({
+							"spec": {"taskRef": {
+								"name": "source-build",
+								"kind": "Task",
+							}},
+							"status": {"taskResults": [
+								{"name": "SOURCE_IMAGE_URL", "value": "registry.local/repo:v1.0.newline\n"},
+								{"name": "SOURCE_IMAGE_DIGEST", "value": _mock_digest_nl},
+							]},
+						})),
+					},
+				],
+			},
+			"runDetails": {"metadata": {
+				"buildFinishedOn": "2025-01-20T15:45:00Z",
+				"buildStartedOn": "2025-01-20T15:00:00Z",
+			}},
+		},
 	}}
 
 	attestations := [slsa_v02_attestation, slsa_v1_attestation]
@@ -84,25 +94,35 @@ test_missing_source_image_references if {
 			"ref": {"kind": "Task", "name": "source-build"},
 			"results": [{"name": "SPAM", "value": "spam"}],
 		}]},
+		"metadata": {
+			"buildFinishedOn": "2025-01-15T10:30:00Z",
+			"buildStartedOn": "2025-01-15T10:00:00Z",
+		},
 	}}}]
 
 	# SLSA v1.0
 	lib.assert_equal_results(expected, source_image.deny) with input.attestations as [{"statement": {
 		"predicateType": "https://slsa.dev/provenance/v1",
-		"predicate": {"buildDefinition": {
-			"buildType": "https://tekton.dev/chains/v2/slsa-tekton",
-			"externalParameters": {"runSpec": {"pipelineSpec": {}}},
-			"resolvedDependencies": [{
-				"name": "pipelineTask",
-				"content": base64.encode(json.marshal({
-					"spec": {"taskRef": {
-						"name": "source-build",
-						"kind": "Task",
-					}},
-					"status": {"taskResults": [{"name": "SPAM", "value": "spam"}]},
-				})),
-			}],
-		}},
+		"predicate": {
+			"buildDefinition": {
+				"buildType": "https://tekton.dev/chains/v2/slsa-tekton",
+				"externalParameters": {"runSpec": {"pipelineSpec": {}}},
+				"resolvedDependencies": [{
+					"name": "pipelineTask",
+					"content": base64.encode(json.marshal({
+						"spec": {"taskRef": {
+							"name": "source-build",
+							"kind": "Task",
+						}},
+						"status": {"taskResults": [{"name": "SPAM", "value": "spam"}]},
+					})),
+				}],
+			},
+			"runDetails": {"metadata": {
+				"buildFinishedOn": "2025-01-20T15:45:00Z",
+				"buildStartedOn": "2025-01-20T15:00:00Z",
+			}},
+		},
 	}}]
 }
 
@@ -117,27 +137,37 @@ test_inaccessible_source_image_references if {
 				{"name": "SOURCE_IMAGE_DIGEST", "value": _mock_digest},
 			],
 		}]},
+		"metadata": {
+			"buildFinishedOn": "2025-01-15T10:30:00Z",
+			"buildStartedOn": "2025-01-15T10:00:00Z",
+		},
 	}}}
 
 	slsa_v1_attestation := {"statement": {
 		"predicateType": "https://slsa.dev/provenance/v1",
-		"predicate": {"buildDefinition": {
-			"buildType": "https://tekton.dev/chains/v2/slsa-tekton",
-			"externalParameters": {"runSpec": {"pipelineSpec": {}}},
-			"resolvedDependencies": [{
-				"name": "pipelineTask",
-				"content": base64.encode(json.marshal({
-					"spec": {"taskRef": {
-						"name": "source-build",
-						"kind": "Task",
-					}},
-					"status": {"taskResults": [
-						{"name": "SOURCE_IMAGE_URL", "value": "registry.local/repo:v1.0"},
-						{"name": "SOURCE_IMAGE_DIGEST", "value": _mock_digest},
-					]},
-				})),
-			}],
-		}},
+		"predicate": {
+			"buildDefinition": {
+				"buildType": "https://tekton.dev/chains/v2/slsa-tekton",
+				"externalParameters": {"runSpec": {"pipelineSpec": {}}},
+				"resolvedDependencies": [{
+					"name": "pipelineTask",
+					"content": base64.encode(json.marshal({
+						"spec": {"taskRef": {
+							"name": "source-build",
+							"kind": "Task",
+						}},
+						"status": {"taskResults": [
+							{"name": "SOURCE_IMAGE_URL", "value": "registry.local/repo:v1.0"},
+							{"name": "SOURCE_IMAGE_DIGEST", "value": _mock_digest},
+						]},
+					})),
+				}],
+			},
+			"runDetails": {"metadata": {
+				"buildFinishedOn": "2025-01-20T15:45:00Z",
+				"buildStartedOn": "2025-01-20T15:00:00Z",
+			}},
+		},
 	}}
 
 	attestations := [slsa_v02_attestation, slsa_v1_attestation]
@@ -169,27 +199,37 @@ test_empty_source_image if {
 				{"name": "SOURCE_IMAGE_DIGEST", "value": _mock_digest},
 			],
 		}]},
+		"metadata": {
+			"buildFinishedOn": "2025-01-15T10:30:00Z",
+			"buildStartedOn": "2025-01-15T10:00:00Z",
+		},
 	}}}
 
 	slsa_v1_attestation := {"statement": {
 		"predicateType": "https://slsa.dev/provenance/v1",
-		"predicate": {"buildDefinition": {
-			"buildType": "https://tekton.dev/chains/v2/slsa-tekton",
-			"externalParameters": {"runSpec": {"pipelineSpec": {}}},
-			"resolvedDependencies": [{
-				"name": "pipelineTask",
-				"content": base64.encode(json.marshal({
-					"spec": {"taskRef": {
-						"name": "source-build",
-						"kind": "Task",
-					}},
-					"status": {"taskResults": [
-						{"name": "SOURCE_IMAGE_URL", "value": "registry.local/repo:v1.0"},
-						{"name": "SOURCE_IMAGE_DIGEST", "value": _mock_digest},
-					]},
-				})),
-			}],
-		}},
+		"predicate": {
+			"buildDefinition": {
+				"buildType": "https://tekton.dev/chains/v2/slsa-tekton",
+				"externalParameters": {"runSpec": {"pipelineSpec": {}}},
+				"resolvedDependencies": [{
+					"name": "pipelineTask",
+					"content": base64.encode(json.marshal({
+						"spec": {"taskRef": {
+							"name": "source-build",
+							"kind": "Task",
+						}},
+						"status": {"taskResults": [
+							{"name": "SOURCE_IMAGE_URL", "value": "registry.local/repo:v1.0"},
+							{"name": "SOURCE_IMAGE_DIGEST", "value": _mock_digest},
+						]},
+					})),
+				}],
+			},
+			"runDetails": {"metadata": {
+				"buildFinishedOn": "2025-01-20T15:45:00Z",
+				"buildStartedOn": "2025-01-20T15:00:00Z",
+			}},
+		},
 	}}
 
 	attestations := [slsa_v02_attestation, slsa_v1_attestation]
@@ -221,27 +261,37 @@ test_missing_signature if {
 				{"name": "SOURCE_IMAGE_DIGEST", "value": _mock_digest},
 			],
 		}]},
+		"metadata": {
+			"buildFinishedOn": "2025-01-15T10:30:00Z",
+			"buildStartedOn": "2025-01-15T10:00:00Z",
+		},
 	}}}
 
 	slsa_v1_attestation := {"statement": {
 		"predicateType": "https://slsa.dev/provenance/v1",
-		"predicate": {"buildDefinition": {
-			"buildType": "https://tekton.dev/chains/v2/slsa-tekton",
-			"externalParameters": {"runSpec": {"pipelineSpec": {}}},
-			"resolvedDependencies": [{
-				"name": "pipelineTask",
-				"content": base64.encode(json.marshal({
-					"spec": {"taskRef": {
-						"name": "source-build",
-						"kind": "Task",
-					}},
-					"status": {"taskResults": [
-						{"name": "SOURCE_IMAGE_URL", "value": "registry.local/repo:v1.0"},
-						{"name": "SOURCE_IMAGE_DIGEST", "value": _mock_digest},
-					]},
-				})),
-			}],
-		}},
+		"predicate": {
+			"buildDefinition": {
+				"buildType": "https://tekton.dev/chains/v2/slsa-tekton",
+				"externalParameters": {"runSpec": {"pipelineSpec": {}}},
+				"resolvedDependencies": [{
+					"name": "pipelineTask",
+					"content": base64.encode(json.marshal({
+						"spec": {"taskRef": {
+							"name": "source-build",
+							"kind": "Task",
+						}},
+						"status": {"taskResults": [
+							{"name": "SOURCE_IMAGE_URL", "value": "registry.local/repo:v1.0"},
+							{"name": "SOURCE_IMAGE_DIGEST", "value": _mock_digest},
+						]},
+					})),
+				}],
+			},
+			"runDetails": {"metadata": {
+				"buildFinishedOn": "2025-01-20T15:45:00Z",
+				"buildStartedOn": "2025-01-20T15:00:00Z",
+			}},
+		},
 	}}
 
 	attestations := [slsa_v02_attestation, slsa_v1_attestation]

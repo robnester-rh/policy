@@ -160,12 +160,58 @@ test_error_data if {
 	}) with input.attestations as attestations
 }
 
-test_mix_data if {
+test_mix_data_v02_failed if {
+	# Test v0.2 attestation with failed test
+	attestations := [mock_a_failing_test]
+	lib.assert_equal_results(test.deny, {{
+		"code": "test.no_failed_tests",
+		"msg": "The Task \"failed_1\" from the build Pipeline reports a failed test",
+		"term": "failed_1",
+	}}) with input.attestations as attestations
+}
+
+test_mix_data_v02_errored if {
+	# Test v0.2 attestation with errored test
+	attestations := [mock_an_errored_test]
+	lib.assert_equal_results(test.deny, {{
+		"code": "test.no_erred_tests",
+		"msg": "The Task \"errored_1\" from the build Pipeline reports a test erred",
+		"term": "errored_1",
+	}}) with input.attestations as attestations
+}
+
+test_mix_data_v1_failed if {
+	# Test v1.0 attestation with failed test
+	slsav1_failed_task := tekton_test.slsav1_task_result_ref("failed_2", [{
+		"name": lib.task_test_result_name,
+		"type": "string",
+		"value": {"result": "FAILURE"},
+	}])
+	attestations := [lib_test.mock_slsav1_attestation_with_tasks([slsav1_failed_task])]
+	lib.assert_equal_results(test.deny, {{
+		"code": "test.no_failed_tests",
+		"msg": "The Task \"failed_2\" from the build Pipeline reports a failed test",
+		"term": "failed_2",
+	}}) with input.attestations as attestations
+}
+
+test_mix_data_v1_errored if {
+	# Test v1.0 attestation with errored test
 	slsav1_errored_task := tekton_test.slsav1_task_result_ref("errored_2", [{
 		"name": lib.task_test_result_name,
 		"type": "string",
 		"value": {"result": "ERROR"},
 	}])
+	attestations := [lib_test.mock_slsav1_attestation_with_tasks([slsav1_errored_task])]
+	lib.assert_equal_results(test.deny, {{
+		"code": "test.no_erred_tests",
+		"msg": "The Task \"errored_2\" from the build Pipeline reports a test erred",
+		"term": "errored_2",
+	}}) with input.attestations as attestations
+}
+
+test_mix_data_both_types if {
+	# Test both v0.2 and v1.0 attestations together
 	slsav1_failed_task := tekton_test.slsav1_task_result_ref("failed_2", [{
 		"name": lib.task_test_result_name,
 		"type": "string",
@@ -173,9 +219,7 @@ test_mix_data if {
 	}])
 	attestations := [
 		mock_a_failing_test,
-		mock_an_errored_test,
 		lib_test.mock_slsav1_attestation_with_tasks([slsav1_failed_task]),
-		lib_test.mock_slsav1_attestation_with_tasks([slsav1_errored_task]),
 	]
 	lib.assert_equal_results(test.deny, {
 		{
@@ -184,19 +228,9 @@ test_mix_data if {
 			"term": "failed_1",
 		},
 		{
-			"code": "test.no_erred_tests",
-			"msg": "The Task \"errored_1\" from the build Pipeline reports a test erred",
-			"term": "errored_1",
-		},
-		{
 			"code": "test.no_failed_tests",
 			"msg": "The Task \"failed_2\" from the build Pipeline reports a failed test",
 			"term": "failed_2",
-		},
-		{
-			"code": "test.no_erred_tests",
-			"msg": "The Task \"errored_2\" from the build Pipeline reports a test erred",
-			"term": "errored_2",
 		},
 	}) with input.attestations as attestations
 }
@@ -270,42 +304,80 @@ test_warning_is_warning if {
 
 # regal ignore:rule-length
 test_mixed_statuses if {
-	test_results := [
-		lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "ERROR"}, "error_1", _bundle),
-		lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "SUCCESS"}, "success_1", _bundle),
-		lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "FAILURE"}, "failure_1", _bundle),
-		lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "SKIPPED"}, "skipped_1", _bundle),
-		lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "FAILURE"}, "failure_2", _bundle),
-		lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "SKIPPED"}, "skipped_2", _bundle),
-		lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "WARNING"}, "warning_1", _bundle),
-		lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "ERROR"}, "error_2", _bundle),
-		lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "WARNING"}, "warning_2", _bundle),
-		lib_test.mock_slsav1_attestation_with_tasks([tekton_test.slsav1_task_result_ref("success_20", [{
+	# Combine all v0.2 tasks into a single v0.2 attestation
+	# Extract tasks from each v0.2 attestation
+	v02_att_error_1 := lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "ERROR"}, "error_1", _bundle)
+
+	# regal ignore:line-length
+	v02_att_success_1 := lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "SUCCESS"}, "success_1", _bundle)
+
+	# regal ignore:line-length
+	v02_att_failure_1 := lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "FAILURE"}, "failure_1", _bundle)
+
+	# regal ignore:line-length
+	v02_att_skipped_1 := lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "SKIPPED"}, "skipped_1", _bundle)
+
+	# regal ignore:line-length
+	v02_att_failure_2 := lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "FAILURE"}, "failure_2", _bundle)
+
+	# regal ignore:line-length
+	v02_att_skipped_2 := lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "SKIPPED"}, "skipped_2", _bundle)
+
+	# regal ignore:line-length
+	v02_att_warning_1 := lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "WARNING"}, "warning_1", _bundle)
+	v02_att_error_2 := lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "ERROR"}, "error_2", _bundle)
+
+	# regal ignore:line-length
+	v02_att_warning_2 := lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "WARNING"}, "warning_2", _bundle)
+
+	# Combine all v0.2 tasks into one attestation
+	v02_tasks := [
+		v02_att_error_1.statement.predicate.buildConfig.tasks[0],
+		v02_att_success_1.statement.predicate.buildConfig.tasks[0],
+		v02_att_failure_1.statement.predicate.buildConfig.tasks[0],
+		v02_att_skipped_1.statement.predicate.buildConfig.tasks[0],
+		v02_att_failure_2.statement.predicate.buildConfig.tasks[0],
+		v02_att_skipped_2.statement.predicate.buildConfig.tasks[0],
+		v02_att_warning_1.statement.predicate.buildConfig.tasks[0],
+		v02_att_error_2.statement.predicate.buildConfig.tasks[0],
+		v02_att_warning_2.statement.predicate.buildConfig.tasks[0],
+	]
+	v02_attestation := {"statement": {"predicate": {
+		"buildType": lib.tekton_pipeline_run,
+		"buildConfig": {"tasks": v02_tasks},
+	}}}
+
+	# Combine all v1.0 tasks into a single v1.0 attestation
+	v1_tasks := [
+		tekton_test.slsav1_task_result_ref("success_20", [{
 			"name": lib.task_test_result_name,
 			"type": "string",
 			"value": {"result": "SUCCESS"},
-		}])]),
-		lib_test.mock_slsav1_attestation_with_tasks([tekton_test.slsav1_task_result_ref("failure_20", [{
+		}]),
+		tekton_test.slsav1_task_result_ref("failure_20", [{
 			"name": lib.task_test_result_name,
 			"type": "string",
 			"value": {"result": "FAILURE"},
-		}])]),
-		lib_test.mock_slsav1_attestation_with_tasks([tekton_test.slsav1_task_result_ref("error_20", [{
+		}]),
+		tekton_test.slsav1_task_result_ref("error_20", [{
 			"name": lib.task_test_result_name,
 			"type": "string",
 			"value": {"result": "ERROR"},
-		}])]),
-		lib_test.mock_slsav1_attestation_with_tasks([tekton_test.slsav1_task_result_ref("warning_20", [{
+		}]),
+		tekton_test.slsav1_task_result_ref("warning_20", [{
 			"name": lib.task_test_result_name,
 			"type": "string",
 			"value": {"result": "WARNING"},
-		}])]),
-		lib_test.mock_slsav1_attestation_with_tasks([tekton_test.slsav1_task_result_ref("skipped_20", [{
+		}]),
+		tekton_test.slsav1_task_result_ref("skipped_20", [{
 			"name": lib.task_test_result_name,
 			"type": "string",
 			"value": {"result": "SKIPPED"},
-		}])]),
+		}]),
 	]
+	v1_attestation := lib_test.mock_slsav1_attestation_with_tasks(v1_tasks)
+
+	test_results := [v02_attestation, v1_attestation]
 
 	lib.assert_equal_results(test.deny, {
 		{
@@ -375,17 +447,36 @@ test_mixed_statuses if {
 }
 
 test_unsupported_test_result if {
-	test_results := [
-		lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "EROR"}, "error_1", _bundle),
-		lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "SUCESS"}, "success_1", _bundle),
-		lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "FAIL"}, "failure_1", _bundle),
-		lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "SKIPED"}, "skipped_1", _bundle),
-		lib_test.mock_slsav1_attestation_with_tasks([tekton_test.slsav1_task_result_ref("skipped_20", [{
-			"name": lib.task_test_result_name,
-			"type": "string",
-			"value": {"result": "SKIPED"},
-		}])]),
+	# Combine all v0.2 tasks into a single v0.2 attestation
+	v02_att_error_1 := lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "EROR"}, "error_1", _bundle)
+
+	# regal ignore:line-length
+	v02_att_success_1 := lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "SUCESS"}, "success_1", _bundle)
+	v02_att_failure_1 := lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "FAIL"}, "failure_1", _bundle)
+
+	# regal ignore:line-length
+	v02_att_skipped_1 := lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "SKIPED"}, "skipped_1", _bundle)
+
+	# Combine all v0.2 tasks into one attestation
+	v02_tasks := [
+		v02_att_error_1.statement.predicate.buildConfig.tasks[0],
+		v02_att_success_1.statement.predicate.buildConfig.tasks[0],
+		v02_att_failure_1.statement.predicate.buildConfig.tasks[0],
+		v02_att_skipped_1.statement.predicate.buildConfig.tasks[0],
 	]
+	v02_attestation := {"statement": {"predicate": {
+		"buildType": lib.tekton_pipeline_run,
+		"buildConfig": {"tasks": v02_tasks},
+	}}}
+
+	# v1.0 attestation with unsupported test result
+	v1_attestation := lib_test.mock_slsav1_attestation_with_tasks([tekton_test.slsav1_task_result_ref("skipped_20", [{
+		"name": lib.task_test_result_name,
+		"type": "string",
+		"value": {"result": "SKIPED"},
+	}])])
+
+	test_results := [v02_attestation, v1_attestation]
 
 	lib.assert_equal_results(test.deny, {
 		{
@@ -459,20 +550,27 @@ test_all_image_processed if {
 }
 
 test_all_images_not_processed if {
+	# Combine both results into a single v0.2 attestation since lib.pipelinerun_attestations
+	# only returns the latest attestation per type
 	digests_processed := {"image": {"digests": ["sha256:wrongDigest"]}}
-	pipeline_run := lib_test.att_mock_helper_ref("IMAGES_PROCESSED", digests_processed, "success_23", _bundle)
-
-	attestations := [
-		pipeline_run,
-		lib_test.att_mock_helper_ref(lib.task_test_result_name, {"result": "SUCCESS"}, "errored_1", _bundle),
-	]
+	attestation := json.patch(
+		lib_test.att_mock_helper_ref("IMAGES_PROCESSED", digests_processed, "success_23", _bundle),
+		[{
+			"op": "add",
+			"path": "/statement/predicate/buildConfig/tasks/0/results/-",
+			"value": {
+				"name": lib.task_test_result_name,
+				"value": json.marshal({"result": "SUCCESS"}),
+			},
+		}],
+	)
 
 	lib.assert_equal_results(test.deny, {{
 		"code": "test.test_all_images",
 		# regal ignore:line-length
 		"msg": "Test 'success_23' did not process image with digest 'sha256:4e388ab32b10dc8dbc7e28144f552830adc74787c1e2c0824032078a79f227fb'.",
 		"term": "success_23",
-	}}) with input.attestations as attestations
+	}}) with input.attestations as [attestation]
 		with input.image.ref as _bundle
 }
 

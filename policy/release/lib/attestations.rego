@@ -43,16 +43,64 @@ slsa_provenance_attestations := [att |
 ]
 
 # These are the ones we're interested in
-pipelinerun_attestations := att if {
-	v1_0 := [a |
-		some a in pipelinerun_slsa_provenance_v1
-	]
-	v0_2 := [a |
+pipelinerun_attestations := array.concat(latest_v02_pipelinerun_attestation, latest_v1_pipelinerun_attestation)
+
+# Helper function to extract buildFinishedOn timestamp from an attestation
+# Handles both SLSA v0.2 and v1.0 formats
+_build_finished_on(att) := timestamp if {
+	# Try SLSA v0.2 path first
+	timestamp := att.statement.predicate.metadata.buildFinishedOn
+} else := timestamp if {
+	# Fallback to SLSA v1.0 path if v0.2 doesn't exist
+	timestamp := att.statement.predicate.runDetails.metadata.buildFinishedOn
+}
+
+# Returns the latest PipelineRun attestation per type (SLSA v0.2 and v1.0)
+# based on the buildFinishedOn timestamp. If there's only one attestation of a type,
+# return it regardless of timestamp. Returns a list (empty if none exist).
+latest_v02_pipelinerun_attestation := [pipelinerun_slsa_provenance02[0]] if {
+	# If there's only one v0.2 attestation, return it regardless of timestamp
+	count(pipelinerun_slsa_provenance02) == 1
+} else := [att |
+	# Multiple v0.2 attestations - filter by timestamp and return latest
+	v02_with_timestamp := [a |
 		some a in pipelinerun_slsa_provenance02
+		_build_finished_on(a)
 	]
 
-	att := array.concat(v1_0, v0_2)
-}
+	# make sure all v0.2 attestations have a timestamp
+	count(v02_with_timestamp) == count(pipelinerun_slsa_provenance02)
+
+	# Find the latest v0.2 attestation
+	max_v02_timestamp := max({ts |
+		some a in v02_with_timestamp
+		ts := _build_finished_on(a)
+	})
+	some att in v02_with_timestamp
+	_build_finished_on(att) == max_v02_timestamp
+]
+
+latest_v1_pipelinerun_attestation := [pipelinerun_slsa_provenance_v1[0]] if {
+	# If there's only one v1.0 attestation, return it regardless of timestamp
+	count(pipelinerun_slsa_provenance_v1) == 1
+} else := [att |
+	# Multiple v1.0 attestations - filter by timestamp and return latest
+	v1_with_timestamp := [a |
+		some a in pipelinerun_slsa_provenance_v1
+		_build_finished_on(a)
+	]
+
+	# make sure all v1.0 attestations have a timestamp
+	count(v1_with_timestamp) == count(pipelinerun_slsa_provenance_v1)
+
+	# Find the latest v1.0 attestation
+	max_v1_timestamp := max({ts |
+		some a in v1_with_timestamp
+		ts := _build_finished_on(a)
+	})
+	some att in v1_with_timestamp
+	_build_finished_on(att) == max_v1_timestamp
+]
 
 pipelinerun_slsa_provenance02 := [att |
 	some att in input.attestations
