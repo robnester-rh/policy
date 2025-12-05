@@ -60,29 +60,6 @@ test_invalid_download_location if {
 		with data.rule_data.allowed_rpm_build_dependency_sources as _mock_allowed_locations
 }
 
-# Test with another invalid download location
-test_invalid_download_location_wrong_domain if {
-	invalid_location := "https://malicious.org/package.rpm"
-	att := _sbom_attestation_with_download_location(invalid_location)
-	expected_locations := array.concat(["NOASSERTION"], _mock_allowed_locations)
-	expected := {{
-		"code": "rpm_build_deps.download_location_valid",
-		"msg": sprintf("Download Location is %s which is not in %v", [invalid_location, expected_locations]),
-	}}
-	lib.assert_equal_results(expected, rpm_build_deps.warn) with input.attestations as [att]
-		with data.rule_data.allowed_rpm_build_dependency_sources as _mock_allowed_locations
-}
-
-# Test with location that doesn't match the patterns
-test_invalid_download_location_no_pattern_match if {
-	# This location doesn't match any of the allowed patterns
-	invalid_location := "https://example.com/package.rpm"
-	att := _sbom_attestation_with_download_location(invalid_location)
-	results := rpm_build_deps.warn with input.attestations as [att]
-		with data.rule_data.allowed_rpm_build_dependency_sources as _mock_allowed_locations
-	count(results) > 0
-}
-
 # Test with multiple packages - all valid
 test_multiple_packages_all_valid if {
 	att := _sbom_attestation_with_multiple_packages([

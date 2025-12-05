@@ -16,7 +16,7 @@ import data.lib.sbom
 # description: Builds have valid download locations for RPM build dependencies
 # custom:
 #   short_name: download_location_valid
-#   failure_msg: Download Location is %s which is not in %v
+#   failure_msg: RPM build dependency source %s is not in the allowed list: %v.
 #   collections:
 #   - redhat_rpms
 warn contains result if {
