@@ -54,7 +54,8 @@ test_invalid_download_location if {
 	expected_locations := array.concat(["NOASSERTION"], _mock_allowed_locations)
 	expected := {{
 		"code": "rpm_build_deps.download_location_valid",
-		"msg": sprintf("Download Location is %s which is not in %v", [invalid_location, expected_locations]),
+		"msg": sprintf("RPM build dependency source %s is not in the allowed list %v.",
+		[invalid_location, expected_locations]),
 	}}
 	lib.assert_equal_results(expected, rpm_build_deps.warn) with input.attestations as [att]
 		with data.rule_data.allowed_rpm_build_dependency_sources as _mock_allowed_locations
