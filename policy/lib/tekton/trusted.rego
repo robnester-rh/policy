@@ -284,7 +284,7 @@ future_deny_rules_for_task(task) := matching_rules if {
 	matching_rules := [rule |
 		some rule in future_deny_rules
 		_pattern_matches(ref.key, rule.pattern)
-		_version_constraints_match(ref, rule)
+		_version_satisfies_any_rule_constraints(ref, rule)
 	]
 }
 
@@ -300,7 +300,7 @@ _rule_is_effective(rule) if {
 _task_matches_deny_rule(ref) if {
 	some rule in _effective_deny_rules
 	_pattern_matches(ref.key, rule.pattern)
-	_version_constraints_match(ref, rule)
+	_version_satisfies_any_rule_constraints(ref, rule)
 }
 
 # Returns a list of patterns from deny rules that match the task, or an empty list if no deny rules match.
@@ -309,7 +309,7 @@ denying_pattern(task) := [rule.pattern |
 	ref := task_ref(task)
 	some rule in _effective_deny_rules
 	_pattern_matches(ref.key, rule.pattern)
-	_version_constraints_match(ref, rule)
+	_version_satisfies_any_rule_constraints(ref, rule)
 ]
 
 # Returns the reason why a task reference was denied, or nothing if the task is trusted.
@@ -361,7 +361,7 @@ _denying_rules_info(task) := {"patterns": patterns, "messages": messages} if {
 	matching_rules := [rule |
 		some rule in _effective_deny_rules
 		_pattern_matches(ref.key, rule.pattern)
-		_version_constraints_match(ref, rule)
+		_version_satisfies_any_rule_constraints(ref, rule)
 	]
 
 	patterns := [rule.pattern | some rule in matching_rules]
@@ -372,7 +372,7 @@ _denying_rules_info(task) := {"patterns": patterns, "messages": messages} if {
 _task_matches_allow_rule(ref) if {
 	some rule in _effective_allow_rules
 	_pattern_matches(ref.key, rule.pattern)
-	_version_constraints_match(ref, rule)
+	_version_satisfies_all_rule_constraints(ref, rule)
 }
 
 # Converts a wildcard pattern to a regex pattern and checks if the key matches
@@ -381,10 +381,6 @@ _pattern_matches(key, pattern) if {
 	regex_pattern := regex.replace(pattern, `\*`, ".*")
 	regex.match(regex_pattern, key)
 }
-
-# Returns true - version constraints are not yet implemented
-# regal ignore:argument-always-wildcard
-_version_constraints_match(_, _) := true
 
 # Schema for trusted_task_rules as defined in trusted_tasks/trusted_task_rules.schema.json
 # This schema validates the rule-based trusted tasks configuration (ADR 53)
@@ -458,6 +454,96 @@ _trusted_task_rules_schema := {
 	},
 	"additionalProperties": false,
 }
+
+# Returns true if the task reference version satisfies ALL semver constraints in the rule.
+# This is intended for use in allow rules, where the rule is effective if all constraints match.
+# Supports constraints like: >=v2, <3, >3.1.0, <v4.2, >=1.2.3
+# Returns true if rule has no "versions" field, or if ref.tagged_ref satisfies all constraints
+# Returns false for git references (no version tag) or invalid semver
+_version_satisfies_all_rule_constraints(ref, rule) if {
+	not "versions" in object.keys(rule)
+} else if {
+	# Extract version from task reference (e.g., "0.4" from "oci://registry.io/task:0.4")
+	"tagged_ref" in object.keys(ref)
+	version := _normalize_version(ref.tagged_ref)
+	semver.is_valid(version)
+
+	constraints := rule.versions
+
+	# Task version must satisfy ALL constraints
+	every constraint in constraints {
+		constraint_version := _normalize_version(constraint)
+		semver.is_valid(constraint_version)
+
+		result := semver.compare(version, constraint_version)
+		_result_satisfies_operator(result, constraint)
+	}
+}
+
+# Returns true if the task reference version satisfies AT LEAST ONE semver constraint in the rule.
+# This is intended for use in deny rules, where the rule is effective if at least one constraint match.
+# Supports constraints like: >=v2, <3, >3.1.0, <v4.2, >=1.2.3
+# Returns true if rule has no "versions" field, or if ref.tagged_ref satisfies all constraints
+# Returns false for git references (no version tag) or invalid semver
+_version_satisfies_any_rule_constraints(ref, rule) if {
+	not "versions" in object.keys(rule)
+} else if {
+	# Extract version from task reference (e.g., "0.4" from "oci://registry.io/task:0.4")
+	"tagged_ref" in object.keys(ref)
+	version := _normalize_version(ref.tagged_ref)
+	semver.is_valid(version)
+
+	constraints := rule.versions
+
+	# Task version must satisfy ALL constraints
+	some constraint in constraints
+	constraint_version := _normalize_version(constraint)
+	semver.is_valid(constraint_version)
+
+	result := semver.compare(version, constraint_version)
+	_result_satisfies_operator(result, constraint)
+}
+
+# Returns normalized semver (e.g: ">=v1.2" -> "1.2.0"; "v1.0" -> "1.0.0")
+# Strips operators (>=, >, <=, <), 'v' prefix, and normalizes to major.minor.patch format
+_normalize_version(to_normalize) := result if {
+	__version := trim_prefix(to_normalize, "<")
+	_version := trim_prefix(__version, ">")
+	version := trim_prefix(_version, "=")
+
+	trimmed := trim_prefix(version, "v")
+	parts := split(trimmed, ".")
+
+	# Normalize to major.minor.patch (default missing components to "0")
+	major := parts[0]
+	minor := _get_version_component(parts, 1)
+	patch := _get_version_component(parts, 2)
+
+	result := concat(".", [major, minor, patch])
+}
+
+# Returns version component at index, or "0" if not present
+_get_version_component(parts, idx) := parts[idx] if {
+	count(parts) > idx
+} else := "0"
+
+# Returns true if semver.compare result satisfies the constraint operator
+# result is -1 (less), 0 (equal), or 1 (greater)
+_result_satisfies_operator(result, constraint) if {
+	startswith(constraint, ">=")
+	result >= 0
+} else if {
+	startswith(constraint, ">")
+	not startswith(constraint, ">=")
+	result > 0
+} else if {
+	startswith(constraint, "<=")
+	result <= 0
+} else if {
+	startswith(constraint, "<")
+	not startswith(constraint, "<=")
+	result < 0
+} else := false
 
 # =============================================================================
 # BEGIN LEGACY SYSTEM (trusted_tasks)
