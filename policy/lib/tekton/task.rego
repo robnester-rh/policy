@@ -84,10 +84,10 @@ _maybe_tasks(given) := tasks if {
 	given.statement.predicateType == slsa_provenance_predicate_type_v1
 	resolved_deps := given.statement.predicate.buildDefinition.resolvedDependencies
 	tasks := [task |
-		some maybe_task in resolved_deps
-		maybe_task.name == "pipelineTask"
-		maybe_task.content
-		task := json.unmarshal(base64.decode(maybe_task.content))
+		some dep in resolved_deps
+		dep.name == "pipelineTask"
+		dep.content
+		task := json.unmarshal(base64.decode(dep.content))
 	]
 }
 
