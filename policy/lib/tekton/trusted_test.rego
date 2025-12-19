@@ -223,14 +223,16 @@ test_is_trusted_task_with_rules if {
 		{"name": "kind", "value": "task"},
 	]}}}
 	tekton.is_trusted_task(allowed_task) with data.rule_data.trusted_task_rules as trusted_task_rules
+		with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "0.4"}}
 
 	# Task that matches deny rule should not be trusted (deny takes precedence)
 	denied_task := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "quay.io/konflux-ci/tekton-catalog/task-buildah"},
+		{"name": "bundle", "value": "quay.io/konflux-ci/tekton-catalog/task-buildah:0.3@sha256:digest"},
 		{"name": "name", "value": "task-buildah"},
 		{"name": "kind", "value": "task"},
 	]}}}
 	not tekton.is_trusted_task(denied_task) with data.rule_data.trusted_task_rules as trusted_task_rules
+		with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "0.3"}}
 
 	# Task that matches allow pattern (registry.local) should be trusted
 	# Note: The key format is oci://registry.local/trusty:1.0 (with tag), so pattern oci://registry.local/* matches
@@ -240,6 +242,7 @@ test_is_trusted_task_with_rules if {
 		{"name": "kind", "value": "task"},
 	]}}}
 	tekton.is_trusted_task(registry_local_task) with data.rule_data.trusted_task_rules as trusted_task_rules
+		with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "1.0"}}
 
 	# Task that doesn't match any allow rule should not be trusted
 	# Note: This task uses a different path (untrusted) that doesn't match the pattern
@@ -249,6 +252,7 @@ test_is_trusted_task_with_rules if {
 		{"name": "kind", "value": "task"},
 	]}}}
 	not tekton.is_trusted_task(not_allowed_task) with data.rule_data.trusted_task_rules as trusted_task_rules
+		with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "1.0"}}
 
 	# Tasks satisfying at least one deny rule version constraints should be denied
 	deny_constrained_task_denied_version := {"spec": {"taskRef": {"resolver": "bundles", "params": [
@@ -257,6 +261,7 @@ test_is_trusted_task_with_rules if {
 		{"name": "kind", "value": "task"},
 	]}}}
 	not tekton.is_trusted_task(deny_constrained_task_denied_version) with data.rule_data.trusted_task_rules as trusted_task_rules # regal ignore:line-length
+		with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "1.5"}}
 
 	# Task not satisfying any deny rule version constraints should not be denied
 	deny_constrained_task_valid_version := {"spec": {"taskRef": {"resolver": "bundles", "params": [
@@ -265,6 +270,7 @@ test_is_trusted_task_with_rules if {
 		{"name": "kind", "value": "task"},
 	]}}}
 	tekton.is_trusted_task(deny_constrained_task_valid_version) with data.rule_data.trusted_task_rules as trusted_task_rules # regal ignore:line-length
+		with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "1.2.3"}}
 
 	# Tasks satisfying all the allow-rule version constraints should be allowed
 	allow_constrained_task_valid_version := {"spec": {"taskRef": {"resolver": "bundles", "params": [
@@ -273,6 +279,7 @@ test_is_trusted_task_with_rules if {
 		{"name": "kind", "value": "task"},
 	]}}}
 	tekton.is_trusted_task(allow_constrained_task_valid_version) with data.rule_data.trusted_task_rules as trusted_task_rules # regal ignore:line-length
+		with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "1.5"}}
 
 	# Tasks *NOT* satisfying all the allow-rule version constraints should be denied
 	allow_constrained_task_denied_version := {"spec": {"taskRef": {"resolver": "bundles", "params": [
@@ -281,6 +288,27 @@ test_is_trusted_task_with_rules if {
 		{"name": "kind", "value": "task"},
 	]}}}
 	not tekton.is_trusted_task(allow_constrained_task_denied_version) with data.rule_data.trusted_task_rules as trusted_task_rules # regal ignore:line-length
+		with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "1.2.3"}}
+
+	# Task with mismatching versions between ref and manifest annotations.
+	# Only the manifest annotation is taken into consideration
+	allow_constrained_task_denied_version_mismatching_1 := {"spec": {"taskRef": {"resolver": "bundles", "params": [
+		{"name": "bundle", "value": "quay.io/konflux-ci/another-catalog/allow-task-constrained:1.5@sha256:digest"},
+		{"name": "name", "value": "constrained"},
+		{"name": "kind", "value": "task"},
+	]}}}
+	not tekton.is_trusted_task(allow_constrained_task_denied_version_mismatching_1) with data.rule_data.trusted_task_rules as trusted_task_rules # regal ignore:line-length
+		with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "1.2.3"}}
+
+	# Task with mismatching versions between ref and manifest annotations.
+	# Only the manifest annotation is taken into consideration
+	allow_constrained_task_denied_version_mismatching_2 := {"spec": {"taskRef": {"resolver": "bundles", "params": [
+		{"name": "bundle", "value": "quay.io/konflux-ci/another-catalog/allow-task-constrained:1.2.3@sha256:digest"},
+		{"name": "name", "value": "constrained"},
+		{"name": "kind", "value": "task"},
+	]}}}
+	tekton.is_trusted_task(allow_constrained_task_denied_version_mismatching_2) with data.rule_data.trusted_task_rules as trusted_task_rules # regal ignore:line-length
+		with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "1.5"}}
 }
 
 test_trusted_task_records if {
@@ -862,46 +890,47 @@ unsorted_trusted_task := {"oci://registry.local/trusty:1.0": [
 
 test_version_satisfies_all_rule_constraints if {
 	# No version constraints in rule - should always pass
-	tekton._version_satisfies_all_rule_constraints({"tagged_ref": "1.2.3"}, {})
+	tekton._version_satisfies_all_rule_constraints({"bundle": "example.com/task:1.2.3"}, {})
 
 	# Has version constraints and valid semver
-	tekton._version_satisfies_all_rule_constraints({"tagged_ref": "v1.2.3"}, {"versions": [">=1.1", "<3"]})
-	tekton._version_satisfies_all_rule_constraints({"tagged_ref": "v1.1.0"}, {"versions": [">=1.1", "<3"]})
-	tekton._version_satisfies_all_rule_constraints({"tagged_ref": "v1.1.1"}, {"versions": [">1.1", "<3"]})
-	tekton._version_satisfies_all_rule_constraints({"tagged_ref": "v3.0.0"}, {"versions": [">1.1", "<=3"]})
+	tekton._version_satisfies_all_rule_constraints({"bundle": "example.com/task:1.0"}, {"versions": [">=1.1", "<3"]}) with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "1.2.3"}} # regal ignore:line-length
+	tekton._version_satisfies_all_rule_constraints({"bundle": "example.com/task:1.0"}, {"versions": [">=1.1", "<3"]}) with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "1.1.0"}} # regal ignore:line-length
+	tekton._version_satisfies_all_rule_constraints({"bundle": "example.com/task:1.0"}, {"versions": [">1.1", "<3"]}) with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "v1.1.1"}} # regal ignore:line-length
+	tekton._version_satisfies_all_rule_constraints({"bundle": "example.com/task:1.0"}, {"versions": [">1.1", "<=3"]}) with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "v3.0.0"}} # regal ignore:line-length
 
 	# Version doesn't match all the constraints
-	not tekton._version_satisfies_all_rule_constraints({"tagged_ref": "v1.5.0"}, {"versions": [">=2"]})
-	not tekton._version_satisfies_all_rule_constraints({"tagged_ref": "v1.1.0"}, {"versions": [">1.1", "<3"]})
-	not tekton._version_satisfies_all_rule_constraints({"tagged_ref": "v3.0.0"}, {"versions": [">1.1", "<3"]})
-	not tekton._version_satisfies_all_rule_constraints({"tagged_ref": "v1.5.0"}, {"versions": ["<2", ">=1.5.1"]})
+	not tekton._version_satisfies_all_rule_constraints({"bundle": "example.com/task:1.0"}, {"versions": [">=2"]}) with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "v1.5.0"}} # regal ignore:line-length
+	not tekton._version_satisfies_all_rule_constraints({"bundle": "example.com/task:1.0"}, {"versions": [">1.1", "<3"]}) with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "v1.1.0"}} # regal ignore:line-length
+	not tekton._version_satisfies_all_rule_constraints({"bundle": "example.com/task:1.0"}, {"versions": [">1.1", "<3"]}) with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "v3.0.0"}} # regal ignore:line-length
+	not tekton._version_satisfies_all_rule_constraints({"bundle": "example.com/task:1.0"}, {"versions": ["<2", ">=1.5.1"]}) with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "v1.5.0"}} # regal ignore:line-length
 
 	# Invalid inputs - should fail
-	not tekton._version_satisfies_all_rule_constraints({}, {"versions": [">=2"]})
-	not tekton._version_satisfies_all_rule_constraints({"tagged_ref": "latest"}, {"versions": [">=2"]})
+	not tekton._version_satisfies_all_rule_constraints({"bundle": "example.com/task:1.0"}, {"versions": [">=2"]}) with ec.oci.image_manifest as {"annotations": {}} # regal ignore:line-length
+	not tekton._version_satisfies_all_rule_constraints({"bundle": "example.com/task:1.0"}, {"versions": [">=2"]}) with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "invalid"}} # regal ignore:line-length
 }
 
 test_version_satisfies_any_rule_constraints if {
 	# No version constraints in rule - should always pass
-	tekton._version_satisfies_any_rule_constraints({"tagged_ref": "1.2.3"}, {})
+	tekton._version_satisfies_any_rule_constraints({"bundle": "example.com/task:1.2.3"}, {})
 
 	# Has version constraints and valid semver
-	tekton._version_satisfies_any_rule_constraints({"tagged_ref": "v1.2.3"}, {"versions": [">=1.1", "<3"]})
-	tekton._version_satisfies_any_rule_constraints({"tagged_ref": "v1.1.0"}, {"versions": [">=1.1", "<3"]})
-	tekton._version_satisfies_any_rule_constraints({"tagged_ref": "v1.1.1"}, {"versions": [">1.1", "<3"]})
-	tekton._version_satisfies_any_rule_constraints({"tagged_ref": "v3.0.0"}, {"versions": [">1.1", "<=3"]})
+	tekton._version_satisfies_any_rule_constraints({"bundle": "example.com/task:1.0"}, {"versions": [">=1.1", "<3"]}) with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "v1.2.3"}} # regal ignore:line-length
+	tekton._version_satisfies_any_rule_constraints({"bundle": "example.com/task:1.0"}, {"versions": [">=1.1", "<3"]}) with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "v1.1.0"}} # regal ignore:line-length
+	tekton._version_satisfies_any_rule_constraints({"bundle": "example.com/task:1.0"}, {"versions": [">1.1", "<3"]}) with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "v1.1.1"}} # regal ignore:line-length
+	tekton._version_satisfies_any_rule_constraints({"bundle": "example.com/task:1.0"}, {"versions": [">1.1", "<=3"]}) with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "v3.0.0"}} # regal ignore:line-length
 
 	# Version doesn't match all the constraints, but still passes
-	tekton._version_satisfies_any_rule_constraints({"tagged_ref": "v1.1.0"}, {"versions": [">1.1", "<3"]})
-	tekton._version_satisfies_any_rule_constraints({"tagged_ref": "v3.0.0"}, {"versions": [">1.1", "<3"]})
+	tekton._version_satisfies_any_rule_constraints({"bundle": "example.com/task:1.0"}, {"versions": [">1.1", "<3"]}) with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "v1.1.0"}} # regal ignore:line-length
+	tekton._version_satisfies_any_rule_constraints({"bundle": "example.com/task:1.0"}, {"versions": [">1.1", "<3"]}) with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "v3.0.0"}} # regal ignore:line-length
 
 	# Version doesn't match any constraint
-	not tekton._version_satisfies_all_rule_constraints({"tagged_ref": "v1.5.0"}, {"versions": [">=2"]})
-	not tekton._version_satisfies_any_rule_constraints({"tagged_ref": "v1.5.0"}, {"versions": ["<1", ">=1.5.1"]})
+	not tekton._version_satisfies_all_rule_constraints({"bundle": "example.com/task:1.0"}, {"versions": [">=2"]}) with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "v1.5.0"}} # regal ignore:line-length
+	not tekton._version_satisfies_any_rule_constraints({"bundle": "example.com/task:1.0"}, {"versions": ["<1", ">=1.5.1"]}) with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "v1.5.0"}} # regal ignore:line-length
 
-	# Invalid inputs - should fail
-	not tekton._version_satisfies_any_rule_constraints({}, {"versions": [">=2"]})
-	not tekton._version_satisfies_any_rule_constraints({"tagged_ref": "latest"}, {"versions": [">=2"]})
+	# Missing or invalid version annotation - should return true (deny by default for security)
+	tekton._version_satisfies_any_rule_constraints({"bundle": "example.com/task:1.0"}, {"versions": [">=2"]}) with ec.oci.image_manifest as {"annotations": {}} # regal ignore:line-length
+	tekton._version_satisfies_any_rule_constraints({"bundle": "example.com/task:1.0"}, {"versions": [">=2"]}) with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "invalid"}} # regal ignore:line-length
+	not tekton._version_satisfies_any_rule_constraints({"bundle": "example.com/task:1.0"}, {"versions": ["<1", ">=1.5.1"]}) with ec.oci.image_manifest as {"annotations": {"org.opencontainers.image.version": "v1.5.0"}} # regal ignore:line-length
 }
 
 test_normalize_version if {

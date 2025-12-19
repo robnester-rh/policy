@@ -458,14 +458,16 @@ _trusted_task_rules_schema := {
 # Returns true if the task reference version satisfies ALL semver constraints in the rule.
 # This is intended for use in allow rules, where the rule is effective if all constraints match.
 # Supports constraints like: >=v2, <3, >3.1.0, <v4.2, >=1.2.3
-# Returns true if rule has no "versions" field, or if ref.tagged_ref satisfies all constraints
-# Returns false for git references (no version tag) or invalid semver
+# Returns true if rule has no "versions" field
+# Returns false if versions field exists but no manifest version is found (don't allow by default for security)
+# Returns true if task version satisfies all constraints
+# Returns false otherwise
 _version_satisfies_all_rule_constraints(ref, rule) if {
 	not "versions" in object.keys(rule)
 } else if {
-	# Extract version from task reference (e.g., "0.4" from "oci://registry.io/task:0.4")
-	"tagged_ref" in object.keys(ref)
-	version := _normalize_version(ref.tagged_ref)
+	# If versions field exists, manifest version must be found
+	manifest_version := _get_manifest_version_annotation(ref)
+	version := _normalize_version(manifest_version)
 	semver.is_valid(version)
 
 	constraints := rule.versions
@@ -483,19 +485,28 @@ _version_satisfies_all_rule_constraints(ref, rule) if {
 # Returns true if the task reference version satisfies AT LEAST ONE semver constraint in the rule.
 # This is intended for use in deny rules, where the rule is effective if at least one constraint match.
 # Supports constraints like: >=v2, <3, >3.1.0, <v4.2, >=1.2.3
-# Returns true if rule has no "versions" field, or if ref.tagged_ref satisfies all constraints
-# Returns false for git references (no version tag) or invalid semver
+# Returns true if rule has no "versions" field
+# Returns true if versions field exists but no manifest version is found (deny by default for security)
+# Returns true if task version satisfies at least one constraint
+# Returns false otherwise
 _version_satisfies_any_rule_constraints(ref, rule) if {
 	not "versions" in object.keys(rule)
 } else if {
-	# Extract version from task reference (e.g., "0.4" from "oci://registry.io/task:0.4")
-	"tagged_ref" in object.keys(ref)
-	version := _normalize_version(ref.tagged_ref)
+	# If versions field exists but no manifest version found, deny the task (return true)
+	"versions" in object.keys(rule)
+	not _get_manifest_version_annotation(ref)
+} else if {
+	manifest_version := _get_manifest_version_annotation(ref)
+	version := _normalize_version(manifest_version)
+	not semver.is_valid(version)
+} else if {
+	manifest_version := _get_manifest_version_annotation(ref)
+	version := _normalize_version(manifest_version)
 	semver.is_valid(version)
 
 	constraints := rule.versions
 
-	# Task version must satisfy ALL constraints
+	# Task version must satisfy at least one constraint
 	some constraint in constraints
 	constraint_version := _normalize_version(constraint)
 	semver.is_valid(constraint_version)
@@ -544,6 +555,16 @@ _result_satisfies_operator(result, constraint) if {
 	not startswith(constraint, "<=")
 	result < 0
 } else := false
+
+_get_manifest_version_annotation(ref) := version if {
+	# Only attempt to fetch manifest for bundle references
+	bundle_ref := object.get(ref, "bundle", "")
+	bundle_ref != ""
+	task_manifest := ec.oci.image_manifest(bundle_ref)
+	annotations := object.get(task_manifest, "annotations", {})
+	version := annotations["org.opencontainers.image.version"]
+	version != null
+}
 
 # =============================================================================
 # BEGIN LEGACY SYSTEM (trusted_tasks)
