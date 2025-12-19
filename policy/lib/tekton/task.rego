@@ -57,16 +57,7 @@ _slsa_task(task) := complete_task if {
 _slsav1_task_params(task) := {"params": task.spec.params} if {
 	task.spec.params
 	count(task.spec.params) > 0
-}
-
-_slsav1_task_params(task) := {} if {
-	not task.spec.params
-}
-
-_slsav1_task_params(task) := {} if {
-	task.spec.params
-	count(task.spec.params) == 0
-}
+} else := {}
 
 # _maybe_tasks returns a set of potential tasks.
 # Handle tasks from a PipelineRun attestation (SLSA v0.2).
