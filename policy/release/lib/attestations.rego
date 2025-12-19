@@ -170,26 +170,6 @@ unmarshal(raw) := value if {
 # First find results using the new task result name
 results_from_tests := results_named(task_test_result_name)
 
-# Check for a task by name. Return the task if found
-task_in_pipelinerun(name) := task if {
-	some task in tasks_from_pipelinerun
-	task.name == name
-	task
-}
-
-# Check for a task result by name
-result_in_task(task_name, result_name) if {
-	task := task_in_pipelinerun(task_name)
-	some task_result in task.results
-	task_result.name == result_name
-}
-
-# Check for a Succeeded status from a task
-task_succeeded(name) if {
-	task := task_in_pipelinerun(name)
-	task.status == "Succeeded"
-}
-
 # param_values expands the value into a list of values as needed. This is useful when handling
 # parameters that could be of type string or an array of strings.
 param_values(value) := {value} if {

@@ -332,65 +332,6 @@ test_results_from_tests if {
 	lib.assert_equal([expected], lib.results_from_tests) with input.attestations as [att3]
 }
 
-test_task_not_in_pipelinerun if {
-	task_name := "bad-task"
-	d := att_mock_task_helper({"name": "my-task", "ref": {"kind": "task"}})
-
-	not lib.task_in_pipelinerun(task_name) with input.attestations as d
-}
-
-test_result_in_task if {
-	task_name := "my-task"
-	result_name := "IMAGE"
-	d := att_mock_task_helper({
-		"name": task_name,
-		"results": [{
-			"name": result_name,
-			"value": "result value",
-		}],
-		"ref": {"kind": "task"},
-	})
-
-	lib.result_in_task(task_name, result_name) with input.attestations as d
-}
-
-test_result_not_in_task if {
-	task_name := "my-task"
-	result_name := "BAD-RESULT"
-	d := att_mock_task_helper({
-		"name": task_name,
-		"results": [{
-			"name": "result name",
-			"value": "result value",
-		}],
-		"ref": {"kind": "task"},
-	})
-
-	not lib.result_in_task(task_name, result_name) with input.attestations as d
-}
-
-test_task_succeeded if {
-	task_name := "my-task"
-	d := att_mock_task_helper({
-		"name": task_name,
-		"status": "Succeeded",
-		"ref": {"kind": "task"},
-	})
-
-	lib.task_succeeded(task_name) with input.attestations as d
-}
-
-test_task_not_succeeded if {
-	task_name := "my-task"
-	d := att_mock_task_helper({
-		"name": task_name,
-		"status": "Failed",
-		"ref": {"kind": "task"},
-	})
-
-	not lib.task_succeeded(task_name) with input.attestations as d
-}
-
 test_unmarshall_json if {
 	lib.assert_equal({"a": 1, "b": "c"}, lib.unmarshal("{\"a\":1,\"b\":\"c\"}"))
 	lib.assert_equal("not JSON", lib.unmarshal("not JSON"))
