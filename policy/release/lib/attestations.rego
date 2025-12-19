@@ -135,12 +135,6 @@ tasks_from_pipelinerun := [task |
 	some task in tekton.tasks(att)
 ]
 
-# slsa v0.2 results
-task_results(task) := task.results
-
-# slsa v1.0 results
-task_results(task) := task.status.taskResults
-
 # All results from the attested PipelineRun with the provided name. Results are
 # expected to contain a JSON value. The return object contains the following
 # keys:
@@ -149,7 +143,7 @@ task_results(task) := task.status.taskResults
 #   value: unmarshalled task result.
 results_named(name) := [r |
 	some task in tasks_from_pipelinerun
-	some result in task_results(task)
+	some result in tekton.task_results(task)
 	result.name == name
 	result_map := unmarshal(result.value)
 

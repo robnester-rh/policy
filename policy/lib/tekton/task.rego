@@ -155,7 +155,6 @@ task_params(task) := params if {
 # task_param returns the value of the given parameter in the task.
 task_param(task, name) := task_params(task)[name]
 
-# slsa v0.2 results
 task_results(task) := task.results
 
 # task_result returns the value of the given result in the task.
