@@ -414,6 +414,14 @@ _trusted_task_rules_schema := {
 						# regal ignore:line-length
 						"description": "Date when this rule becomes effective (e.g., '2025-02-01'). Rules with future effective_on dates are not considered. If omitted, rule is effective immediately.",
 					},
+					"versions": {
+						"type": "array",
+						"description": "List of version constraints to match only specific versions of the task",
+						"items": {
+							"type": "string",
+							"description": "Version constraint (e.g., '>=2.1', '<1.2.3')",
+						},
+					},
 				},
 				"additionalProperties": true,
 			},
@@ -445,6 +453,14 @@ _trusted_task_rules_schema := {
 					"message": {
 						"type": "string",
 						"description": "User-visible message explaining why the task is denied (e.g., deprecation notice)",
+					},
+					"versions": {
+						"type": "array",
+						"description": "List of version constraints to match only specific versions of the task",
+						"items": {
+							"type": "string",
+							"description": "Version constraint (e.g., '>=2.1', '<1.2.3')",
+						},
 					},
 				},
 				"additionalProperties": true,
