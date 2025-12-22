@@ -1,0 +1,31 @@
+{
+  "apiVersion": "tekton.dev/v1",
+  "kind": "Pipeline",
+  "metadata": {
+    "name": "test-pipeline"
+  },
+  "spec": {
+    "tasks": [
+      {
+        "name": "buildah-task",
+        "taskRef": {
+          "resolver": "bundles",
+          "params": [
+            {
+              "name": "bundle",
+              "value": "quay.io/konflux-ci/tekton-catalog/task-buildah:0.5@sha256:633a99fc16d0b05d32a9c08f792ac1ddaecabf6db5ac805856ac92970b63025b"
+            },
+            {
+              "name": "name",
+              "value": "buildah"
+            },
+            {
+              "name": "kind",
+              "value": "task"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
