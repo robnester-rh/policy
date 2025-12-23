@@ -288,10 +288,13 @@ test_trusted_artifact_denied_by_rules if {
 
 # Test that future deny rules produce a warning
 test_future_deny_rule_warning if {
-	att := {"statement": {"predicate": {
-		"buildType": lib.tekton_pipeline_run,
-		"buildConfig": {"tasks": [trusted_bundle_pipeline_task]},
-	}}}
+	att := {"statement": {
+		"predicateType": "https://slsa.dev/provenance/v0.2",
+		"predicate": {
+			"buildType": lib.tekton_pipeline_run,
+			"buildConfig": {"tasks": [trusted_bundle_pipeline_task]},
+		},
+	}}
 
 	# Task is allowed but a deny rule with future effective_on is present
 	task_rules := {
@@ -316,10 +319,13 @@ test_future_deny_rule_warning if {
 
 # Test that deny rules without effective_on do not produce a future deny warning
 test_future_deny_rule_no_warning_when_already_effective if {
-	att := {"statement": {"predicate": {
-		"buildType": lib.tekton_pipeline_run,
-		"buildConfig": {"tasks": [trusted_bundle_pipeline_task]},
-	}}}
+	att := {"statement": {
+		"predicateType": "https://slsa.dev/provenance/v0.2",
+		"predicate": {
+			"buildType": lib.tekton_pipeline_run,
+			"buildConfig": {"tasks": [trusted_bundle_pipeline_task]},
+		},
+	}}
 
 	# Deny rule has no effective_on, so it's already effective (no warning)
 	task_rules := {
@@ -1309,10 +1315,13 @@ test_mixed_trusted_and_untrusted_tasks if {
 #####################################################
 
 # Create a simple attestation structure for testing
-_rules_make_attestation(tasks) := {"statement": {"predicate": {
-	"buildType": lib.tekton_pipeline_run,
-	"buildConfig": {"tasks": tasks},
-}}}
+_rules_make_attestation(tasks) := {"statement": {
+	"predicateType": "https://slsa.dev/provenance/v0.2",
+	"predicate": {
+		"buildType": lib.tekton_pipeline_run,
+		"buildConfig": {"tasks": tasks},
+	},
+}}
 
 # Create a bundle task reference for testing
 # Uses the SLSA v0.2 format that lib.tasks_from_pipelinerun expects
