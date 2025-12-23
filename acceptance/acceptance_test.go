@@ -47,6 +47,12 @@ var (
 	sampleGCPolicyInput string
 	//go:embed samples/clamav-task.json
 	sampleClamAVTask string
+	//go:embed samples/trusted-task.json
+	sampleTrustedTask string
+	//go:embed samples/untrusted-task.json
+	sampleUntrustedTask string
+	//go:embed samples/untrusted-task-despite-valid-oci-ref-tag.json
+	sampleUntrustedTaskDespiteValidOciRefTag string
 )
 
 type testStateKey struct{}
@@ -105,6 +111,12 @@ func writeSampleGCPolicyInput(ctx context.Context, sampleName string) (context.C
 		content = sampleGCPolicyInput
 	case "clamav-task":
 		content = sampleClamAVTask
+	case "trusted-task":
+		content = sampleTrustedTask
+	case "untrusted-task":
+		content = sampleUntrustedTask
+	case "untrusted-task-despite-valid-oci-ref-tag":
+		content = sampleUntrustedTaskDespiteValidOciRefTag
 	default:
 		return ctx, fmt.Errorf("%q is not a known sample name", sampleName)
 	}
@@ -186,6 +198,24 @@ func thereShouldBeNoViolationsInTheResult(ctx context.Context) error {
 		if len(filepath.Violations) != 0 {
 			return errors.New(prettifyResults("expected no violations, got:", filepath.Violations))
 		}
+	}
+
+	return nil
+}
+
+func thereShouldBeViolationsInTheResult(ctx context.Context) error {
+	ts, err := getTestState(ctx)
+	if err != nil {
+		return fmt.Errorf("reading test state: %w", err)
+	}
+
+	violationCount := 0
+	for _, filepath := range ts.report.FilePaths {
+		violationCount += len(filepath.Violations)
+	}
+
+	if violationCount == 0 {
+		return errors.New("expected violations, but got none")
 	}
 
 	return nil
@@ -350,6 +380,7 @@ func InitializeScenario(sc *godog.ScenarioContext) {
 	sc.Step(`^a policy config:$`, writePolicyConfig)
 	sc.Step(`^input is validated$`, validateInputWithPolicyConfig)
 	sc.Step(`^there should be no violations in the result$`, thereShouldBeNoViolationsInTheResult)
+	sc.Step(`^there should be violations in the result$`, thereShouldBeViolationsInTheResult)
 	sc.Step(`^there should be no warnings in the result$`, thereShouldBeNoWarningsInTheResult)
 	sc.Step(`^there should be no violations with "([^"]*)" collection in the result$`, thereShouldBeNoViolationsWithCollectionInTheResult)
 	sc.Step(`^there should be no violations with "([^"]*)" package in the result$`, thereShouldBeNoViolationsWithPackageInTheResult)
