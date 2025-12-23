@@ -135,12 +135,6 @@ tasks_from_pipelinerun := [task |
 	some task in tekton.tasks(att)
 ]
 
-# slsa v0.2 results
-task_results(task) := task.results
-
-# slsa v1.0 results
-task_results(task) := task.status.taskResults
-
 # All results from the attested PipelineRun with the provided name. Results are
 # expected to contain a JSON value. The return object contains the following
 # keys:
@@ -149,7 +143,7 @@ task_results(task) := task.status.taskResults
 #   value: unmarshalled task result.
 results_named(name) := [r |
 	some task in tasks_from_pipelinerun
-	some result in task_results(task)
+	some result in tekton.task_results(task)
 	result.name == name
 	result_map := unmarshal(result.value)
 
@@ -169,26 +163,6 @@ unmarshal(raw) := value if {
 # (Don't call it test_results since test_ means a unit test)
 # First find results using the new task result name
 results_from_tests := results_named(task_test_result_name)
-
-# Check for a task by name. Return the task if found
-task_in_pipelinerun(name) := task if {
-	some task in tasks_from_pipelinerun
-	task.name == name
-	task
-}
-
-# Check for a task result by name
-result_in_task(task_name, result_name) if {
-	task := task_in_pipelinerun(task_name)
-	some task_result in task.results
-	task_result.name == result_name
-}
-
-# Check for a Succeeded status from a task
-task_succeeded(name) if {
-	task := task_in_pipelinerun(name)
-	task.status == "Succeeded"
-}
 
 # param_values expands the value into a list of values as needed. This is useful when handling
 # parameters that could be of type string or an array of strings.
