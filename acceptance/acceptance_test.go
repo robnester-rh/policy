@@ -167,6 +167,8 @@ func validateInputWithPolicyConfig(ctx context.Context) (context.Context, error)
 		ts.configFileName,
 		"--strict=false",
 		"--info",
+		"--output",
+		"json",
 	)
 	cmd.Dir = ts.acceptanceModulePath
 
