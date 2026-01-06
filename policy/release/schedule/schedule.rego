@@ -27,7 +27,6 @@ import data.lib.json as j
 #   solution: Try again on a different weekday.
 #   collections:
 #   - redhat
-#   - redhat_rpms
 #
 deny contains result if {
 	lib.pipeline_intention_match(rego.metadata.chain())
@@ -55,7 +54,6 @@ deny contains result if {
 #   solution: Try again on a different day.
 #   collections:
 #   - redhat
-#   - redhat_rpms
 #
 deny contains result if {
 	lib.pipeline_intention_match(rego.metadata.chain())
@@ -76,7 +74,6 @@ deny contains result if {
 #   solution: If provided, ensure the rule data is in the expected format.
 #   collections:
 #   - redhat
-#   - redhat_rpms
 #   - policy_data
 #
 deny contains result if {
