@@ -127,34 +127,69 @@ test_failure_with_platform_grouping if {
 		with ec.oci.blob as _mock_blob
 }
 
+# Test that lockfile entries (with repository_id but no distro) are filtered out
+# This simulates the real-world scenario where SBOMs contain entries for all architectures
+# from the rpm lockfile, but only the installed packages should be compared
+test_lockfile_entries_filtered if {
+	att := _attestation_with_sboms([_sbom_with_lockfile_amd64, _sbom_with_lockfile_arm64])
+
+	# Should NOT trigger violation because installed versions are the same (spam-1.0.0-1)
+	# even though lockfile entries show different versions for other arches
+	lib.assert_empty(rpm_packages.deny) with input.attestations as [att]
+		with input.image.ref as "registry.local/image-index@sha256:image_index_digest"
+		with ec.oci.descriptor as {"mediaType": "application/vnd.oci.image.index.v1+json"}
+		with ec.oci.blob as _mock_blob
+}
+
+# Test that actual version mismatch is still detected even with lockfile noise
+test_mismatch_detected_with_lockfile_noise if {
+	att := _attestation_with_sboms([_sbom_with_lockfile_amd64, _sbom_with_lockfile_arm64_different])
+
+	expected := {{
+		"code": "rpm_packages.unique_version",
+		"msg": sprintf("%s %s", [
+			"Mismatched versions of the \"spam\" RPM were found across different arches.",
+			"Platform linux/amd64 has spam-1.0.0-1. Platform linux/arm64 has spam-1.0.0-2.",
+		]),
+		"term": "spam",
+	}}
+
+	lib.assert_equal_results(expected, rpm_packages.deny) with input.attestations as [att]
+		with input.image.ref as "registry.local/image-index@sha256:image_index_digest"
+		with ec.oci.descriptor as {"mediaType": "application/vnd.oci.image.index.v1+json"}
+		with ec.oci.blob as _mock_blob
+}
+
+# CycloneDX mock blobs - purls must have distro= qualifier to be considered installed
 _mock_blob(`registry.local/cyclonedx-1@sha256:cyclonedx-1-digest`) := json.marshal({"components": [
-	{"purl": "pkg:rpm/redhat/spam@1.0.0-1"},
-	{"purl": "pkg:rpm/redhat/bacon@1.0.0-2"},
-	{"purl": "pkg:rpm/redhat/ham@4.2.0-0"},
+	{"purl": "pkg:rpm/redhat/spam@1.0.0-1?distro=rhel-10.0"},
+	{"purl": "pkg:rpm/redhat/bacon@1.0.0-2?distro=rhel-10.0"},
+	{"purl": "pkg:rpm/redhat/ham@4.2.0-0?distro=rhel-10.0"},
 ]})
 
 _mock_blob(`registry.local/cyclonedx-2@sha256:cyclonedx-2-digest`) := json.marshal({"components": [
-	{"purl": "pkg:rpm/redhat/spam@1.0.0-2"},
-	{"purl": "pkg:rpm/redhat/bacon@1.0.0-2"},
-	{"purl": "pkg:rpm/redhat/eggs@4.2.0-0"},
+	{"purl": "pkg:rpm/redhat/spam@1.0.0-2?distro=rhel-10.0"},
+	{"purl": "pkg:rpm/redhat/bacon@1.0.0-2?distro=rhel-10.0"},
+	{"purl": "pkg:rpm/redhat/eggs@4.2.0-0?distro=rhel-10.0"},
 ]})
 
+# SPDX mock blobs - purls must have distro= qualifier to be considered installed
 _mock_blob(`registry.local/spdx-1@sha256:spdx-1-digest`) := json.marshal({"packages": [
 	{"externalRefs": [{
 		"referenceType": "purl",
 		"referenceCategory": "PACKAGE_MANAGER",
-		"referenceLocator": "pkg:rpm/redhat/spam@1.0.0-1",
+		"referenceLocator": "pkg:rpm/redhat/spam@1.0.0-1?distro=rhel-10.0",
 	}]},
 	{"externalRefs": [{
 		"referenceType": "purl",
 		"referenceCategory": "PACKAGE_MANAGER",
-		"referenceLocator": "pkg:rpm/redhat/bacon@1.0.0-2",
+		"referenceLocator": "pkg:rpm/redhat/bacon@1.0.0-2?distro=rhel-10.0",
 	}]},
 	{"externalRefs": [{
 		"referenceType": "purl",
 		# Intentionally different since we match both PACKAGE_MANAGER and PACKAGE-MANAGER
 		"referenceCategory": "PACKAGE-MANAGER",
-		"referenceLocator": "pkg:rpm/redhat/ham@4.2.0-0",
+		"referenceLocator": "pkg:rpm/redhat/ham@4.2.0-0?distro=rhel-10.0",
 	}]},
 ]})
 
@@ -162,18 +197,18 @@ _mock_blob(`registry.local/spdx-2@sha256:spdx-2-digest`) := json.marshal({"packa
 	{"externalRefs": [{
 		"referenceType": "purl",
 		"referenceCategory": "PACKAGE_MANAGER",
-		"referenceLocator": "pkg:rpm/redhat/spam@1.0.0-2",
+		"referenceLocator": "pkg:rpm/redhat/spam@1.0.0-2?distro=rhel-10.0",
 	}]},
 	{"externalRefs": [{
 		"referenceType": "purl",
 		"referenceCategory": "PACKAGE_MANAGER",
-		"referenceLocator": "pkg:rpm/redhat/bacon@1.0.0-2",
+		"referenceLocator": "pkg:rpm/redhat/bacon@1.0.0-2?distro=rhel-10.0",
 	}]},
 	{"externalRefs": [{
 		"referenceType": "purl",
 		# Intentionally different since we match both PACKAGE_MANAGER and PACKAGE-MANAGER
 		"referenceCategory": "PACKAGE-MANAGER",
-		"referenceLocator": "pkg:rpm/redhat/eggs@4.2.0-0",
+		"referenceLocator": "pkg:rpm/redhat/eggs@4.2.0-0?distro=rhel-10.0",
 	}]},
 ]})
 
@@ -182,17 +217,17 @@ _mock_blob(`registry.local/multi-spam@sha256:multi-spam-digest`) := json.marshal
 	{"externalRefs": [{
 		"referenceType": "purl",
 		"referenceCategory": "PACKAGE_MANAGER",
-		"referenceLocator": "pkg:rpm/redhat/spam@1.0.0-1",
+		"referenceLocator": "pkg:rpm/redhat/spam@1.0.0-1?distro=rhel-10.0",
 	}]},
 	{"externalRefs": [{
 		"referenceType": "purl",
 		"referenceCategory": "PACKAGE_MANAGER",
-		"referenceLocator": "pkg:rpm/redhat/spam@1.0.0-2",
+		"referenceLocator": "pkg:rpm/redhat/spam@1.0.0-2?distro=rhel-10.0",
 	}]},
 	{"externalRefs": [{
 		"referenceType": "purl",
 		"referenceCategory": "PACKAGE_MANAGER",
-		"referenceLocator": "pkg:rpm/redhat/bacon@1.0.0-2",
+		"referenceLocator": "pkg:rpm/redhat/bacon@1.0.0-2?distro=rhel-10.0",
 	}]},
 ]})
 
@@ -201,12 +236,12 @@ _mock_blob(`registry.local/single-spam@sha256:single-spam-digest`) := json.marsh
 	{"externalRefs": [{
 		"referenceType": "purl",
 		"referenceCategory": "PACKAGE_MANAGER",
-		"referenceLocator": "pkg:rpm/redhat/spam@1.0.0-1",
+		"referenceLocator": "pkg:rpm/redhat/spam@1.0.0-1?distro=rhel-10.0",
 	}]},
 	{"externalRefs": [{
 		"referenceType": "purl",
 		"referenceCategory": "PACKAGE_MANAGER",
-		"referenceLocator": "pkg:rpm/redhat/bacon@1.0.0-2",
+		"referenceLocator": "pkg:rpm/redhat/bacon@1.0.0-2?distro=rhel-10.0",
 	}]},
 ]})
 
@@ -215,14 +250,71 @@ _mock_blob(`registry.local/spam-v3@sha256:spam-v3-digest`) := json.marshal({"pac
 	{"externalRefs": [{
 		"referenceType": "purl",
 		"referenceCategory": "PACKAGE_MANAGER",
-		"referenceLocator": "pkg:rpm/redhat/spam@1.0.0-3",
+		"referenceLocator": "pkg:rpm/redhat/spam@1.0.0-3?distro=rhel-10.0",
 	}]},
 	{"externalRefs": [{
 		"referenceType": "purl",
 		"referenceCategory": "PACKAGE_MANAGER",
-		"referenceLocator": "pkg:rpm/redhat/bacon@1.0.0-2",
+		"referenceLocator": "pkg:rpm/redhat/bacon@1.0.0-2?distro=rhel-10.0",
 	}]},
 ]})
+
+# Mock blob simulating amd64 SBOM with lockfile entries for all arches
+# The installed package (with distro=) is spam-1.0.0-1
+# Lockfile entries (with repository_id=) show spam-1.0.0-2 for arm64 - should be ignored
+_mock_blob(`registry.local/sbom-lockfile-amd64@sha256:sbom-lockfile-amd64-digest`) := json.marshal({"packages": [
+	# Installed package on this platform
+	{"externalRefs": [{
+		"referenceType": "purl",
+		"referenceCategory": "PACKAGE_MANAGER",
+		"referenceLocator": "pkg:rpm/redhat/spam@1.0.0-1?arch=x86_64&distro=rhel-10.0",
+	}]},
+	# Lockfile entry for arm64 - different version, should be filtered out
+	{"externalRefs": [{
+		"referenceType": "purl",
+		"referenceCategory": "PACKAGE_MANAGER",
+		"referenceLocator": "pkg:rpm/redhat/spam@1.0.0-2?arch=aarch64&repository_id=rhel-10-for-aarch64-baseos-rpms",
+	}]},
+]})
+
+# Mock blob simulating arm64 SBOM with lockfile entries - installed version matches amd64
+_mock_blob(`registry.local/sbom-lockfile-arm64@sha256:sbom-lockfile-arm64-digest`) := json.marshal({"packages": [
+	# Installed package on this platform - same version as amd64
+	{"externalRefs": [{
+		"referenceType": "purl",
+		"referenceCategory": "PACKAGE_MANAGER",
+		"referenceLocator": "pkg:rpm/redhat/spam@1.0.0-1?arch=aarch64&distro=rhel-10.0",
+	}]},
+	# Lockfile entry for amd64 - should be filtered out
+	{"externalRefs": [{
+		"referenceType": "purl",
+		"referenceCategory": "PACKAGE_MANAGER",
+		"referenceLocator": "pkg:rpm/redhat/spam@1.0.0-1?arch=x86_64&repository_id=rhel-10-for-x86_64-baseos-rpms",
+	}]},
+]})
+
+# Mock blob simulating arm64 SBOM with different installed version than amd64
+# regal ignore:line-length
+_mock_blob(`registry.local/sbom-lockfile-arm64-diff@sha256:sbom-lockfile-arm64-diff-digest`) := json.marshal({"packages": [
+	# Installed package on this platform - DIFFERENT version than amd64
+	{"externalRefs": [{
+		"referenceType": "purl",
+		"referenceCategory": "PACKAGE_MANAGER",
+		"referenceLocator": "pkg:rpm/redhat/spam@1.0.0-2?arch=aarch64&distro=rhel-10.0",
+	}]},
+	# Lockfile entry for amd64 - should be filtered out
+	{"externalRefs": [{
+		"referenceType": "purl",
+		"referenceCategory": "PACKAGE_MANAGER",
+		"referenceLocator": "pkg:rpm/redhat/spam@1.0.0-1?arch=x86_64&repository_id=rhel-10-for-x86_64-baseos-rpms",
+	}]},
+]})
+
+_sbom_with_lockfile_amd64 := "registry.local/sbom-lockfile-amd64@sha256:sbom-lockfile-amd64-digest"
+
+_sbom_with_lockfile_arm64 := "registry.local/sbom-lockfile-arm64@sha256:sbom-lockfile-arm64-digest"
+
+_sbom_with_lockfile_arm64_different := "registry.local/sbom-lockfile-arm64-diff@sha256:sbom-lockfile-arm64-diff-digest"
 
 _cyclonedx_url_1 := "registry.local/cyclonedx-1@sha256:cyclonedx-1-digest"
 

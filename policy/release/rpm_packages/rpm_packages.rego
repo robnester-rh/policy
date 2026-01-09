@@ -112,6 +112,14 @@ all_rpms_by_name_and_platform[rpm_name][platform] contains nvr if {
 	# the rpm version details
 	some rpm_info in sbom.rpms_from_sbom(s)
 	rpm := ec.purl.parse(rpm_info.purl)
+
+	# Filter to only include RPMs that are actually installed on this platform.
+	# Installed RPMs have a "distro" qualifier (e.g., distro=rhel-10.1), while
+	# lockfile entries for other architectures have "repository_id" instead.
+	# Without this filter, all platforms appear to have the same RPMs because
+	# the SBOM includes lockfile entries for all architectures.
+	_is_installed_rpm(rpm)
+
 	rpm_name := rpm.name
 	rpm_version := rpm.version
 
@@ -120,4 +128,11 @@ all_rpms_by_name_and_platform[rpm_name][platform] contains nvr if {
 	# Note that rpm.version is actually the version and the release in
 	# RPM terms, hence this is the name-version-release, aka the nvr
 	nvr := sprintf("%s-%s", [rpm_name, rpm_version])
+}
+
+# Check if an RPM purl represents an installed package (has "distro" qualifier)
+# vs a lockfile entry (has "repository_id" qualifier instead)
+_is_installed_rpm(rpm) if {
+	some qualifier in rpm.qualifiers
+	qualifier.key == "distro"
 }
