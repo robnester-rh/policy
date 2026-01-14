@@ -6,7 +6,7 @@ toolchain go1.24.12
 
 require (
 	github.com/conforma/cli v0.8.80
-	github.com/cucumber/godog v0.13.0
+	github.com/cucumber/godog v0.15.1
 )
 
 require (
@@ -271,7 +271,7 @@ require (
 	github.com/spf13/afero v1.14.0 // indirect
 	github.com/spf13/cast v1.7.1 // indirect
 	github.com/spf13/cobra v1.9.1 // indirect
-	github.com/spf13/pflag v1.0.6 // indirect
+	github.com/spf13/pflag v1.0.7 // indirect
 	github.com/spf13/viper v1.20.1 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.5.0 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
@@ -366,4 +366,4 @@ require (
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
 
-replace github.com/google/go-containerregistry => github.com/conforma/go-containerregistry v0.20.7-0.20250905142844-b167a6a723f4
+replace github.com/google/go-containerregistry => github.com/conforma/go-containerregistry v0.20.7-0.20251103083939-3459088e4bae
