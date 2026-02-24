@@ -226,3 +226,152 @@ test_effective_on if {
 	err := `ERROR: wrong syntax of effective_on value "wubba lubba dub dub" at policy/release/effective_on.rego:10`
 	lib.assert_equal({err}, checks.violation) with input as opa_inspect_effective_on
 }
+
+opa_inspect_collection_mismatch := {
+	"namespaces": {
+		"data.policy.release.attestation_type": ["policy/release/attestation_type.rego"],
+		"data.policy.release.tasks": ["policy/release/tasks.rego"],
+	},
+	"annotations": [
+		{
+			"annotations": {
+				"custom": {
+					"collections": ["minimal", "redhat"],
+					"short_name": "pipelinerun_attestation_found",
+					"failure_msg": "Missing pipelinerun attestation",
+				},
+				"description": "Confirm at least one PipelineRun attestation is present.",
+				"scope": "rule",
+				"title": "PipelineRun attestation found",
+			},
+			"location": {
+				"file": "policy/release/attestation_type.rego",
+				"row": 60,
+				"col": 1,
+			},
+		},
+		{
+			"annotations": {
+				"custom": {
+					"collections": ["minimal", "redhat", "slsa3"],
+					"depends_on": ["attestation_type.pipelinerun_attestation_found"],
+					"short_name": "pipeline_has_tasks",
+					"failure_msg": "No tasks found",
+				},
+				"description": "Ensure that at least one Task is present in the PipelineRun attestation.",
+				"scope": "rule",
+				"title": "Pipeline run includes at least one task",
+			},
+			"location": {
+				"file": "policy/release/tasks.rego",
+				"row": 30,
+				"col": 1,
+			},
+		},
+	],
+}
+
+test_dependency_collection_mismatch if {
+	# regal ignore:line-length
+	err := `ERROR: Dependency "attestation_type.pipelinerun_attestation_found" is missing from collections ["slsa3"] (required by rule at policy/release/tasks.rego:30 which is in collections ["minimal", "redhat", "slsa3"])`
+	lib.assert_equal({err}, checks.violation) with input as opa_inspect_collection_mismatch
+}
+
+opa_inspect_collection_valid := {
+	"namespaces": {
+		"data.policy.release.attestation_type": ["policy/release/attestation_type.rego"],
+		"data.policy.release.tasks": ["policy/release/tasks.rego"],
+	},
+	"annotations": [
+		{
+			"annotations": {
+				"custom": {
+					"collections": ["minimal", "redhat", "slsa3"],
+					"short_name": "pipelinerun_attestation_found",
+					"failure_msg": "Missing pipelinerun attestation",
+				},
+				"description": "Confirm at least one PipelineRun attestation is present.",
+				"scope": "rule",
+				"title": "PipelineRun attestation found",
+			},
+			"location": {
+				"file": "policy/release/attestation_type.rego",
+				"row": 60,
+				"col": 1,
+			},
+		},
+		{
+			"annotations": {
+				"custom": {
+					"collections": ["minimal", "redhat", "slsa3"],
+					"depends_on": ["attestation_type.pipelinerun_attestation_found"],
+					"short_name": "pipeline_has_tasks",
+					"failure_msg": "No tasks found",
+				},
+				"description": "Ensure that at least one Task is present in the PipelineRun attestation.",
+				"scope": "rule",
+				"title": "Pipeline run includes at least one task",
+			},
+			"location": {
+				"file": "policy/release/tasks.rego",
+				"row": 30,
+				"col": 1,
+			},
+		},
+	],
+}
+
+test_dependency_collection_valid if {
+	lib.assert_empty(checks.violation) with input as opa_inspect_collection_valid
+}
+
+opa_inspect_dependency_no_collections := {
+	"namespaces": {
+		"data.policy.release.attestation_type": ["policy/release/attestation_type.rego"],
+		"data.policy.release.tasks": ["policy/release/tasks.rego"],
+	},
+	"annotations": [
+		{
+			"annotations": {
+				"custom": {
+					"short_name": "pipelinerun_attestation_found",
+					"failure_msg": "Missing pipelinerun attestation",
+				},
+				"description": "Confirm at least one PipelineRun attestation is present.",
+				"scope": "rule",
+				"title": "PipelineRun attestation found",
+			},
+			"location": {
+				"file": "policy/release/attestation_type.rego",
+				"row": 60,
+				"col": 1,
+			},
+		},
+		{
+			"annotations": {
+				"custom": {
+					"collections": ["minimal", "redhat", "slsa3"],
+					"depends_on": ["attestation_type.pipelinerun_attestation_found"],
+					"short_name": "pipeline_has_tasks",
+					"failure_msg": "No tasks found",
+				},
+				"description": "Ensure that at least one Task is present in the PipelineRun attestation.",
+				"scope": "rule",
+				"title": "Pipeline run includes at least one task",
+			},
+			"location": {
+				"file": "policy/release/tasks.rego",
+				"row": 30,
+				"col": 1,
+			},
+		},
+	],
+}
+
+test_dependency_no_collections if {
+	# When a dependent rule has collections but its dependency lacks collections entirely,
+	# the dependency should be considered missing from all the dependent's collections
+	# regal ignore:line-length
+	err := `ERROR: Dependency "attestation_type.pipelinerun_attestation_found" is missing from collections ["minimal", "redhat", "slsa3"] (required by rule at policy/release/tasks.rego:30 which is in collections ["minimal", "redhat", "slsa3"])`
+	lib.assert_equal({err}, checks.violation) with input as opa_inspect_dependency_no_collections
+}
