@@ -196,6 +196,7 @@ deny contains result if {
 #   collections:
 #   - minimal
 #   - redhat
+#   - redhat_rpms
 #   depends_on:
 #   - attestation_type.known_attestation_type
 #
