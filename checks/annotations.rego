@@ -13,11 +13,18 @@ required_annotations := {
 # returns Rego files corresponding to policy rules
 policy_rule_files(namespaces) := {rule |
 	some namespace, files in namespaces
-	startswith(namespace, "data.policy") # look only in the policy namespace
-	rule := {"namespace": namespace, "files": {file |
-		some file in files
-		not endswith(file, "_test.rego") # disregard test Rego files
-	}}
+
+	# Filter to get only policy files (not lib, not tests) from this namespace
+	policy_files := {f |
+		some f in files
+		startswith(f, "policy/") # look only in the policy directory
+		not contains(f, "/lib/") # exclude library files
+		not endswith(f, "_test.rego") # disregard test Rego files
+	}
+
+	# Only include this namespace if it has policy files
+	count(policy_files) > 0
+	rule := {"namespace": namespace, "files": policy_files}
 }
 
 # for annotations defined as:
@@ -106,7 +113,7 @@ violation contains msg if {
 	annotation.location.file == file
 
 	some depends_on in annotation.annotations.custom.depends_on
-	dependency_rule_name := sprintf("data.policy.release.%s", [depends_on])
+	dependency_rule_name := sprintf("data.%s", [depends_on])
 
 	count({dependency_rule_name} & all_rule_names) == 0
 	msg := sprintf("ERROR: Missing dependency rule %q at %s:%d", [dependency_rule_name, file, annotation.location.row])
@@ -159,7 +166,7 @@ violation contains msg if {
 	some dependency_name in annotation.annotations.custom.depends_on
 
 	dependent_rule_collections := annotation.annotations.custom.collections
-	dependency_rule_name := sprintf("data.policy.release.%s", [dependency_name])
+	dependency_rule_name := sprintf("data.%s", [dependency_name])
 
 	# Get dependency collections, defaulting to empty array if not present
 	dependency_collections := object.get(collections_by_rule, dependency_rule_name, [])
