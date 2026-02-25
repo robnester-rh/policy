@@ -2,7 +2,7 @@
 # METADATA
 # title: SPDX SBOM
 # description: >-
-#   Checks different properties of the CycloneDX SBOMs associated with the image being validated.
+#   Checks different properties of the SPDX SBOMs associated with the image being validated.
 #
 package sbom_spdx
 
