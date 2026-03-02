@@ -1,6 +1,6 @@
 = SPDX SBOM Package
 
-Checks different properties of the CycloneDX SBOMs associated with the image being validated.
+Checks different properties of the SPDX SBOMs associated with the image being validated.
 
 == Package Name
 

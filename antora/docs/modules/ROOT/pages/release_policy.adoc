@@ -472,7 +472,7 @@ a| SLSA v1 verification model states:
 This package correlates the provided source code reference with the source code referenced in the attestation.
 
 | xref:packages/release_sbom_spdx.adoc[sbom_spdx]
-a| Checks different properties of the CycloneDX SBOMs associated with the image being validated.
+a| Checks different properties of the SPDX SBOMs associated with the image being validated.
 
 | xref:packages/release_schedule.adoc[schedule]
 a| Rules that verify the current date conform to a given schedule.
