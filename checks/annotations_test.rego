@@ -3,7 +3,7 @@ package checks_test
 import rego.v1
 
 import data.checks
-import data.lib
+import data.lib.assertions
 
 opa_inspect_valid := {
 	"namespaces": {
@@ -70,7 +70,7 @@ opa_inspect_valid := {
 }
 
 test_required_annotations_valid if {
-	lib.assert_empty(checks.violation) with input as opa_inspect_valid
+	assertions.assert_empty(checks.violation) with input as opa_inspect_valid
 }
 
 opa_inspect_missing_annotations := {
@@ -204,13 +204,13 @@ opa_inspect_effective_on := {
 
 test_required_annotations_invalid if {
 	err = "ERROR: Missing annotation(s) custom.failure_msg, title at policy/release/attestation_task_bundle.rego:13"
-	lib.assert_equal({err}, checks.violation) with input as opa_inspect_missing_annotations
+	assertions.assert_equal({err}, checks.violation) with input as opa_inspect_missing_annotations
 }
 
 test_missing_dependency_invalid if {
 	# regal ignore:line-length
 	err = `ERROR: Missing dependency rule "data.attestation_type.known_attestation_type" at policy/release/attestation_task_bundle.rego:71`
-	lib.assert_equal({err}, checks.violation) with input as opa_inspect_missing_dependency
+	assertions.assert_equal({err}, checks.violation) with input as opa_inspect_missing_dependency
 }
 
 test_duplicate_rules if {
@@ -219,12 +219,12 @@ test_duplicate_rules if {
 
 	# regal ignore:line-length
 	err2 = `ERROR: Found non-unique code "data.attestation_type.known_attestation_type" at policy/release/attestation_type.rego:50`
-	lib.assert_equal({err1, err2}, checks.violation) with input as opa_inspect_duplicate
+	assertions.assert_equal({err1, err2}, checks.violation) with input as opa_inspect_duplicate
 }
 
 test_effective_on if {
 	err := `ERROR: wrong syntax of effective_on value "wubba lubba dub dub" at policy/release/effective_on.rego:10`
-	lib.assert_equal({err}, checks.violation) with input as opa_inspect_effective_on
+	assertions.assert_equal({err}, checks.violation) with input as opa_inspect_effective_on
 }
 
 opa_inspect_collection_mismatch := {
@@ -274,7 +274,7 @@ opa_inspect_collection_mismatch := {
 test_dependency_collection_mismatch if {
 	# regal ignore:line-length
 	err := `ERROR: Dependency "attestation_type.pipelinerun_attestation_found" is missing from collections ["slsa3"] (required by rule at policy/release/tasks.rego:30 which is in collections ["minimal", "redhat", "slsa3"])`
-	lib.assert_equal({err}, checks.violation) with input as opa_inspect_collection_mismatch
+	assertions.assert_equal({err}, checks.violation) with input as opa_inspect_collection_mismatch
 }
 
 opa_inspect_collection_valid := {
@@ -322,7 +322,7 @@ opa_inspect_collection_valid := {
 }
 
 test_dependency_collection_valid if {
-	lib.assert_empty(checks.violation) with input as opa_inspect_collection_valid
+	assertions.assert_empty(checks.violation) with input as opa_inspect_collection_valid
 }
 
 opa_inspect_dependency_no_collections := {
@@ -373,7 +373,7 @@ test_dependency_no_collections if {
 	# the dependency should be considered missing from all the dependent's collections
 	# regal ignore:line-length
 	err := `ERROR: Dependency "attestation_type.pipelinerun_attestation_found" is missing from collections ["minimal", "redhat", "slsa3"] (required by rule at policy/release/tasks.rego:30 which is in collections ["minimal", "redhat", "slsa3"])`
-	lib.assert_equal({err}, checks.violation) with input as opa_inspect_dependency_no_collections
+	assertions.assert_equal({err}, checks.violation) with input as opa_inspect_dependency_no_collections
 }
 
 test_policy_rule_files_includes_policy_directory if {
@@ -388,7 +388,7 @@ test_policy_rule_files_includes_policy_directory if {
 		"files": {"policy/release/tasks.rego"},
 	}}
 
-	lib.assert_equal(expected, result)
+	assertions.assert_equal(expected, result)
 }
 
 test_policy_rule_files_excludes_lib_directory if {
@@ -404,7 +404,7 @@ test_policy_rule_files_excludes_lib_directory if {
 	}
 
 	result := checks.policy_rule_files(namespaces)
-	lib.assert_empty(result)
+	assertions.assert_empty(result)
 }
 
 test_policy_rule_files_excludes_non_policy_directory if {
@@ -414,5 +414,5 @@ test_policy_rule_files_excludes_non_policy_directory if {
 	}
 
 	result := checks.policy_rule_files(namespaces)
-	lib.assert_empty(result)
+	assertions.assert_empty(result)
 }

@@ -2,7 +2,7 @@ package lib.tekton_test
 
 import rego.v1
 
-import data.lib
+import data.lib.assertions
 import data.lib.tekton
 
 test_image_result if {
@@ -24,8 +24,14 @@ test_image_result if {
 			"value": "4321\n",
 		},
 	]
-	lib.assert_equal(["image1", "image2"], tekton.task_result_artifact_url(resolved_slsav1_task("task1", [], results)))
-	lib.assert_equal(["1234", "4321"], tekton.task_result_artifact_digest(resolved_slsav1_task("task1", [], results)))
+	assertions.assert_equal(
+		["image1", "image2"],
+		tekton.task_result_artifact_url(resolved_slsav1_task("task1", [], results)),
+	)
+	assertions.assert_equal(
+		["1234", "4321"],
+		tekton.task_result_artifact_digest(resolved_slsav1_task("task1", [], results)),
+	)
 }
 
 test_artifact_result if {
@@ -47,20 +53,24 @@ test_artifact_result if {
 			"value": "4321\n",
 		},
 	]
-	lib.assert_equal(["image1", "image2"], tekton.task_result_artifact_url(resolved_slsav1_task("task1", [], results)))
-	lib.assert_equal(["1234", "4321"], tekton.task_result_artifact_digest(resolved_slsav1_task("task1", [], results)))
+	assertions.assert_equal(
+		["image1", "image2"],
+		tekton.task_result_artifact_url(resolved_slsav1_task("task1", [], results)),
+	)
+	assertions.assert_equal(
+		["1234", "4321"],
+		tekton.task_result_artifact_digest(resolved_slsav1_task("task1", [], results)),
+	)
 }
 
 test_images_result if {
 	results := [{
 		"name": "IMAGES",
-		# regal ignore:line-length
-		"value": "img1@sha256:d19e5701000000000000000000000000000000000000000000000000d19e5701, img2@sha256:d19e5702000000000000000000000000000000000000000000000000d19e5702\n",
+		"value": "img1@sha256:digest1, img2@sha256:digest2\n",
 	}]
-	lib.assert_equal(["img1", "img2"], tekton.task_result_artifact_url(resolved_slsav1_task("task1", [], results)))
-	lib.assert_equal(
-		# regal ignore:line-length
-		["sha256:d19e5701000000000000000000000000000000000000000000000000d19e5701", "sha256:d19e5702000000000000000000000000000000000000000000000000d19e5702"],
+	assertions.assert_equal(["img1", "img2"], tekton.task_result_artifact_url(resolved_slsav1_task("task1", [], results)))
+	assertions.assert_equal(
+		["sha256:digest1", "sha256:digest2"],
 		tekton.task_result_artifact_digest(resolved_slsav1_task("task1", [], results)),
 	)
 }
@@ -76,8 +86,11 @@ test_artifact_outputs_result if {
 			"value": {"uri": "img2\n", "digest": "4321\n"},
 		},
 	]
-	lib.assert_equal(["img1", "img2"], tekton.task_result_artifact_url(resolved_slsav1_task("task1", [], results)))
-	lib.assert_equal(["1234", "4321"], tekton.task_result_artifact_digest(resolved_slsav1_task("task1", [], results)))
+	assertions.assert_equal(["img1", "img2"], tekton.task_result_artifact_url(resolved_slsav1_task("task1", [], results)))
+	assertions.assert_equal(
+		["1234", "4321"],
+		tekton.task_result_artifact_digest(resolved_slsav1_task("task1", [], results)),
+	)
 }
 
 test_invalid_result_name if {
@@ -85,8 +98,8 @@ test_invalid_result_name if {
 		"name": "INVALID_OUTPUTS",
 		"value": {"uri": "img1", "digest": "1234"},
 	}]
-	lib.assert_empty(tekton.task_result_artifact_url(resolved_slsav1_task("task1", [], results)))
-	lib.assert_empty(tekton.task_result_artifact_digest(resolved_slsav1_task("task1", [], results)))
+	assertions.assert_empty(tekton.task_result_artifact_url(resolved_slsav1_task("task1", [], results)))
+	assertions.assert_empty(tekton.task_result_artifact_digest(resolved_slsav1_task("task1", [], results)))
 }
 
 test_images_with_digests if {
@@ -126,13 +139,13 @@ test_images_with_digests if {
 		resolved_slsav1_task("task1", [], results_artifact_outputs),
 		resolved_slsav1_task("task2", [], results_artifact_outputs),
 	]
-	lib.assert_equal(["img1@1234", "img1@1234"], tekton.images_with_digests(tasks_artifacts))
+	assertions.assert_equal(["img1@1234", "img1@1234"], tekton.images_with_digests(tasks_artifacts))
 
 	tasks_images := [resolved_slsav1_task("task1", [], results_images), resolved_slsav1_task("task2", [], results_images)]
-	lib.assert_equal(["img1@1234", "img1@1234"], tekton.images_with_digests(tasks_images))
+	assertions.assert_equal(["img1@1234", "img1@1234"], tekton.images_with_digests(tasks_images))
 
 	tasks_ordered := [resolved_slsav1_task("task1", [], results_images_unordered)]
-	lib.assert_equal(["img1@1234", "img2@5678"], tekton.images_with_digests(tasks_ordered))
+	assertions.assert_equal(["img1@1234", "img2@5678"], tekton.images_with_digests(tasks_ordered))
 }
 
 test_mixed_results if {
@@ -155,8 +168,7 @@ test_mixed_results if {
 		},
 		{
 			"name": "IMAGES",
-			# regal ignore:line-length
-			"value": "images-1@sha256:4567000000000000000000000000000000000000000000000000000000004567,images-2@sha256:5678000000000000000000000000000000000000000000000000000000005678",
+			"value": "images-1@sha256:4567,images-2@sha256:5678",
 		},
 		{
 			"name": "image1_ARTIFACT_URI",
@@ -164,7 +176,7 @@ test_mixed_results if {
 		},
 		{
 			"name": "image1_ARTIFACT_DIGEST",
-			"value": "sha256:6789000000000000000000000000000000000000000000000000000000006789",
+			"value": "sha256:6789",
 		},
 		{
 			"name": "image2_ARTIFACT_URI",
@@ -172,34 +184,32 @@ test_mixed_results if {
 		},
 		{
 			"name": "image2_ARTIFACT_DIGEST",
-			"value": "sha256:7890000000000000000000000000000000000000000000000000000000007890",
+			"value": "sha256:7890",
 		},
 		{
 			"name": "image1_ARTIFACT_OUTPUTS",
-			# regal ignore:line-length
-			"value": {"uri": "artifact-outputs-img1", "digest": "sha256:1234000000000000000000000000000000000000000000000000000000001234"},
+			"value": {"uri": "artifact-outputs-img1", "digest": "sha256:1234"},
 		},
 		{
 			"name": "image2_ARTIFACT_OUTPUTS",
-			# regal ignore:line-length
-			"value": {"uri": "artifact-outputs-img2", "digest": "sha256:9801000000000000000000000000000000000000000000000000000000009801"},
+			"value": {"uri": "artifact-outputs-img2", "digest": "sha256:9801"},
 		},
 	]
 
 	expected := [
 		"image-url-img1@2345",
 		"image-url-img2@3456",
-		"image-artifact-1@sha256:6789000000000000000000000000000000000000000000000000000000006789",
-		"image-artifact-1@sha256:7890000000000000000000000000000000000000000000000000000000007890",
-		"images-1@sha256:4567000000000000000000000000000000000000000000000000000000004567",
-		"images-2@sha256:5678000000000000000000000000000000000000000000000000000000005678",
-		"artifact-outputs-img1@sha256:1234000000000000000000000000000000000000000000000000000000001234",
-		"artifact-outputs-img2@sha256:9801000000000000000000000000000000000000000000000000000000009801",
+		"image-artifact-1@sha256:6789",
+		"image-artifact-1@sha256:7890",
+		"images-1@sha256:4567",
+		"images-2@sha256:5678",
+		"artifact-outputs-img1@sha256:1234",
+		"artifact-outputs-img2@sha256:9801",
 	]
 
-	lib.assert_equal(expected, tekton.images_with_digests([resolved_slsav1_task("task1", [], results)]))
+	assertions.assert_equal(expected, tekton.images_with_digests([resolved_slsav1_task("task1", [], results)]))
 }
 
 test_no_results if {
-	lib.assert_empty(tekton.images_with_digests([resolved_slsav1_task("task1", [], [])]))
+	assertions.assert_empty(tekton.images_with_digests([resolved_slsav1_task("task1", [], [])]))
 }

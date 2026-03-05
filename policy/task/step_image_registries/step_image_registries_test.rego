@@ -2,7 +2,8 @@ package step_image_registries_test
 
 import rego.v1
 
-import data.lib
+import data.lib.assertions
+
 import data.step_image_registries
 
 # regal ignore:line-length
@@ -17,7 +18,7 @@ test_step_images_permitted_success if {
 		"spec": {"steps": [{"image": good_image}, {"image": good_image}]},
 	}
 
-	lib.assert_empty(step_image_registries.deny) with input as task
+	assertions.assert_empty(step_image_registries.deny) with input as task
 }
 
 test_step_images_permitted_failure if {
@@ -42,7 +43,7 @@ test_step_images_permitted_failure if {
 		},
 	}
 
-	lib.assert_equal_results(step_image_registries.deny, expected) with input as task
+	assertions.assert_equal_results(step_image_registries.deny, expected) with input as task
 }
 
 test_step_images_missing_name_version if {
@@ -52,7 +53,7 @@ test_step_images_missing_name_version if {
 		"spec": {"steps": [{"image": bad_image}]},
 	}
 
-	lib.assert_equal_results(step_image_registries.deny, {{
+	assertions.assert_equal_results(step_image_registries.deny, {{
 		"code": "step_image_registries.step_images_permitted",
 		# regal ignore:line-length
 		"msg": "Step 0 uses disallowed image ref 'hackz.io/openshift-pipelines/pipelines-git-init-rhel8@sha256:af7dd5b3b0000000000000000000000000000000000000000000000af7dd5b3b'",
@@ -65,7 +66,7 @@ test_step_images_missing_name_version if {
 		"spec": {"steps": [{"image": bad_image}]},
 	}
 
-	lib.assert_equal_results(step_image_registries.deny, {{
+	assertions.assert_equal_results(step_image_registries.deny, {{
 		"code": "step_image_registries.step_images_permitted",
 		# regal ignore:line-length
 		"msg": "Step 0 uses disallowed image ref 'hackz.io/openshift-pipelines/pipelines-git-init-rhel8@sha256:af7dd5b3b0000000000000000000000000000000000000000000000af7dd5b3b'",
@@ -77,7 +78,7 @@ test_step_images_missing_name_version if {
 		"spec": {"steps": [{"image": bad_image}]},
 	}
 
-	lib.assert_equal_results(step_image_registries.deny, {{
+	assertions.assert_equal_results(step_image_registries.deny, {{
 		"code": "step_image_registries.step_images_permitted",
 		# regal ignore:line-length
 		"msg": "Step 0 uses disallowed image ref 'hackz.io/openshift-pipelines/pipelines-git-init-rhel8@sha256:af7dd5b3b0000000000000000000000000000000000000000000000af7dd5b3b'",
@@ -91,7 +92,7 @@ test_step_images_permitted_skipped if {
 		"spec": {"steps": [{"image": bad_image}]},
 	}
 
-	lib.assert_empty(step_image_registries.deny) with input as not_a_task
+	assertions.assert_empty(step_image_registries.deny) with input as not_a_task
 }
 
 test_step_images_permitted_prefix_list_empty if {
@@ -116,7 +117,7 @@ test_step_images_permitted_prefix_list_empty if {
 		},
 	}
 
-	lib.assert_equal_results(step_image_registries.deny, expected) with input as task
+	assertions.assert_equal_results(step_image_registries.deny, expected) with input as task
 		with data.rule_data as {}
 }
 
@@ -144,5 +145,5 @@ test_step_image_registry_prefix_list_format if {
 		},
 	}
 
-	lib.assert_equal_results(expected, step_image_registries.deny) with data.rule_data as d
+	assertions.assert_equal_results(expected, step_image_registries.deny) with data.rule_data as d
 }

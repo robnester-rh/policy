@@ -3,11 +3,13 @@ package hermetic_task_test
 import rego.v1
 
 import data.hermetic_task
+
 import data.lib
+import data.lib.assertions
 import data.lib.tekton_test
 
 test_hermetic_task if {
-	lib.assert_empty(hermetic_task.deny) with input.attestations as [_good_attestation]
+	assertions.assert_empty(hermetic_task.deny) with input.attestations as [_good_attestation]
 		with data.rule_data.required_hermetic_tasks as ["buildah", "run-script-oci-ta"]
 
 	_task_base := tekton_test.slsav1_task("buildah")
@@ -20,7 +22,7 @@ test_hermetic_task if {
 	)
 
 	slsav1_attestation := tekton_test.slsav1_attestation([slsav1_task])
-	lib.assert_empty(hermetic_task.deny) with input.attestations as [slsav1_attestation]
+	assertions.assert_empty(hermetic_task.deny) with input.attestations as [slsav1_attestation]
 		with data.rule_data.required_hermetic_tasks as ["buildah", "run-script-oci-ta"]
 }
 
@@ -35,12 +37,12 @@ test_not_hermetic_task if {
 		"path": "/statement/predicate/buildConfig/tasks/0/invocation/parameters/HERMETIC",
 		"value": "false",
 	}])
-	lib.assert_equal_results(expected, hermetic_task.deny) with input.attestations as [hermetic_not_true]
+	assertions.assert_equal_results(expected, hermetic_task.deny) with input.attestations as [hermetic_not_true]
 		with data.rule_data.required_hermetic_tasks as ["buildah", "run-script-oci-ta"]
 
 	# regal ignore:line-length
 	hermetic_missing := json.remove(_good_attestation, ["/statement/predicate/buildConfig/tasks/0/invocation/parameters/HERMETIC"])
-	lib.assert_equal_results(expected, hermetic_task.deny) with input.attestations as [hermetic_missing]
+	assertions.assert_equal_results(expected, hermetic_task.deny) with input.attestations as [hermetic_missing]
 		with data.rule_data.required_hermetic_tasks as ["buildah", "run-script-oci-ta"]
 
 	_task_base := tekton_test.slsav1_task("buildah")
@@ -53,12 +55,12 @@ test_not_hermetic_task if {
 	)
 
 	slsav1_attestation_hermetic_false := tekton_test.slsav1_attestation([slsav1_task])
-	lib.assert_equal_results(expected, hermetic_task.deny) with input.attestations as [slsav1_attestation_hermetic_false]
+	assertions.assert_equal_results(expected, hermetic_task.deny) with input.attestations as [slsav1_attestation_hermetic_false]
 		with data.rule_data.required_hermetic_tasks as ["buildah", "run-script-oci-ta"]
 
 	slsav1_task_not_hermetic := tekton_test.slsav1_task("buildah")
 	slsav1_attestation_not_hermetic := tekton_test.slsav1_attestation([slsav1_task_not_hermetic])
-	lib.assert_equal_results(expected, hermetic_task.deny) with input.attestations as [slsav1_attestation_not_hermetic]
+	assertions.assert_equal_results(expected, hermetic_task.deny) with input.attestations as [slsav1_attestation_not_hermetic]
 		with data.rule_data.required_hermetic_tasks as ["buildah", "run-script-oci-ta"]
 }
 
@@ -90,7 +92,7 @@ test_many_hermetic_tasks if {
 			"buildConfig": {"tasks": [task1, task2]},
 		},
 	}}
-	lib.assert_empty(hermetic_task.deny) with input.attestations as [attestation]
+	assertions.assert_empty(hermetic_task.deny) with input.attestations as [attestation]
 		with data.rule_data.required_hermetic_tasks as ["buildah", "run-script-oci-ta"]
 
 	_task_base_1 := tekton_test.slsav1_task("buildah")
@@ -112,7 +114,7 @@ test_many_hermetic_tasks if {
 	)
 
 	slsav1_attestation := tekton_test.slsav1_attestation([slsav1_task1, slsav1_task2])
-	lib.assert_empty(hermetic_task.deny) with input.attestations as [slsav1_attestation]
+	assertions.assert_empty(hermetic_task.deny) with input.attestations as [slsav1_attestation]
 		with data.rule_data.required_hermetic_tasks as ["buildah", "run-script-oci-ta"]
 
 	attestation_mixed_hermetic_1 := json.patch(
@@ -135,7 +137,7 @@ test_many_hermetic_tasks if {
 	}}
 
 	# regal ignore:line-length
-	lib.assert_equal_results(expected_mixed_hermetic_1, hermetic_task.deny) with input.attestations as [attestation_mixed_hermetic_1]
+	assertions.assert_equal_results(expected_mixed_hermetic_1, hermetic_task.deny) with input.attestations as [attestation_mixed_hermetic_1]
 		with data.rule_data.required_hermetic_tasks as ["buildah", "run-script-oci-ta"]
 
 	attestation_mixed_hermetic_2 := json.patch(
@@ -158,7 +160,7 @@ test_many_hermetic_tasks if {
 	}}
 
 	# regal ignore:line-length
-	lib.assert_equal_results(expected_mixed_hermetic_2, hermetic_task.deny) with input.attestations as [attestation_mixed_hermetic_2]
+	assertions.assert_equal_results(expected_mixed_hermetic_2, hermetic_task.deny) with input.attestations as [attestation_mixed_hermetic_2]
 		with data.rule_data.required_hermetic_tasks as ["buildah", "run-script-oci-ta"]
 
 	_base_mixed_1 := tekton_test.slsav1_task("buildah")
@@ -182,7 +184,7 @@ test_many_hermetic_tasks if {
 	slsav1_attestation_mixed_hermetic := tekton_test.slsav1_attestation([slsav1_task1_mixed, slsav1_task2_mixed])
 
 	# regal ignore:line-length
-	lib.assert_equal_results(expected_mixed_hermetic_2, hermetic_task.deny) with input.attestations as [slsav1_attestation_mixed_hermetic]
+	assertions.assert_equal_results(expected_mixed_hermetic_2, hermetic_task.deny) with input.attestations as [slsav1_attestation_mixed_hermetic]
 		with data.rule_data.required_hermetic_tasks as ["buildah", "run-script-oci-ta"]
 
 	attestation_non_hermetic := json.patch(
@@ -218,7 +220,7 @@ test_many_hermetic_tasks if {
 	}
 
 	# regal ignore:line-length
-	lib.assert_equal_results(expected_non_hermetic, hermetic_task.deny) with input.attestations as [attestation_non_hermetic]
+	assertions.assert_equal_results(expected_non_hermetic, hermetic_task.deny) with input.attestations as [attestation_non_hermetic]
 		with data.rule_data.required_hermetic_tasks as ["buildah", "run-script-oci-ta"]
 
 	_base_non_hermetic_1 := tekton_test.slsav1_task("buildah")
@@ -245,7 +247,7 @@ test_many_hermetic_tasks if {
 	])
 
 	# regal ignore:line-length
-	lib.assert_equal_results(expected_non_hermetic, hermetic_task.deny) with input.attestations as [slsav1_attestation_non_hermetic]
+	assertions.assert_equal_results(expected_non_hermetic, hermetic_task.deny) with input.attestations as [slsav1_attestation_non_hermetic]
 		with data.rule_data.required_hermetic_tasks as ["buildah", "run-script-oci-ta"]
 }
 
