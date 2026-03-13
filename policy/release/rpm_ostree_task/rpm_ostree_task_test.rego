@@ -14,7 +14,8 @@ test_success if {
 			"buildConfig": {"tasks": [{
 				"name": "rpm-ostree-p",
 				"ref": {"kind": "Task", "name": "rpm-ostree"},
-				"invocation": {"parameters": {"BUILDER_IMAGE": "registry.local/builder:v0.2@sha256:abc"}},
+				# regal ignore:line-length
+				"invocation": {"parameters": {"BUILDER_IMAGE": "registry.local/builder:v0.2@sha256:abc0000000000000000000000000000000000000000000000000000000000abc"}},
 			}]},
 		},
 	}}
@@ -25,7 +26,7 @@ test_success if {
 		_base_task,
 		[{
 			"name": "BUILDER_IMAGE",
-			"value": "registry.local/builder:v1.0@sha256:bcd",
+			"value": "registry.local/builder:v1.0@sha256:bcd0000000000000000000000000000000000000000000000000000000000bcd",
 		}],
 	)
 
@@ -51,7 +52,8 @@ test_builder_image_param_failures if {
 				{
 					"name": "rpm-ostree-2",
 					"ref": {"kind": "Task", "name": "rpm-ostree"},
-					"invocation": {"parameters": {"BUILDER_IMAGE": "registry.local/deprecated:v0.2@sha256:abc"}},
+					# regal ignore:line-length
+					"invocation": {"parameters": {"BUILDER_IMAGE": "registry.local/deprecated:v0.2@sha256:abc0000000000000000000000000000000000000000000000000000000000abc"}},
 				},
 			]},
 		},
@@ -74,7 +76,7 @@ test_builder_image_param_failures if {
 		_slsa_v1_task_2_w_name,
 		[{
 			"name": "BUILDER_IMAGE",
-			"value": "registry.local/deprecated:v1.0@sha256:bcd",
+			"value": "registry.local/deprecated:v1.0@sha256:bcd0000000000000000000000000000000000000000000000000000000000bcd",
 		}],
 	)
 
@@ -87,13 +89,13 @@ test_builder_image_param_failures if {
 		{
 			"code": "rpm_ostree_task.builder_image_param",
 			# regal ignore:line-length
-			"msg": "BUILDER_IMAGE \"registry.local/deprecated:v0.2@sha256:abc\" starts with \"registry.local/deprecated\" prefix that expires on 2099-01-01T00:00:00Z",
+			"msg": "BUILDER_IMAGE \"registry.local/deprecated:v0.2@sha256:abc0000000000000000000000000000000000000000000000000000000000abc\" starts with \"registry.local/deprecated\" prefix that expires on 2099-01-01T00:00:00Z",
 			"effective_on": "2099-01-01T00:00:00Z",
 		},
 		{
 			"code": "rpm_ostree_task.builder_image_param",
 			# regal ignore:line-length
-			"msg": "BUILDER_IMAGE \"registry.local/deprecated:v1.0@sha256:bcd\" starts with \"registry.local/deprecated\" prefix that expires on 2099-01-01T00:00:00Z",
+			"msg": "BUILDER_IMAGE \"registry.local/deprecated:v1.0@sha256:bcd0000000000000000000000000000000000000000000000000000000000bcd\" starts with \"registry.local/deprecated\" prefix that expires on 2099-01-01T00:00:00Z",
 			"effective_on": "2099-01-01T00:00:00Z",
 		},
 		# Prefix not allowed

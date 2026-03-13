@@ -8,13 +8,13 @@ import data.sbom_cyclonedx
 
 test_all_good_from_attestation if {
 	lib.assert_empty(sbom_cyclonedx.deny) with input.attestations as [_sbom_1_5_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
 }
 
 test_all_good_from_image if {
 	files := {"root/buildinfo/content_manifests/sbom-cyclonedx.json": _sbom_1_5_attestation.statement.predicate}
 	lib.assert_empty(sbom_cyclonedx.deny) with input.image.files as files
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
 }
 
 test_not_valid if {
@@ -45,7 +45,7 @@ test_unsupported_version if {
 
 test_valid_cdx_1_4 if {
 	lib.assert_empty(sbom_cyclonedx.deny) with input.attestations as [_sbom_1_4_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
 }
 
 test_invalid_cdx_1_4 if {
@@ -63,7 +63,7 @@ test_invalid_cdx_1_4 if {
 
 test_valid_cdx_1_5 if {
 	lib.assert_empty(sbom_cyclonedx.deny) with input.attestations as [_sbom_1_5_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
 }
 
 test_invalid_cdx_1_5 if {
@@ -81,7 +81,7 @@ test_invalid_cdx_1_5 if {
 
 test_valid_cdx_1_6 if {
 	lib.assert_empty(sbom_cyclonedx.deny) with input.attestations as [_sbom_1_6_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
 }
 
 test_invalid_cdx_1_6 if {
@@ -99,10 +99,10 @@ test_invalid_cdx_1_6 if {
 
 test_attributes_not_allowed_all_good if {
 	lib.assert_empty(sbom_cyclonedx.deny) with input.attestations as [_sbom_1_5_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
 
 	lib.assert_empty(sbom_cyclonedx.deny) with input.attestations as [_sbom_1_5_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
 		with data.rule_data as {sbom.rule_data_attributes_key: [{"name": "attrX", "value": "valueX"}]}
 }
 
@@ -116,7 +116,7 @@ test_attributes_not_allowed_pair if {
 	}}
 
 	lib.assert_equal_results(expected, sbom_cyclonedx.deny) with input.attestations as [_sbom_1_5_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
 		with data.rule_data as {sbom.rule_data_attributes_key: [{"name": "attr1"}]}
 }
 
@@ -130,7 +130,7 @@ test_attributes_not_allowed_value if {
 	}}
 
 	lib.assert_equal_results(expected, sbom_cyclonedx.deny) with input.attestations as [_sbom_1_5_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
 		with data.rule_data as {sbom.rule_data_attributes_key: [{"name": "attr2", "value": "value2"}]}
 }
 
@@ -155,7 +155,7 @@ test_attributes_not_allowed_effective_on if {
 	}
 
 	raw_results := sbom_cyclonedx.deny with input.attestations as [_sbom_1_5_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
 		with data.rule_data as {sbom.rule_data_attributes_key: [
 			{"name": "attr1", "effective_on": "2025-01-01T00:00:00Z"},
 			{"name": "attr2", "value": "value2"},
@@ -178,14 +178,14 @@ test_attributes_not_allowed_value_no_purl if {
 	}}
 
 	lib.assert_equal_results(expected, sbom_cyclonedx.deny) with input.attestations as [_sbom_1_5_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
 		with data.rule_data as {sbom.rule_data_attributes_key: [{"name": "syft:distro:id", "value": "rhel"}]}
 }
 
 test_external_references_allowed_regex_with_no_rules_is_allowed if {
 	expected := {}
 	lib.assert_equal_results(expected, sbom_cyclonedx.deny) with input.attestations as [_sbom_1_5_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
 		with data.rule_data as {sbom.rule_data_allowed_external_references_key: []}
 }
 
@@ -199,7 +199,7 @@ test_external_references_allowed_regex if {
 	}}
 
 	lib.assert_equal_results(expected, sbom_cyclonedx.deny) with input.attestations as [_sbom_1_5_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
 		with data.rule_data as {sbom.rule_data_allowed_external_references_key: [{
 			"type": "distribution",
 			"url": ".*allowed.net.*",
@@ -215,7 +215,7 @@ test_external_references_allowed_no_purl if {
 	}}
 
 	lib.assert_equal_results(expected, sbom_cyclonedx.deny) with input.attestations as [_sbom_1_5_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
 		with data.rule_data as {sbom.rule_data_allowed_external_references_key: [{
 			"type": "website",
 			"url": ".*example.com.*",
@@ -232,7 +232,7 @@ test_external_references_disallowed_regex if {
 	}}
 
 	lib.assert_equal_results(expected, sbom_cyclonedx.deny) with input.attestations as [_sbom_1_5_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
 		with data.rule_data as {sbom.rule_data_disallowed_external_references_key: [{
 			"type": "distribution",
 			"url": ".*example.com.*",
@@ -248,7 +248,7 @@ test_external_references_disallowed_no_purl if {
 	}}
 
 	lib.assert_equal_results(expected, sbom_cyclonedx.deny) with input.attestations as [_sbom_1_5_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
 		with data.rule_data as {sbom.rule_data_disallowed_external_references_key: [{
 			"type": "website",
 			"url": ".*redhat.com.*",
@@ -357,7 +357,7 @@ test_attributes_not_allowed_no_properties if {
 	}])
 
 	lib.assert_empty(sbom_cyclonedx.deny) with input.attestations as [att]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
 		with data.rule_data as {sbom.rule_data_attributes_key: [{"name": "attr", "value": "value"}]}
 }
 

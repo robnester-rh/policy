@@ -7,12 +7,12 @@ import data.lib.konflux
 
 test_is_image_index if {
 	konflux.is_validating_image_index with input.attestations as [_attestation]
-		with input.image.ref as "registry.local/ham@sha256:fff"
+		with input.image.ref as "registry.local/ham@sha256:fff0000000000000000000000000000000000000000000000000000000000fff"
 }
 
 test_is_image_index_unknown_digest if {
 	not konflux.is_validating_image_index with input.attestations as [_attestation]
-		with input.image.ref as "registry.local/ham@sha256:bbb"
+		with input.image.ref as "registry.local/ham@sha256:bbb0000000000000000000000000000000000000000000000000000000000bbb"
 }
 
 test_is_image_index_empty_images if {
@@ -21,7 +21,7 @@ test_is_image_index_empty_images if {
 		[{"op": "add", "path": "/statement/predicate/buildConfig/tasks/0/results/0/value", "value": ""}],
 	)
 	not konflux.is_validating_image_index with input.attestations as [att]
-		with input.image.ref as "registry.local/ham@sha256:fff"
+		with input.image.ref as "registry.local/ham@sha256:fff0000000000000000000000000000000000000000000000000000000000fff"
 }
 
 _attestation := {"statement": {
@@ -32,7 +32,8 @@ _attestation := {"statement": {
 			{
 				"name": "IMAGES",
 				"type": "string",
-				"value": "registry.local/spam@sha256:abc, registry.local/bacon@sha256:bcd",
+				# regal ignore:line-length
+				"value": "registry.local/spam@sha256:abc0000000000000000000000000000000000000000000000000000000000abc, registry.local/bacon@sha256:bcd0000000000000000000000000000000000000000000000000000000000bcd",
 			},
 			{
 				"name": "IMAGE_URL",
@@ -42,7 +43,7 @@ _attestation := {"statement": {
 			{
 				"name": "IMAGE_DIGEST",
 				"type": "string",
-				"value": "sha256:fff",
+				"value": "sha256:fff0000000000000000000000000000000000000000000000000000000000fff",
 			},
 		]}]},
 	},

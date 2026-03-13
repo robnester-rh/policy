@@ -25,9 +25,9 @@ import data.volatile_config
 # Use a fixed "now" time for deterministic tests: 2024-06-15T12:00:00Z
 _now_ns := 1718452800000000000
 
-_image_ref := "quay.io/repo/image:v1@sha256:abc123def456"
+_image_ref := "quay.io/repo/image:v1@sha256:abc123def4560000000000000000000000000000000000abc123def456"
 
-_image_digest := "sha256:abc123def456"
+_image_digest := "sha256:abc123def4560000000000000000000000000000000000abc123def456"
 
 _component_name := "my-component"
 
@@ -242,7 +242,7 @@ test_warn_scoped_by_image_digest_match if {
 test_no_warn_scoped_by_image_digest_no_match if {
 	policy_spec := _policy_spec_with_include({
 		"value": "scoped.rule",
-		"imageDigest": "sha256:different",
+		"imageDigest": "sha256:d1ffe4e0000000000000000000000000000000000000000000000000d1ffe4e0",
 	})
 
 	lib.assert_empty(volatile_config.warn) with input.policy_spec as policy_spec
@@ -452,7 +452,8 @@ test_warn_with_malformed_image_ref_multiple_at if {
 	# Global rules apply with malformed image ref containing multiple @ symbols
 	# This tests the case where split("@") doesn't produce exactly 2 parts
 	lib.assert_equal_results(volatile_config.warn, expected) with input.policy_spec as policy_spec
-		with input.image.ref as "quay.io/repo/image@sha256:abc123@sha256:def456"
+		# regal ignore:line-length
+with 		input.image.ref as "quay.io/repo/image@sha256:abc123@sha256:def4560000000000000000000000000000000000000000000000000000def456"
 		with input.component_name as _component_name
 		with time_lib.effective_current_time_ns as _now_ns
 }

@@ -120,7 +120,7 @@ image_ref_from_purl(raw_purl) := image_ref if {
 	# other SPDX creators might reasonably use "pkg:docker/" in the purl.
 	# purl.type in {"oci", "docker"}
 
-	# Example image_digest: "sha256:012abc"
+	# Example image_digest: "sha256:012abc0000000000000000000000000000000000000000000000000000012abc"
 	image_digest := purl.version
 
 	some qualifier in purl.qualifiers

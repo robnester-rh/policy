@@ -38,7 +38,7 @@ garbage_att := {"statement": {
 	"predicate": {"buildType": "garbage"},
 }}
 
-trusted_bundle_ref := "registry.img/acceptable@sha256:digest"
+trusted_bundle_ref := "registry.img/acceptable@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"
 
 # This is used through the tests to generate an attestation of a PipelineRun
 # with an inline Task definition, look at using att_mock_helper_ref to generate
@@ -272,7 +272,7 @@ test_att_mock_helper_ref if {
 				"ref": {
 					"name": "mytask",
 					"kind": "Task",
-					"bundle": "registry.img/name:tag@sha256:digest",
+					"bundle": "registry.img/name:tag@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700",
 				},
 				"results": [{
 					"name": "result-name",
@@ -286,7 +286,7 @@ test_att_mock_helper_ref if {
 		"result-name",
 		{"foo": "bar"},
 		"mytask",
-		"registry.img/name:tag@sha256:digest",
+		"registry.img/name:tag@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700",
 	))
 }
 
@@ -296,7 +296,7 @@ test_results_from_tests if {
 	expected := {
 		"value": {"result": "SUCCESS", "foo": "bar"},
 		"name": "mytask",
-		"bundle": "registry.img/acceptable@sha256:digest",
+		"bundle": "registry.img/acceptable@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700",
 	}
 
 	att1 := att_mock_helper_ref(
@@ -370,7 +370,7 @@ test_attestation_materials if {
 # Mock materials for attestations (usable for both v0.2 and v1.0)
 _mock_materials := [
 	{
-		"digest": {"sha256": "abc123"},
+		"digest": {"sha256": "abc1230000000000000000000000000000000000000000000000000000abc123"},
 		"uri": "oci://registry.img/spam",
 	},
 	{
@@ -385,7 +385,7 @@ _build_task := {
 	"ref": {"kind": "Task", "name": "buildah", "bundle": trusted_bundle_ref},
 	"results": [
 		{"name": "IMAGE_URL", "value": "quay.io/test/image:tag"},
-		{"name": "IMAGE_DIGEST", "value": "sha256:abc123"},
+		{"name": "IMAGE_DIGEST", "value": "sha256:abc1230000000000000000000000000000000000000000000000000000abc123"},
 	],
 }
 
@@ -483,7 +483,8 @@ test_pipelinerun_attestations_multiple_v1_missing_timestamp if {
 		_task_base,
 		[
 			{"name": "IMAGE_URL", "type": "string", "value": "quay.io/test/image:tag"},
-			{"name": "IMAGE_DIGEST", "type": "string", "value": "sha256:abc123"},
+			# regal ignore:line-length
+			{"name": "IMAGE_DIGEST", "type": "string", "value": "sha256:abc1230000000000000000000000000000000000000000000000000000abc123"},
 		],
 	)
 	v1_task := tekton_test.with_bundle(_task_w_results, trusted_bundle_ref)
@@ -505,7 +506,8 @@ test_pipelinerun_attestations_mixed_formats if {
 		_task_base,
 		[
 			{"name": "IMAGE_URL", "type": "string", "value": "quay.io/test/image:tag"},
-			{"name": "IMAGE_DIGEST", "type": "string", "value": "sha256:abc123"},
+			# regal ignore:line-length
+			{"name": "IMAGE_DIGEST", "type": "string", "value": "sha256:abc1230000000000000000000000000000000000000000000000000000abc123"},
 		],
 	)
 	v1_task := tekton_test.with_bundle(
@@ -561,7 +563,8 @@ test_pipelinerun_attestations_v1_single_no_timestamp if {
 		_task_base,
 		[
 			{"name": "IMAGE_URL", "type": "string", "value": "quay.io/test/image:tag"},
-			{"name": "IMAGE_DIGEST", "type": "string", "value": "sha256:abc123"},
+			# regal ignore:line-length
+			{"name": "IMAGE_DIGEST", "type": "string", "value": "sha256:abc1230000000000000000000000000000000000000000000000000000abc123"},
 		],
 	)
 	v1_task := tekton_test.with_bundle(_task_w_results, trusted_bundle_ref)

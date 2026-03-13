@@ -30,7 +30,7 @@ test_cyclonedx_sboms if {
 					{
 						"name": "IMAGE_DIGEST",
 						"type": "string",
-						"value": "sha256:284e3029",
+						"value": "sha256:284e302900000000000000000000000000000000000000000000000284e3029",
 					},
 					{
 						"name": "IMAGE_URL",
@@ -40,7 +40,7 @@ test_cyclonedx_sboms if {
 					{
 						"name": "SBOM_BLOB_URL",
 						"type": "string",
-						"value": "registry.io/repository/image@sha256:f0cacc1a",
+						"value": "registry.io/repository/image@sha256:f0cacc1a00000000000000000000000000000000000000000000000f0cacc1a0",
 					},
 				]}]},
 			},
@@ -72,7 +72,7 @@ test_spdx_sboms if {
 					{
 						"name": "IMAGE_DIGEST",
 						"type": "string",
-						"value": "sha256:284e3029",
+						"value": "sha256:284e302900000000000000000000000000000000000000000000000284e3029",
 					},
 					{
 						"name": "IMAGE_URL",
@@ -82,7 +82,7 @@ test_spdx_sboms if {
 					{
 						"name": "SBOM_BLOB_URL",
 						"type": "string",
-						"value": "registry.io/repository/image@sha256:f0cacc1a",
+						"value": "registry.io/repository/image@sha256:f0cacc1a00000000000000000000000000000000000000000000000f0cacc1a0",
 					},
 				]}]},
 			},
@@ -103,7 +103,7 @@ test_ignore_unrelated_sboms if {
 				{
 					"name": "IMAGE_DIGEST",
 					"type": "string",
-					"value": "sha256:0000000",
+					"value": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
 				},
 				{
 					"name": "IMAGE_URL",
@@ -113,7 +113,7 @@ test_ignore_unrelated_sboms if {
 				{
 					"name": "SBOM_BLOB_URL",
 					"type": "string",
-					"value": "registry.io/repository/image@sha256:f0cacc1a",
+					"value": "registry.io/repository/image@sha256:f0cacc1a00000000000000000000000000000000000000000000000f0cacc1a0",
 				},
 			]}]},
 		}}},
@@ -123,7 +123,7 @@ test_ignore_unrelated_sboms if {
 				{
 					"name": "IMAGE_DIGEST",
 					"type": "string",
-					"value": "sha256:1111111",
+					"value": "sha256:1111111000000000000000000000000000000000000000000000000001111111",
 				},
 				{
 					"name": "IMAGE_URL",
@@ -133,14 +133,15 @@ test_ignore_unrelated_sboms if {
 				{
 					"name": "SBOM_BLOB_URL",
 					"type": "string",
-					"value": "registry.io/repository/image@sha256:f0cacc1b",
+					"value": "registry.io/repository/image@sha256:f0cacc1b00000000000000000000000000000000000000000000000f0cacc1b0",
 				},
 			]}]},
 		}}},
 	]
 
 	lib.assert_equal(sbom.all_sboms, []) with input.attestations as attestations
-		with input.image as {"ref": "registry.io/repository/image@sha256:284e3029"}
+		# regal ignore:line-length
+with 		input.image as {"ref": "registry.io/repository/image@sha256:284e302900000000000000000000000000000000000000000000000284e3029"}
 		with ec.oci.blob as ""
 		with ec.oci.descriptor as {"mediaType": "application/vnd.oci.image.manifest.v1+json"}
 }
@@ -159,11 +160,11 @@ mock_ec_oci_cyclonedx_blob := `{"sbom": "from oci blob", "bomFormat": "CycloneDX
 mock_ec_oci_spdx_blob := `{"sbom": "from oci blob", "SPDXID": "SPDXRef-DOCUMENT"}`
 
 _cyclonedx_image := {
-	"ref": "registry.io/repository/image@sha256:284e3029",
+	"ref": "registry.io/repository/image@sha256:284e302900000000000000000000000000000000000000000000000284e3029",
 	"config": {"Labels": {"vendor": "Red Hat, Inc."}},
 }
 
 _spdx_image := {
-	"ref": "registry.io/repository/image@sha256:284e3029",
+	"ref": "registry.io/repository/image@sha256:284e302900000000000000000000000000000000000000000000000284e3029",
 	"config": {"Labels": {"vendor": "Red Hat, Inc."}},
 }
