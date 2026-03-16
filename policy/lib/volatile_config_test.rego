@@ -81,8 +81,8 @@ test_days_until_expiration_invalid_date if {
 test_is_rule_applicable_global if {
 	rule := {"value": "some.rule"}
 	context := {
-		"imageRef": "quay.io/repo/image:v1@sha256:abc123",
-		"imageDigest": "sha256:abc123",
+		"imageRef": "quay.io/repo/image:v1@sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
+		"imageDigest": "sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
 		"componentName": "my-component",
 	}
 	lib.is_rule_applicable(rule, context)
@@ -97,8 +97,8 @@ test_is_rule_applicable_global_explicit_empty if {
 		"componentNames": [],
 	}
 	context := {
-		"imageRef": "quay.io/repo/image:v1@sha256:abc123",
-		"imageDigest": "sha256:abc123",
+		"imageRef": "quay.io/repo/image:v1@sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
+		"imageDigest": "sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
 		"componentName": "my-component",
 	}
 	lib.is_rule_applicable(rule, context)
@@ -109,20 +109,20 @@ test_is_rule_applicable_global_explicit_empty if {
 # =============================================================================
 
 test_is_rule_applicable_image_digest_match if {
-	rule := {"value": "some.rule", "imageDigest": "sha256:abc123def456"}
+	rule := {"value": "some.rule", "imageDigest": "sha256:abc123def4560000000000000000000000000000000000abc123def456"}
 	context := {
-		"imageRef": "quay.io/repo/image:v1@sha256:abc123def456",
-		"imageDigest": "sha256:abc123def456",
+		"imageRef": "quay.io/repo/image:v1@sha256:abc123def4560000000000000000000000000000000000abc123def456",
+		"imageDigest": "sha256:abc123def4560000000000000000000000000000000000abc123def456",
 		"componentName": "my-component",
 	}
 	lib.is_rule_applicable(rule, context)
 }
 
 test_is_rule_applicable_image_digest_no_match if {
-	rule := {"value": "some.rule", "imageDigest": "sha256:abc123def456"}
+	rule := {"value": "some.rule", "imageDigest": "sha256:abc123def4560000000000000000000000000000000000abc123def456"}
 	context := {
-		"imageRef": "quay.io/repo/image:v1@sha256:different",
-		"imageDigest": "sha256:different",
+		"imageRef": "quay.io/repo/image:v1@sha256:d1ffe4e0000000000000000000000000000000000000000000000000d1ffe4e0",
+		"imageDigest": "sha256:d1ffe4e0000000000000000000000000000000000000000000000000d1ffe4e0",
 		"componentName": "my-component",
 	}
 	not lib.is_rule_applicable(rule, context)
@@ -133,20 +133,20 @@ test_is_rule_applicable_image_digest_no_match if {
 # =============================================================================
 
 test_is_rule_applicable_image_ref_match if {
-	rule := {"value": "some.rule", "imageRef": "sha256:abc123def456"}
+	rule := {"value": "some.rule", "imageRef": "sha256:abc123def4560000000000000000000000000000000000abc123def456"}
 	context := {
-		"imageRef": "quay.io/repo/image:v1@sha256:abc123def456",
-		"imageDigest": "sha256:abc123def456",
+		"imageRef": "quay.io/repo/image:v1@sha256:abc123def4560000000000000000000000000000000000abc123def456",
+		"imageDigest": "sha256:abc123def4560000000000000000000000000000000000abc123def456",
 		"componentName": "my-component",
 	}
 	lib.is_rule_applicable(rule, context)
 }
 
 test_is_rule_applicable_image_ref_no_match if {
-	rule := {"value": "some.rule", "imageRef": "sha256:abc123def456"}
+	rule := {"value": "some.rule", "imageRef": "sha256:abc123def4560000000000000000000000000000000000abc123def456"}
 	context := {
-		"imageRef": "quay.io/repo/image:v1@sha256:different",
-		"imageDigest": "sha256:different",
+		"imageRef": "quay.io/repo/image:v1@sha256:d1ffe4e0000000000000000000000000000000000000000000000000d1ffe4e0",
+		"imageDigest": "sha256:d1ffe4e0000000000000000000000000000000000000000000000000d1ffe4e0",
 		"componentName": "my-component",
 	}
 	not lib.is_rule_applicable(rule, context)
@@ -159,8 +159,8 @@ test_is_rule_applicable_image_ref_no_match if {
 test_is_rule_applicable_image_url_exact_match if {
 	rule := {"value": "some.rule", "imageUrl": "quay.io/repo/image"}
 	context := {
-		"imageRef": "quay.io/repo/image:v1@sha256:abc123",
-		"imageDigest": "sha256:abc123",
+		"imageRef": "quay.io/repo/image:v1@sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
+		"imageDigest": "sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
 		"componentName": "my-component",
 	}
 	lib.is_rule_applicable(rule, context)
@@ -169,8 +169,8 @@ test_is_rule_applicable_image_url_exact_match if {
 test_is_rule_applicable_image_url_prefix_match if {
 	rule := {"value": "some.rule", "imageUrl": "quay.io/repo"}
 	context := {
-		"imageRef": "quay.io/repo/image:v1@sha256:abc123",
-		"imageDigest": "sha256:abc123",
+		"imageRef": "quay.io/repo/image:v1@sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
+		"imageDigest": "sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
 		"componentName": "my-component",
 	}
 	lib.is_rule_applicable(rule, context)
@@ -179,8 +179,8 @@ test_is_rule_applicable_image_url_prefix_match if {
 test_is_rule_applicable_image_url_no_match if {
 	rule := {"value": "some.rule", "imageUrl": "quay.io/other"}
 	context := {
-		"imageRef": "quay.io/repo/image:v1@sha256:abc123",
-		"imageDigest": "sha256:abc123",
+		"imageRef": "quay.io/repo/image:v1@sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
+		"imageDigest": "sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
 		"componentName": "my-component",
 	}
 	not lib.is_rule_applicable(rule, context)
@@ -203,8 +203,8 @@ test_is_rule_applicable_image_url_with_tag_only if {
 test_is_rule_applicable_component_name_match if {
 	rule := {"value": "some.rule", "componentNames": ["my-component", "other-component"]}
 	context := {
-		"imageRef": "quay.io/repo/image:v1@sha256:abc123",
-		"imageDigest": "sha256:abc123",
+		"imageRef": "quay.io/repo/image:v1@sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
+		"imageDigest": "sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
 		"componentName": "my-component",
 	}
 	lib.is_rule_applicable(rule, context)
@@ -213,8 +213,8 @@ test_is_rule_applicable_component_name_match if {
 test_is_rule_applicable_component_name_no_match if {
 	rule := {"value": "some.rule", "componentNames": ["other-component"]}
 	context := {
-		"imageRef": "quay.io/repo/image:v1@sha256:abc123",
-		"imageDigest": "sha256:abc123",
+		"imageRef": "quay.io/repo/image:v1@sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
+		"imageDigest": "sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
 		"componentName": "my-component",
 	}
 	not lib.is_rule_applicable(rule, context)
@@ -224,8 +224,8 @@ test_is_rule_applicable_component_name_empty_list if {
 	# Empty componentNames should NOT match (it's a global rule then, handled separately)
 	rule := {"value": "some.rule", "componentNames": [], "imageUrl": "quay.io/other"}
 	context := {
-		"imageRef": "quay.io/repo/image:v1@sha256:abc123",
-		"imageDigest": "sha256:abc123",
+		"imageRef": "quay.io/repo/image:v1@sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
+		"imageDigest": "sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
 		"componentName": "my-component",
 	}
 	not lib.is_rule_applicable(rule, context)

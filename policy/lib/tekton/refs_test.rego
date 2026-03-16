@@ -5,11 +5,11 @@ import rego.v1
 import data.lib
 import data.lib.tekton
 
-_image := "registry.img/test@sha256:digest"
+_image := "registry.img/test@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"
 
 _image_key := "oci://registry.img/test"
 
-_image_digest := "sha256:digest"
+_image_digest := "sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"
 
 _unpinned_image := "registry.img/test:latest"
 

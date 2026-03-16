@@ -54,11 +54,13 @@ test_artifact_result if {
 test_images_result if {
 	results := [{
 		"name": "IMAGES",
-		"value": "img1@sha256:digest1, img2@sha256:digest2\n",
+		# regal ignore:line-length
+		"value": "img1@sha256:d19e5701000000000000000000000000000000000000000000000000d19e5701, img2@sha256:d19e5702000000000000000000000000000000000000000000000000d19e5702\n",
 	}]
 	lib.assert_equal(["img1", "img2"], tekton.task_result_artifact_url(resolved_slsav1_task("task1", [], results)))
 	lib.assert_equal(
-		["sha256:digest1", "sha256:digest2"],
+		# regal ignore:line-length
+		["sha256:d19e5701000000000000000000000000000000000000000000000000d19e5701", "sha256:d19e5702000000000000000000000000000000000000000000000000d19e5702"],
 		tekton.task_result_artifact_digest(resolved_slsav1_task("task1", [], results)),
 	)
 }
@@ -153,7 +155,8 @@ test_mixed_results if {
 		},
 		{
 			"name": "IMAGES",
-			"value": "images-1@sha256:4567,images-2@sha256:5678",
+			# regal ignore:line-length
+			"value": "images-1@sha256:4567000000000000000000000000000000000000000000000000000000004567,images-2@sha256:5678000000000000000000000000000000000000000000000000000000005678",
 		},
 		{
 			"name": "image1_ARTIFACT_URI",
@@ -161,7 +164,7 @@ test_mixed_results if {
 		},
 		{
 			"name": "image1_ARTIFACT_DIGEST",
-			"value": "sha256:6789",
+			"value": "sha256:6789000000000000000000000000000000000000000000000000000000006789",
 		},
 		{
 			"name": "image2_ARTIFACT_URI",
@@ -169,27 +172,29 @@ test_mixed_results if {
 		},
 		{
 			"name": "image2_ARTIFACT_DIGEST",
-			"value": "sha256:7890",
+			"value": "sha256:7890000000000000000000000000000000000000000000000000000000007890",
 		},
 		{
 			"name": "image1_ARTIFACT_OUTPUTS",
-			"value": {"uri": "artifact-outputs-img1", "digest": "sha256:1234"},
+			# regal ignore:line-length
+			"value": {"uri": "artifact-outputs-img1", "digest": "sha256:1234000000000000000000000000000000000000000000000000000000001234"},
 		},
 		{
 			"name": "image2_ARTIFACT_OUTPUTS",
-			"value": {"uri": "artifact-outputs-img2", "digest": "sha256:9801"},
+			# regal ignore:line-length
+			"value": {"uri": "artifact-outputs-img2", "digest": "sha256:9801000000000000000000000000000000000000000000000000000000009801"},
 		},
 	]
 
 	expected := [
 		"image-url-img1@2345",
 		"image-url-img2@3456",
-		"image-artifact-1@sha256:6789",
-		"image-artifact-1@sha256:7890",
-		"images-1@sha256:4567",
-		"images-2@sha256:5678",
-		"artifact-outputs-img1@sha256:1234",
-		"artifact-outputs-img2@sha256:9801",
+		"image-artifact-1@sha256:6789000000000000000000000000000000000000000000000000000000006789",
+		"image-artifact-1@sha256:7890000000000000000000000000000000000000000000000000000000007890",
+		"images-1@sha256:4567000000000000000000000000000000000000000000000000000000004567",
+		"images-2@sha256:5678000000000000000000000000000000000000000000000000000000005678",
+		"artifact-outputs-img1@sha256:1234000000000000000000000000000000000000000000000000000000001234",
+		"artifact-outputs-img2@sha256:9801000000000000000000000000000000000000000000000000000000009801",
 	]
 
 	lib.assert_equal(expected, tekton.images_with_digests([resolved_slsav1_task("task1", [], results)]))

@@ -188,7 +188,8 @@ _applicable_rules contains rule if {
 # Get image ref from input
 _image_ref := object.get(input, ["image", "ref"], "")
 
-# Extract image digest from ref (e.g., "repo/image@sha256:abc..." -> "sha256:abc...")
+# regal ignore:line-length
+# Extract image digest from ref (e.g., "repo/image@sha256:abc0000000000000000000000000000000000000000000000000000000000abc..." -> "sha256:abc0000000000000000000000000000000000000000000000000000000000abc...")
 _image_digest := digest if {
 	_image_ref != ""
 	contains(_image_ref, "@")

@@ -450,10 +450,11 @@ _bundle := "registry.img/spam@sha256:4e388ab32b10dc8dbc7e28144f552830adc74787c1e
 _results := [
 	{
 		"name": "IMAGE_DIGEST",
-		"value": "sha256:hash",
+		"value": "sha256:0a50000000000000000000000000000000000000000000000000000000000a50",
 	},
 	{
 		"name": "IMAGE_URL",
-		"value": "quay.io/jstuart/hacbs-docker-build:tag@sha256:hash",
+		# regal ignore:line-length
+		"value": "quay.io/jstuart/hacbs-docker-build:tag@sha256:0a50000000000000000000000000000000000000000000000000000000000a50",
 	},
 ]

@@ -60,7 +60,7 @@ test_deny_expected_source_code_reference_happy_day if {
 	dependencies := [
 		{
 			"uri": "registry.io/repository/image",
-			"digest": {"sha256": "cafe"},
+			"digest": {"sha256": "cafe000000000000000000000000000000000000000000000000000000cafe00"},
 		},
 		{
 			"uri": "git+https://git.repository",
@@ -68,7 +68,7 @@ test_deny_expected_source_code_reference_happy_day if {
 		},
 		{
 			"uri": "registry.io/repository/image2",
-			"digest": {"sha256": "dada"},
+			"digest": {"sha256": "dada000000000000000000000000000000000000000000000000000000dada00"},
 		},
 	]
 
@@ -339,7 +339,8 @@ test_slsa_v02_source_references if {
 	lib.assert_empty(slsa_source_correlated._source_references) with input.attestations as [att3]
 
 	# no uri
-	att4 = _material_attestation([{"digest": {"sha256": "cafe"}}])
+	# regal ignore:line-length
+	att4 = _material_attestation([{"digest": {"sha256": "cafe000000000000000000000000000000000000000000000000000000cafe00"}}])
 	lib.assert_empty(slsa_source_correlated._source_references) with input.attestations as [att4]
 	lib.assert_equal(
 		{"git+ssh://git.repository@sha1:cafe"},
@@ -373,7 +374,8 @@ test_slsa_v10_source_references if {
 	lib.assert_empty(slsa_source_correlated._source_references) with input.attestations as [att4]
 
 	# no uri
-	att5 = _resolved_dependencies_attestation([{"digest": {"sha256": "cafe"}}])
+	# regal ignore:line-length
+	att5 = _resolved_dependencies_attestation([{"digest": {"sha256": "cafe000000000000000000000000000000000000000000000000000000cafe00"}}])
 	lib.assert_empty(slsa_source_correlated._source_references) with input.attestations as [att5]
 	lib.assert_equal(
 		{"git+ssh://git.repository@sha1:cafe"},

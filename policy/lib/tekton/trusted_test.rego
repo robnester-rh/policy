@@ -218,7 +218,8 @@ test_is_trusted_task_with_rules if {
 
 	# Task that matches allow rule should be trusted
 	allowed_task := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "quay.io/konflux-ci/tekton-catalog/task-something:0.4@sha256:digest"},
+		# regal ignore:line-length
+		{"name": "bundle", "value": "quay.io/konflux-ci/tekton-catalog/task-something:0.4@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		{"name": "name", "value": "task-something"},
 		{"name": "kind", "value": "task"},
 	]}}}
@@ -227,7 +228,8 @@ test_is_trusted_task_with_rules if {
 
 	# Task that matches deny rule should not be trusted (deny takes precedence)
 	denied_task := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "quay.io/konflux-ci/tekton-catalog/task-buildah:0.3@sha256:digest"},
+		# regal ignore:line-length
+		{"name": "bundle", "value": "quay.io/konflux-ci/tekton-catalog/task-buildah:0.3@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		{"name": "name", "value": "task-buildah"},
 		{"name": "kind", "value": "task"},
 	]}}}
@@ -237,7 +239,8 @@ test_is_trusted_task_with_rules if {
 	# Task that matches allow pattern (registry.local) should be trusted
 	# Note: The key format is oci://registry.local/trusty:1.0 (with tag), so pattern oci://registry.local/* matches
 	registry_local_task := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "registry.local/trusty:1.0@sha256:digest"},
+		# regal ignore:line-length
+		{"name": "bundle", "value": "registry.local/trusty:1.0@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		{"name": "name", "value": "trusty"},
 		{"name": "kind", "value": "task"},
 	]}}}
@@ -247,7 +250,8 @@ test_is_trusted_task_with_rules if {
 	# Task that doesn't match any allow rule should not be trusted
 	# Note: This task uses a different path (untrusted) that doesn't match the pattern
 	not_allowed_task := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "other-registry.io/untrusted:1.0@sha256:digest"},
+		# regal ignore:line-length
+		{"name": "bundle", "value": "other-registry.io/untrusted:1.0@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		{"name": "name", "value": "untrusted"},
 		{"name": "kind", "value": "task"},
 	]}}}
@@ -256,7 +260,8 @@ test_is_trusted_task_with_rules if {
 
 	# Tasks satisfying at least one deny rule version constraints should be denied
 	deny_constrained_task_denied_version := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "quay.io/konflux-ci/tekton-catalog/deny-task-constrained:1.5@sha256:digest"},
+		# regal ignore:line-length
+		{"name": "bundle", "value": "quay.io/konflux-ci/tekton-catalog/deny-task-constrained:1.5@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		{"name": "name", "value": "constrained"},
 		{"name": "kind", "value": "task"},
 	]}}}
@@ -265,7 +270,8 @@ test_is_trusted_task_with_rules if {
 
 	# Task not satisfying any deny rule version constraints should not be denied
 	deny_constrained_task_valid_version := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "quay.io/konflux-ci/tekton-catalog/deny-task-constrained:1.2.3@sha256:digest"},
+		# regal ignore:line-length
+		{"name": "bundle", "value": "quay.io/konflux-ci/tekton-catalog/deny-task-constrained:1.2.3@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		{"name": "name", "value": "constrained"},
 		{"name": "kind", "value": "task"},
 	]}}}
@@ -274,7 +280,8 @@ test_is_trusted_task_with_rules if {
 
 	# Tasks satisfying all the allow-rule version constraints should be allowed
 	allow_constrained_task_valid_version := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "quay.io/konflux-ci/another-catalog/allow-task-constrained:1.5@sha256:digest"},
+		# regal ignore:line-length
+		{"name": "bundle", "value": "quay.io/konflux-ci/another-catalog/allow-task-constrained:1.5@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		{"name": "name", "value": "constrained"},
 		{"name": "kind", "value": "task"},
 	]}}}
@@ -283,7 +290,8 @@ test_is_trusted_task_with_rules if {
 
 	# Tasks *NOT* satisfying all the allow-rule version constraints should be denied
 	allow_constrained_task_denied_version := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "quay.io/konflux-ci/another-catalog/allow-task-constrained:1.2.3@sha256:digest"},
+		# regal ignore:line-length
+		{"name": "bundle", "value": "quay.io/konflux-ci/another-catalog/allow-task-constrained:1.2.3@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		{"name": "name", "value": "constrained"},
 		{"name": "kind", "value": "task"},
 	]}}}
@@ -293,7 +301,8 @@ test_is_trusted_task_with_rules if {
 	# Task with mismatching versions between ref and manifest annotations.
 	# Only the manifest annotation is taken into consideration
 	allow_constrained_task_denied_version_mismatching_1 := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "quay.io/konflux-ci/another-catalog/allow-task-constrained:1.5@sha256:digest"},
+		# regal ignore:line-length
+		{"name": "bundle", "value": "quay.io/konflux-ci/another-catalog/allow-task-constrained:1.5@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		{"name": "name", "value": "constrained"},
 		{"name": "kind", "value": "task"},
 	]}}}
@@ -303,7 +312,8 @@ test_is_trusted_task_with_rules if {
 	# Task with mismatching versions between ref and manifest annotations.
 	# Only the manifest annotation is taken into consideration
 	allow_constrained_task_denied_version_mismatching_2 := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "quay.io/konflux-ci/another-catalog/allow-task-constrained:1.2.3@sha256:digest"},
+		# regal ignore:line-length
+		{"name": "bundle", "value": "quay.io/konflux-ci/another-catalog/allow-task-constrained:1.2.3@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		{"name": "name", "value": "constrained"},
 		{"name": "kind", "value": "task"},
 	]}}}
@@ -328,10 +338,10 @@ test_trusted_task_records if {
 
 test_unexpired_records if {
 	expected_refs_by_index := {
-		0: "sha256:latest",
-		1: "sha256:digest-1",
-		2: "sha256:digest-2",
-		3: "sha256:oldest",
+		0: "sha256:1a7e5700000000000000000000000000000000000000000000000000001a7e57",
+		1: "sha256:d19e5710000000000000000000000000000000000000000000000000d19e5710",
+		2: "sha256:d19e5720000000000000000000000000000000000000000000000000d19e5720",
+		3: "sha256:01de5700000000000000000000000000000000000000000000000000001de570",
 	}
 
 	# regal ignore:line-length
@@ -358,7 +368,8 @@ test_data_trusted_task_rules_extraction if {
 
 	# Task matching allow from data.trusted_task_rules should be trusted
 	allowed_task := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "registry.local/trusty:1.0@sha256:digest"},
+		# regal ignore:line-length
+		{"name": "bundle", "value": "registry.local/trusty:1.0@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		{"name": "name", "value": "trusty"},
 		{"name": "kind", "value": "task"},
 	]}}}
@@ -373,7 +384,8 @@ test_data_trusted_task_rules_extraction if {
 
 	# Task matching deny from data.trusted_task_rules should not be trusted
 	denied_task := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "registry.local/crook:1.0@sha256:digest"},
+		# regal ignore:line-length
+		{"name": "bundle", "value": "registry.local/crook:1.0@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		{"name": "name", "value": "crook"},
 		{"name": "kind", "value": "task"},
 	]}}}
@@ -402,7 +414,8 @@ test_rule_data_trusted_task_rules_extraction if {
 
 	# Task matching allow from rule_data should be trusted
 	allowed_task := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "quay.io/konflux-ci/tekton-catalog/task-something:0.4@sha256:digest"},
+		# regal ignore:line-length
+		{"name": "bundle", "value": "quay.io/konflux-ci/tekton-catalog/task-something:0.4@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		{"name": "name", "value": "task-something"},
 		{"name": "kind", "value": "task"},
 	]}}}
@@ -410,7 +423,8 @@ test_rule_data_trusted_task_rules_extraction if {
 
 	# Task matching deny from rule_data should not be trusted
 	denied_task := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "quay.io/konflux-ci/tekton-catalog/task-buildah:0.3@sha256:digest"},
+		# regal ignore:line-length
+		{"name": "bundle", "value": "quay.io/konflux-ci/tekton-catalog/task-buildah:0.3@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		{"name": "name", "value": "task-buildah"},
 		{"name": "kind", "value": "task"},
 	]}}}
@@ -438,8 +452,10 @@ test_data_errors if {
 		],
 		# this is allowed
 		"duplicated-entries": [
-			{"ref": "sha256:digest", "expires_on": "2099-01-01T00:00:00Z"},
-			{"ref": "sha256:digest", "expires_on": "2099-01-01T00:00:00Z"},
+			# regal ignore:line-length
+			{"ref": "sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700", "expires_on": "2099-01-01T00:00:00Z"},
+			# regal ignore:line-length
+			{"ref": "sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700", "expires_on": "2099-01-01T00:00:00Z"},
 		],
 	}
 
@@ -500,7 +516,8 @@ test_denying_pattern if {
 
 	# Create a task that matches the deny rule
 	denied_task := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "quay.io/konflux-ci/tekton-catalog/task-buildah:0.3@sha256:digest"},
+		# regal ignore:line-length
+		{"name": "bundle", "value": "quay.io/konflux-ci/tekton-catalog/task-buildah:0.3@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		{"name": "name", "value": "task-buildah"},
 		{"name": "kind", "value": "task"},
 	]}}}
@@ -511,7 +528,8 @@ test_denying_pattern if {
 
 	# Task that doesn't match any deny rule should return empty list
 	non_matching_task := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "registry.local/trusty:1.0@sha256:digest"},
+		# regal ignore:line-length
+		{"name": "bundle", "value": "registry.local/trusty:1.0@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		{"name": "name", "value": "trusty"},
 		{"name": "kind", "value": "task"},
 	]}}}
@@ -539,7 +557,8 @@ test_denying_pattern_multiple_rules if {
 
 	# Should match both patterns (both rules match this task)
 	buildah_task := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:digest"},
+		# regal ignore:line-length
+		{"name": "bundle", "value": "quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		{"name": "name", "value": "task-buildah"},
 		{"name": "kind", "value": "task"},
 	]}}}
@@ -571,7 +590,8 @@ test_denial_reason if {
 
 	# Case 1: Matches a deny rule (even though it also matches allow)
 	denied_task := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "quay.io/konflux-ci/tekton-catalog/task-buildah:0.3@sha256:digest"},
+		# regal ignore:line-length
+		{"name": "bundle", "value": "quay.io/konflux-ci/tekton-catalog/task-buildah:0.3@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		{"name": "name", "value": "task-buildah"},
 		{"name": "kind", "value": "task"},
 	]}}}
@@ -582,7 +602,8 @@ test_denial_reason if {
 
 	# Case 2: Doesn't match any allow rule and isn't in legacy
 	not_allowed_task := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "registry.local/untrusted:1.0@sha256:digest"},
+		# regal ignore:line-length
+		{"name": "bundle", "value": "registry.local/untrusted:1.0@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		{"name": "name", "value": "untrusted"},
 		{"name": "kind", "value": "task"},
 	]}}}
@@ -595,7 +616,8 @@ test_denial_reason if {
 
 	# Task that matches allow rule should return nothing (it's trusted)
 	allowed_task := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "quay.io/konflux-ci/tekton-catalog/task-something:0.4@sha256:digest"},
+		# regal ignore:line-length
+		{"name": "bundle", "value": "quay.io/konflux-ci/tekton-catalog/task-something:0.4@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		{"name": "name", "value": "task-something"},
 		{"name": "kind", "value": "task"},
 	]}}}
@@ -620,7 +642,8 @@ test_denial_reason_no_allow_rules if {
 	# Task not in legacy should return nothing (we fall back to legacy, which is empty, but denial_reason
 	# only applies when allow rules exist)
 	untrusted_task := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "registry.local/untrusted:1.0@sha256:digest"},
+		# regal ignore:line-length
+		{"name": "bundle", "value": "registry.local/untrusted:1.0@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		{"name": "name", "value": "untrusted"},
 		{"name": "kind", "value": "task"},
 	]}}}
@@ -732,7 +755,8 @@ test_denying_rules_info_empty if {
 
 	# Task that matches allow rule - denial_reason should be empty
 	allowed_task := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:digest"},
+		# regal ignore:line-length
+		{"name": "bundle", "value": "quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		{"name": "name", "value": "task-buildah"},
 		{"name": "kind", "value": "task"},
 	]}}}
@@ -746,7 +770,8 @@ test_denying_rules_info_empty if {
 }
 
 trusted_bundle_task := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-	{"name": "bundle", "value": "registry.local/trusty:1.0@sha256:digest"},
+	# regal ignore:line-length
+	{"name": "bundle", "value": "registry.local/trusty:1.0@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 	{"name": "name", "value": "trusty"},
 	{"name": "kind", "value": "task"},
 ]}}}
@@ -754,19 +779,22 @@ trusted_bundle_task := {"spec": {"taskRef": {"resolver": "bundles", "params": [
 newest_trusted_bundle_task := trusted_bundle_task
 
 same_date_trusted_bundle_task := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-	{"name": "bundle", "value": "registry.local/trusty:1.0@sha256:same_date"},
+	# regal ignore:line-length
+	{"name": "bundle", "value": "registry.local/trusty:1.0@sha256:5a4eda7e00000000000000000000000000000000000000000000000005a4eda7e"},
 	{"name": "name", "value": "trusty"},
 	{"name": "kind", "value": "task"},
 ]}}}
 
 outdated_trusted_bundle_task := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-	{"name": "bundle", "value": "registry.local/trusty:1.0@sha256:outdated-digest"},
+	# regal ignore:line-length
+	{"name": "bundle", "value": "registry.local/trusty:1.0@sha256:007da7edd19e5700000000000000000000000000000000007da7edd19e57"},
 	{"name": "name", "value": "trusty"},
 	{"name": "kind", "value": "task"},
 ]}}}
 
 expired_trusted_bundle_task := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-	{"name": "bundle", "value": "registry.local/trusty:1.0@sha256:expired-digest"},
+	# regal ignore:line-length
+	{"name": "bundle", "value": "registry.local/trusty:1.0@sha256:e001edd19e5700000000000000000000000000000000000000e001edd19e57"},
 	{"name": "name", "value": "trusty"},
 	{"name": "kind", "value": "task"},
 ]}}}
@@ -778,7 +806,8 @@ unpinned_bundle_task := {"spec": {"taskRef": {"resolver": "bundles", "params": [
 ]}}}
 
 untrusted_bundle_task := {"spec": {"taskRef": {"resolver": "bundles", "params": [
-	{"name": "bundle", "value": "registry.local/crook:1.0@sha256:digest"},
+	# regal ignore:line-length
+	{"name": "bundle", "value": "registry.local/crook:1.0@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 	{"name": "name", "value": "crook"},
 	{"name": "kind", "value": "task"},
 ]}}}
@@ -837,17 +866,17 @@ untrusted_git_task := {
 
 trusted_tasks := {
 	"oci://registry.local/trusty:1.0": [
-		{"ref": "sha256:digest"},
+		{"ref": "sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		{
-			"ref": "sha256:same_date",
+			"ref": "sha256:5a4eda7e00000000000000000000000000000000000000000000000005a4eda7e",
 			"expires_on": "2099-01-01T00:00:00Z",
 		},
 		{
-			"ref": "sha256:outdated-digest",
+			"ref": "sha256:007da7edd19e5700000000000000000000000000000000007da7edd19e57",
 			"expires_on": "2099-01-01T00:00:00Z",
 		},
 		{
-			"ref": "sha256:expired-digest",
+			"ref": "sha256:e001edd19e5700000000000000000000000000000000000000e001edd19e57",
 			"expires_on": "2024-01-01T00:00:00Z",
 		},
 	],
@@ -866,24 +895,24 @@ trusted_tasks := {
 
 unsorted_trusted_task := {"oci://registry.local/trusty:1.0": [
 	{
-		"ref": "sha256:digest-1",
+		"ref": "sha256:d19e5710000000000000000000000000000000000000000000000000d19e5710",
 		"expires_on": "2100-01-01T00:00:00Z",
 	},
 	{
-		"ref": "sha256:digest-2",
+		"ref": "sha256:d19e5720000000000000000000000000000000000000000000000000d19e5720",
 		"expires_on": "2075-01-01T00:00:00Z",
 	},
-	{"ref": "sha256:latest"},
+	{"ref": "sha256:1a7e5700000000000000000000000000000000000000000000000000001a7e57"},
 	{
-		"ref": "sha256:oldest",
+		"ref": "sha256:01de5700000000000000000000000000000000000000000000000000001de570",
 		"expires_on": "2050-01-01T00:00:00Z",
 	},
 	{
-		"ref": "sha256:expired",
+		"ref": "sha256:e001ed00000000000000000000000000000000000000000000000000e001ed00",
 		"expires_on": "2000-01-01T00:00:00Z",
 	},
 	{
-		"ref": "sha256:invalid-expires-on",
+		"ref": "sha256:bad0da7e0000000000000000000000000000000000000000000000bad0da7e",
 		"expires_on": "bad-data",
 	},
 ]}

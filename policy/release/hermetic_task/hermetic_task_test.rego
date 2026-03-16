@@ -68,7 +68,8 @@ test_many_hermetic_tasks if {
 			{"name": "IMAGE_URL", "value": "registry/repo"},
 			{"name": "IMAGE_DIGEST", "value": "digest"},
 		],
-		"ref": {"kind": "Task", "name": "buildah", "bundle": "reg.img/spam@sha256:abc"},
+		# regal ignore:line-length
+		"ref": {"kind": "Task", "name": "buildah", "bundle": "reg.img/spam@sha256:abc0000000000000000000000000000000000000000000000000000000000abc"},
 		"invocation": {"parameters": {"HERMETIC": "true"}},
 	}
 
@@ -77,7 +78,8 @@ test_many_hermetic_tasks if {
 			{"name": "IMAGE_URL", "value": "registry/repo"},
 			{"name": "IMAGE_DIGEST", "value": "digest"},
 		],
-		"ref": {"kind": "Task", "name": "run-script-oci-ta", "bundle": "reg.img/spam@sha256:abc"},
+		# regal ignore:line-length
+		"ref": {"kind": "Task", "name": "run-script-oci-ta", "bundle": "reg.img/spam@sha256:abc0000000000000000000000000000000000000000000000000000000000abc"},
 		"invocation": {"parameters": {"HERMETIC": "true"}},
 	}
 
@@ -274,7 +276,8 @@ _good_attestation := {"statement": {
 				{"name": "IMAGE_URL", "value": "registry/repo"},
 				{"name": "IMAGE_DIGEST", "value": "digest"},
 			],
-			"ref": {"kind": "Task", "name": "buildah", "bundle": "reg.img/spam@sha256:abc"},
+			# regal ignore:line-length
+			"ref": {"kind": "Task", "name": "buildah", "bundle": "reg.img/spam@sha256:abc0000000000000000000000000000000000000000000000000000000000abc"},
 			"invocation": {"parameters": {"HERMETIC": "true"}},
 		}]},
 	},

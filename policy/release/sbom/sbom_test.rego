@@ -8,7 +8,7 @@ import data.sbom
 test_not_found if {
 	expected := {{"code": "sbom.found", "msg": "No SBOM attestations found"}}
 	lib.assert_equal_results(expected, sbom.deny) with input.attestations as []
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
 }
 
 test_not_found_image_index if {
@@ -20,7 +20,8 @@ test_not_found_image_index if {
 				{
 					"name": "IMAGES",
 					"type": "string",
-					"value": "registry.local/spam@sha256:abc, registry.local/bacon@sha256:bcd",
+					# regal ignore:line-length
+					"value": "registry.local/spam@sha256:abc0000000000000000000000000000000000000000000000000000000000abc, registry.local/bacon@sha256:bcd0000000000000000000000000000000000000000000000000000000000bcd",
 				},
 				{
 					"name": "IMAGE_URL",
@@ -30,14 +31,14 @@ test_not_found_image_index if {
 				{
 					"name": "IMAGE_DIGEST",
 					"type": "string",
-					"value": "sha256:fff",
+					"value": "sha256:fff0000000000000000000000000000000000000000000000000000000000fff",
 				},
 			]}]},
 		},
 	}}
 
 	lib.assert_empty(sbom.deny) with input.attestations as [att]
-		with input.image.ref as "registry.local/ham@sha256:fff"
+		with input.image.ref as "registry.local/ham@sha256:fff0000000000000000000000000000000000000000000000000000000000fff"
 }
 
 test_rule_data_validation if {
@@ -267,7 +268,7 @@ _spdx_sbom_attestation := {"statement": {
 		"documentNamespace": "https://example.dev/spdxdocs/example-310683af-e9a0-4f66-a6a4-119352915b51",
 		"dataLicense": "CC0-1.0",
 		"SPDXID": "SPDXRef-DOCUMENT",
-		"name": "registry.local/bacon@sha256:123",
+		"name": "registry.local/bacon@sha256:1230000000000000000000000000000000000000000000000000000000000123",
 		"creationInfo": {
 			"created": "2006-08-14T02:34:56-06:00",
 			"creators": ["Tool: example SPDX document only"],

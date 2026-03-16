@@ -67,7 +67,7 @@ test_tagged_warning if {
 	expected := {{
 		"code": "trusted_task.tagged",
 		# regal ignore:line-length
-		"msg": "Pipeline task \"untagged-trusty-p\" uses an untagged task reference, oci://registry.local/trusty@sha256:digest", "term": "trusty",
+		"msg": "Pipeline task \"untagged-trusty-p\" uses an untagged task reference, oci://registry.local/trusty@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700", "term": "trusty",
 	}}
 
 	lib.assert_equal_results(trusted_task.warn, expected) with input.attestations as [att]
@@ -98,7 +98,7 @@ test_outdated_warning if {
 		{
 			"code": "trusted_task.current",
 			# regal ignore:line-length
-			"msg": `A newer version of task "outdated-trusty-p" exists. Please update before 2099-01-01T00:00:00Z. The current bundle is "oci://registry.local/trusty:1.0@sha256:outdated-digest" and the latest bundle ref is "sha256:digest"`,
+			"msg": `A newer version of task "outdated-trusty-p" exists. Please update before 2099-01-01T00:00:00Z. The current bundle is "oci://registry.local/trusty:1.0@sha256:007da7edd19e5700000000000000000000000000000000007da7edd19e57" and the latest bundle ref is "sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"`,
 			"term": "trusty",
 		},
 	}
@@ -130,7 +130,8 @@ test_trusted_violation if {
 	expected := {
 		{
 			"code": "trusted_task.trusted",
-			"msg": `PipelineTask "crook-p" uses an untrusted task reference: oci://registry.local/crook:1.0@sha256:digest`,
+			# regal ignore:line-length
+			"msg": `PipelineTask "crook-p" uses an untrusted task reference: oci://registry.local/crook:1.0@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700`,
 			"term": "crook",
 		},
 		{
@@ -142,7 +143,7 @@ test_trusted_violation if {
 		{
 			"code": "trusted_task.trusted",
 			# regal ignore:line-length
-			"msg": `PipelineTask "expired-trusty-p" uses an untrusted task reference: oci://registry.local/trusty:1.0@sha256:expired-digest. Please upgrade the task version to: sha256:digest`,
+			"msg": `PipelineTask "expired-trusty-p" uses an untrusted task reference: oci://registry.local/trusty:1.0@sha256:e001edd19e5700000000000000000000000000000000000000e001edd19e57. Please upgrade the task version to: sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700`,
 			"term": "trusty",
 		},
 		{
@@ -166,7 +167,7 @@ test_trusted_artifact_tampering if {
 	evil_attestation := json.patch(attestation_ta, [{
 		"op": "replace",
 		"path": "/statement/predicate/buildConfig/tasks/1/ref/bundle",
-		"value": "registry.io/evil/bundle@sha256:cde",
+		"value": "registry.io/evil/bundle@sha256:cde0000000000000000000000000000000000000000000000000000000000cde",
 	}])
 
 	expected := {
@@ -199,13 +200,13 @@ test_trusted_artifact_outdated if {
 		{
 			"code": "trusted_task.trusted",
 			# regal ignore:line-length
-			"msg": `Untrusted version of PipelineTask "task_b" (Task "TaskB") was included in build chain comprised of: task_a, task_b, task_c. Please upgrade the task version to: sha256:digest`,
+			"msg": `Untrusted version of PipelineTask "task_b" (Task "TaskB") was included in build chain comprised of: task_a, task_b, task_c. Please upgrade the task version to: sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700`,
 			"term": "TaskB",
 		},
 		{
 			"code": "trusted_task.trusted",
 			# regal ignore:line-length
-			"msg": `Untrusted version of PipelineTask "task_b" (Task "TaskB") was included in build chain comprised of: task_b, task_c, task_test_a. Please upgrade the task version to: sha256:digest`,
+			"msg": `Untrusted version of PipelineTask "task_b" (Task "TaskB") was included in build chain comprised of: task_b, task_c, task_test_a. Please upgrade the task version to: sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700`,
 			"term": "TaskB",
 		},
 	}
@@ -491,7 +492,8 @@ test_trusted_build_digests_from_run_script_result if {
 	# A digest from the SCRIPT_RUNNER_IMAGE_REFERENCE task result in the run-script-oci-ta
 	# task appears in _trusted_build_digests if the task is considered a trusted task
 	attestation := _mock_att_with_task({
-		"ref": {"name": "run-script-oci-ta", "bundle": "registry.local/trusty:1.0@sha256:digest"},
+		# regal ignore:line-length
+		"ref": {"name": "run-script-oci-ta", "bundle": "registry.local/trusty:1.0@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		"results": [_mock_run_script_result],
 	})
 	expected := {"sha256:1111111111111111111111111111111111111111111111111111111111111111"}
@@ -503,7 +505,8 @@ test_trusted_build_digests_from_run_script_untrusted if {
 	# A digest from the SCRIPT_RUNNER_IMAGE_REFERENCE task result in the run-script-oci-ta
 	# task does not appear in _trusted_build_digests if the task is not considered a trusted task
 	attestation := _mock_att_with_task({
-		"ref": {"name": "run-script-oci-ta", "bundle": "registry.local/unknown:1.0@sha256:digest"},
+		# regal ignore:line-length
+		"ref": {"name": "run-script-oci-ta", "bundle": "registry.local/unknown:1.0@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		"results": [_mock_run_script_result],
 	})
 	lib.assert_empty(trusted_task._trusted_build_digests) with input.attestations as [attestation]
@@ -515,7 +518,8 @@ test_trusted_build_digests_from_run_script_no_result if {
 	# in _trusted_build_digests even if the task is not considered a trusted task
 	results := json.patch(_mock_run_script_result, [{"op": "add", "path": "/name", "value": "SOME_OTHER_NAME"}])
 	attestation := _mock_att_with_task({
-		"ref": {"name": "run-script-oci-ta", "bundle": "registry.local/trusty:1.0@sha256:digest"},
+		# regal ignore:line-length
+		"ref": {"name": "run-script-oci-ta", "bundle": "registry.local/trusty:1.0@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		"results": [results],
 	})
 	lib.assert_equal(trusted_task._trusted_build_digests, set()) with input.attestations as [attestation]
@@ -526,7 +530,8 @@ test_trusted_build_digests_from_build_task_results if {
 	# A digest from the the IMAGE_DIGEST build task result appears in _trusted_build_digests
 	# if the build task is considered a trusted task
 	attestation := _mock_att_with_task({
-		"ref": {"name": "some-task", "bundle": "registry.local/trusty:1.0@sha256:digest"},
+		# regal ignore:line-length
+		"ref": {"name": "some-task", "bundle": "registry.local/trusty:1.0@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		"results": [
 			{"name": "SOME_IMAGE_URL", "value": "registry.io/whatever/image", "type": "string"},
 			# regal ignore:line-length
@@ -560,7 +565,8 @@ test_trusted_build_digests_from_snapshot_components if {
 trusted_bundle_pipeline_task := {
 	"name": "trusty-p",
 	"ref": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "registry.local/trusty:1.0@sha256:digest"},
+		# regal ignore:line-length
+		{"name": "bundle", "value": "registry.local/trusty:1.0@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		{"name": "name", "value": "trusty"},
 		{"name": "kind", "value": "task"},
 	]},
@@ -571,7 +577,8 @@ newest_bundle_pipeline_task := trusted_bundle_pipeline_task
 outdated_bundle_pipeline_task := {
 	"name": "outdated-trusty-p",
 	"ref": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "registry.local/trusty:1.0@sha256:outdated-digest"},
+		# regal ignore:line-length
+		{"name": "bundle", "value": "registry.local/trusty:1.0@sha256:007da7edd19e5700000000000000000000000000000000007da7edd19e57"},
 		{"name": "name", "value": "trusty"},
 		{"name": "kind", "value": "task"},
 	]},
@@ -580,7 +587,8 @@ outdated_bundle_pipeline_task := {
 expired_bundle_pipeline_task := {
 	"name": "expired-trusty-p",
 	"ref": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "registry.local/trusty:1.0@sha256:expired-digest"},
+		# regal ignore:line-length
+		{"name": "bundle", "value": "registry.local/trusty:1.0@sha256:e001edd19e5700000000000000000000000000000000000000e001edd19e57"},
 		{"name": "name", "value": "trusty"},
 		{"name": "kind", "value": "task"},
 	]},
@@ -598,7 +606,8 @@ unpinned_bundle_pipeline_task := {
 untagged_bundle_pipeline_task := {
 	"name": "untagged-trusty-p",
 	"ref": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "registry.local/trusty@sha256:digest"},
+		# regal ignore:line-length
+		{"name": "bundle", "value": "registry.local/trusty@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		{"name": "name", "value": "trusty"},
 		{"name": "kind", "value": "task"},
 	]},
@@ -607,7 +616,8 @@ untagged_bundle_pipeline_task := {
 unknown_bundle_pipeline_task := {
 	"name": "crook-p",
 	"ref": {"resolver": "bundles", "params": [
-		{"name": "bundle", "value": "registry.local/crook:1.0@sha256:digest"},
+		# regal ignore:line-length
+		{"name": "bundle", "value": "registry.local/crook:1.0@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		{"name": "name", "value": "crook"},
 		{"name": "kind", "value": "task"},
 	]},
@@ -694,9 +704,9 @@ image_a_digest := "sha256:49a6fd43239ae41643426daefc5239857a1cc1a6f2c1595f88965d
 
 image_index_digest := "sha256:6e69e396950defe6ff7981636e30498f99128310a4ee37a87c48729888cb77b3"
 
-outdated_bundle := "registry.local/trusty:1.0@sha256:outdated"
+outdated_bundle := "registry.local/trusty:1.0@sha256:007da7ed00000000000000000000000000000000000000000000000007da7ed0"
 
-trusted_bundle := "registry.local/trusty:1.0@sha256:digest"
+trusted_bundle := "registry.local/trusty:1.0@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"
 
 task_image_index := {
 	"metadata": {"labels": {"tekton.dev/pipelineTask": "task_image_index"}},
@@ -788,16 +798,16 @@ attestation_ta := {"statement": {
 trusted_tasks_data := {
 	"oci://registry.local/trusty:1.0": [
 		{
-			"ref": "sha256:digest",
+			"ref": "sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700",
 			"effective_on": "2099-01-01T00:00:00Z",
 		},
 		{
-			"ref": "sha256:outdated-digest",
+			"ref": "sha256:007da7edd19e5700000000000000000000000000000000007da7edd19e57",
 			"effective_on": "2024-01-01T00:00:00Z",
 			"expires_on": "2099-01-01T00:00:00Z",
 		},
 		{
-			"ref": "sha256:expired-digest",
+			"ref": "sha256:e001edd19e5700000000000000000000000000000000000000e001edd19e57",
 			"effective_on": "2023-01-01T00:00:00Z",
 			"expires_on": "2024-01-01T00:00:00Z",
 		},
@@ -835,7 +845,8 @@ trusted_tasks_data := {
 # A1 — On trusted_tasks, no rules → trusted
 # Task is in trusted_tasks, trusted_task_rules is empty → should be trusted via legacy fallback
 test_on_trusted_tasks_no_rules_trusted if {
-	rules_trusted_tasks_data := {"oci://quay.io/konflux-ci/tekton-catalog/task-buildah:0.4": [{"ref": "sha256:abc123"}]}
+	# regal ignore:line-length
+	rules_trusted_tasks_data := {"oci://quay.io/konflux-ci/tekton-catalog/task-buildah:0.4": [{"ref": "sha256:abc1230000000000000000000000000000000000000000000000000000abc123"}]}
 
 	trusted_task_rules_data := {
 		"allow": [],
@@ -844,7 +855,8 @@ test_on_trusted_tasks_no_rules_trusted if {
 
 	att := _rules_make_attestation([_rules_make_task(
 		"buildah-task",
-		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123",
+		# regal ignore:line-length
+		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
 		"task-buildah",
 	)])
 
@@ -858,7 +870,7 @@ test_on_trusted_tasks_no_rules_trusted if {
 # Task is in trusted_tasks with expired date → should produce deny
 test_on_trusted_tasks_expired_untrusted if {
 	rules_trusted_tasks_data := {"oci://quay.io/konflux-ci/tekton-catalog/task-buildah:0.4": [{
-		"ref": "sha256:abc123",
+		"ref": "sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
 		"expires_on": "2024-12-31T00:00:00Z",
 	}]}
 
@@ -869,14 +881,15 @@ test_on_trusted_tasks_expired_untrusted if {
 
 	att := _rules_make_attestation([_rules_make_task(
 		"buildah-task",
-		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123",
+		# regal ignore:line-length
+		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
 		"task-buildah",
 	)])
 
 	expected := {{
 		"code": "trusted_task.trusted",
 		# regal ignore:line-length
-		"msg": `PipelineTask "buildah-task" uses an untrusted task reference: oci://quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123`,
+		"msg": `PipelineTask "buildah-task" uses an untrusted task reference: oci://quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc1230000000000000000000000000000000000000000000000000000abc123`,
 		"term": "task-buildah",
 	}}
 
@@ -899,7 +912,7 @@ test_not_on_trusted_tasks_no_rules_untrusted if {
 
 	att := _rules_make_attestation([_rules_make_task(
 		"other-task",
-		"quay.io/myorg/other/task:1.0@sha256:abc123",
+		"quay.io/myorg/other/task:1.0@sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
 		"other-task",
 	)])
 
@@ -931,7 +944,8 @@ test_allow_by_location if {
 
 	att := _rules_make_attestation([_rules_make_task(
 		"buildah-task",
-		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123",
+		# regal ignore:line-length
+		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
 		"task-buildah",
 	)])
 
@@ -955,14 +969,14 @@ test_outside_pattern_not_trusted if {
 
 	att := _rules_make_attestation([_rules_make_task(
 		"other-task",
-		"quay.io/myorg/other/task:1.0@sha256:abc123",
+		"quay.io/myorg/other/task:1.0@sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
 		"other-task",
 	)])
 
 	expected := {{
 		"code": "trusted_task.trusted",
 		# regal ignore:line-length
-		"msg": `PipelineTask "other-task" uses an untrusted task reference: oci://quay.io/myorg/other/task:1.0@sha256:abc123. The denial reason is: not_allowed`,
+		"msg": `PipelineTask "other-task" uses an untrusted task reference: oci://quay.io/myorg/other/task:1.0@sha256:abc1230000000000000000000000000000000000000000000000000000abc123. The denial reason is: not_allowed`,
 		"term": "other-task",
 	}}
 
@@ -994,14 +1008,15 @@ test_deny_takes_precedence_over_allow if {
 
 	att := _rules_make_attestation([_rules_make_task(
 		"buildah-task",
-		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123",
+		# regal ignore:line-length
+		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
 		"task-buildah",
 	)])
 
 	expected := {{
 		"code": "trusted_task.trusted",
 		# regal ignore:line-length
-		"msg": "PipelineTask \"buildah-task\" uses an untrusted task reference: oci://quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123. The denial reason is: deny_rule\n  - oci://quay.io/konflux-ci/tekton-catalog/task-buildah*\nMessages:\n  - task-buildah:0.4 is deprecated",
+		"msg": "PipelineTask \"buildah-task\" uses an untrusted task reference: oci://quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc1230000000000000000000000000000000000000000000000000000abc123. The denial reason is: deny_rule\n  - oci://quay.io/konflux-ci/tekton-catalog/task-buildah*\nMessages:\n  - task-buildah:0.4 is deprecated",
 		"term": "task-buildah",
 	}}
 
@@ -1029,14 +1044,15 @@ test_allow_rule_not_yet_effective if {
 
 	att := _rules_make_attestation([_rules_make_task(
 		"buildah-task",
-		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123",
+		# regal ignore:line-length
+		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
 		"task-buildah",
 	)])
 
 	expected := {{
 		"code": "trusted_task.trusted",
 		# regal ignore:line-length
-		"msg": `PipelineTask "buildah-task" uses an untrusted task reference: oci://quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123. The denial reason is: no_effective_rules`,
+		"msg": `PipelineTask "buildah-task" uses an untrusted task reference: oci://quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc1230000000000000000000000000000000000000000000000000000abc123. The denial reason is: no_effective_rules`,
 		"term": "task-buildah",
 	}}
 
@@ -1060,7 +1076,8 @@ test_allow_rule_effective_trusted if {
 
 	att := _rules_make_attestation([_rules_make_task(
 		"buildah-task",
-		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123",
+		# regal ignore:line-length
+		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
 		"task-buildah",
 	)])
 
@@ -1088,7 +1105,8 @@ test_deny_rule_not_yet_effective if {
 
 	att := _rules_make_attestation([_rules_make_task(
 		"buildah-task",
-		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123",
+		# regal ignore:line-length
+		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
 		"task-buildah",
 	)])
 
@@ -1116,14 +1134,15 @@ test_deny_rule_becomes_effective if {
 
 	att := _rules_make_attestation([_rules_make_task(
 		"buildah-task",
-		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123",
+		# regal ignore:line-length
+		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
 		"task-buildah",
 	)])
 
 	expected := {{
 		"code": "trusted_task.trusted",
 		# regal ignore:line-length
-		"msg": "PipelineTask \"buildah-task\" uses an untrusted task reference: oci://quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123. The denial reason is: deny_rule\n  - oci://quay.io/konflux-ci/tekton-catalog/task-buildah*",
+		"msg": "PipelineTask \"buildah-task\" uses an untrusted task reference: oci://quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc1230000000000000000000000000000000000000000000000000000abc123. The denial reason is: deny_rule\n  - oci://quay.io/konflux-ci/tekton-catalog/task-buildah*",
 		"term": "task-buildah",
 	}}
 
@@ -1156,7 +1175,8 @@ test_multiple_allow_rules if {
 
 	att := _rules_make_attestation([_rules_make_task(
 		"buildah-task",
-		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123",
+		# regal ignore:line-length
+		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
 		"task-buildah",
 	)])
 
@@ -1188,14 +1208,15 @@ test_deny_with_message if {
 
 	att := _rules_make_attestation([_rules_make_task(
 		"manifest-task",
-		"quay.io/konflux-ci/tekton-catalog/task-build-image-manifest:1.0@sha256:abc123",
+		# regal ignore:line-length
+		"quay.io/konflux-ci/tekton-catalog/task-build-image-manifest:1.0@sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
 		"task-build-image-manifest",
 	)])
 
 	expected := {{
 		"code": "trusted_task.trusted",
 		# regal ignore:line-length
-		"msg": "PipelineTask \"manifest-task\" uses an untrusted task reference: oci://quay.io/konflux-ci/tekton-catalog/task-build-image-manifest:1.0@sha256:abc123. The denial reason is: deny_rule\n  - oci://quay.io/konflux-ci/tekton-catalog/task-build-image-manifest*\nMessages:\n  - This task was renamed to build-image-index.",
+		"msg": "PipelineTask \"manifest-task\" uses an untrusted task reference: oci://quay.io/konflux-ci/tekton-catalog/task-build-image-manifest:1.0@sha256:abc1230000000000000000000000000000000000000000000000000000abc123. The denial reason is: deny_rule\n  - oci://quay.io/konflux-ci/tekton-catalog/task-build-image-manifest*\nMessages:\n  - This task was renamed to build-image-index.",
 		"term": "task-build-image-manifest",
 	}}
 
@@ -1215,7 +1236,7 @@ test_deny_with_message if {
 # regardless of legacy expiry
 test_rules_allow_trusted_tasks_expiry_ignored if {
 	rules_trusted_tasks_data := {"oci://quay.io/konflux-ci/tekton-catalog/task-buildah:0.4": [{
-		"ref": "sha256:abc123",
+		"ref": "sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
 		"expires_on": "2025-01-01T00:00:00Z",
 	}]}
 
@@ -1229,7 +1250,8 @@ test_rules_allow_trusted_tasks_expiry_ignored if {
 
 	att := _rules_make_attestation([_rules_make_task(
 		"buildah-task",
-		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123",
+		# regal ignore:line-length
+		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
 		"task-buildah",
 	)])
 
@@ -1258,7 +1280,8 @@ test_unknown_fields_ignored if {
 
 	att := _rules_make_attestation([_rules_make_task(
 		"buildah-task",
-		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123",
+		# regal ignore:line-length
+		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
 		"task-buildah",
 	)])
 
@@ -1287,12 +1310,13 @@ test_mixed_trusted_and_untrusted_tasks if {
 	att := _rules_make_attestation([
 		_rules_make_task(
 			"trusted-task",
-			"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc123",
+			# regal ignore:line-length
+			"quay.io/konflux-ci/tekton-catalog/task-buildah:0.4@sha256:abc1230000000000000000000000000000000000000000000000000000abc123",
 			"task-buildah",
 		),
 		_rules_make_task(
 			"untrusted-task",
-			"quay.io/evil/malicious-task:1.0@sha256:evil123",
+			"quay.io/evil/malicious-task:1.0@sha256:bad0bad000000000000000000000000000000000000000000000000000bad123",
 			"malicious-task",
 		),
 	])
@@ -1300,7 +1324,7 @@ test_mixed_trusted_and_untrusted_tasks if {
 	expected := {{
 		"code": "trusted_task.trusted",
 		# regal ignore:line-length
-		"msg": `PipelineTask "untrusted-task" uses an untrusted task reference: oci://quay.io/evil/malicious-task:1.0@sha256:evil123. The denial reason is: not_allowed`,
+		"msg": `PipelineTask "untrusted-task" uses an untrusted task reference: oci://quay.io/evil/malicious-task:1.0@sha256:bad0bad000000000000000000000000000000000000000000000000000bad123. The denial reason is: not_allowed`,
 		"term": "malicious-task",
 	}}
 

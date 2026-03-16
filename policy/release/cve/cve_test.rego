@@ -10,14 +10,16 @@ import data.lib_test
 
 test_success if {
 	lib.assert_empty(cve.deny | cve.warn) with input.attestations as _no_vuln_attestations
-		with input.image.ref as "registry.io/repository/image@sha256:image_digest"
+		# regal ignore:line-length
+with 		input.image.ref as "registry.io/repository/image@sha256:14a9ed19e570000000000000000000000000000000000000000014a9ed19e57"
 		with ec.oci.image_manifest as _mock_image_manifest
 		with ec.oci.blob as _mock_blob
 }
 
 test_success_with_rule_data if {
 	lib.assert_empty(cve.deny | cve.warn) with input.attestations as _with_vuln_attestations
-		with input.image.ref as "registry.io/repository/image@sha256:image_digest"
+		# regal ignore:line-length
+with 		input.image.ref as "registry.io/repository/image@sha256:14a9ed19e570000000000000000000000000000000000000000014a9ed19e57"
 		with ec.oci.image_manifest as _mock_image_manifest
 		with ec.oci.blob as _mock_blob
 		with data.rule_data.restrict_cve_security_levels as []
@@ -49,7 +51,8 @@ test_failure if {
 	}
 
 	lib.assert_equal_results(cve.deny, expected_deny) with input.attestations as _with_vuln_attestations
-		with input.image.ref as "registry.io/repository/image@sha256:image_digest"
+		# regal ignore:line-length
+with 		input.image.ref as "registry.io/repository/image@sha256:14a9ed19e570000000000000000000000000000000000000000014a9ed19e57"
 		with ec.oci.image_manifest as _mock_image_manifest
 		with ec.oci.blob as _mock_blob
 }
@@ -99,7 +102,8 @@ test_failure_with_rule_data if {
 	}
 
 	lib.assert_equal_results(cve.deny, expected) with input.attestations as _with_vuln_attestations
-		with input.image.ref as "registry.io/repository/image@sha256:image_digest"
+		# regal ignore:line-length
+with 		input.image.ref as "registry.io/repository/image@sha256:14a9ed19e570000000000000000000000000000000000000000014a9ed19e57"
 		with ec.oci.image_manifest as _mock_image_manifest
 		with ec.oci.blob as _mock_blob
 		with data.rule_data.restrict_cve_security_levels as ["unknown", "low"]
@@ -138,7 +142,8 @@ test_failure_with_leeway if {
 
 	# Violations are updated with an effective_on in the future.
 	lib.assert_equal_results_no_collections(cve.deny, expected_deny) with input.attestations as _with_vuln_attestations
-		with input.image.ref as "registry.io/repository/image@sha256:image_digest"
+		# regal ignore:line-length
+with 		input.image.ref as "registry.io/repository/image@sha256:14a9ed19e570000000000000000000000000000000000000000014a9ed19e57"
 		with ec.oci.image_manifest as _mock_image_manifest
 		with ec.oci.blob as _mock_blob
 		with data.rule_data.cve_leeway as {"critical": 3}
@@ -182,7 +187,8 @@ test_failure_with_missing_leeway_data if {
 
 	# Violations are updated with an effective_on in the future.
 	lib.assert_equal_results_no_collections(cve.deny, expected_deny) with input.attestations as _with_vuln_attestations
-		with input.image.ref as "registry.io/repository/image@sha256:image_digest"
+		# regal ignore:line-length
+with 		input.image.ref as "registry.io/repository/image@sha256:14a9ed19e570000000000000000000000000000000000000000014a9ed19e57"
 		with ec.oci.image_manifest as _mock_image_manifest
 		with ec.oci.blob as _mock_blob
 		with data.rule_data.cve_leeway as {}
@@ -218,7 +224,8 @@ test_warn if {
 	}
 
 	lib.assert_equal_results(cve.warn, expected) with input.attestations as _with_vuln_attestations
-		with input.image.ref as "registry.io/repository/image@sha256:image_digest"
+		# regal ignore:line-length
+with 		input.image.ref as "registry.io/repository/image@sha256:14a9ed19e570000000000000000000000000000000000000000014a9ed19e57"
 		with ec.oci.image_manifest as _mock_image_manifest
 		with ec.oci.blob as _mock_blob
 }
@@ -288,7 +295,8 @@ test_warn_with_rule_data if {
 	}
 
 	lib.assert_equal_results(cve.warn, expected) with input.attestations as _with_vuln_attestations
-		with input.image.ref as "registry.io/repository/image@sha256:image_digest"
+		# regal ignore:line-length
+with 		input.image.ref as "registry.io/repository/image@sha256:14a9ed19e570000000000000000000000000000000000000000014a9ed19e57"
 		with ec.oci.image_manifest as _mock_image_manifest
 		with ec.oci.blob as _mock_blob
 		with data.rule_data.warn_cve_security_levels as ["medium", "low", "unknown"]
@@ -377,7 +385,8 @@ test_rule_data_provided if {
 	}
 
 	lib.assert_equal_results(cve.deny, expected) with input.attestations as _no_vuln_attestations
-		with input.image.ref as "registry.io/repository/image@sha256:image_digest"
+		# regal ignore:line-length
+with 		input.image.ref as "registry.io/repository/image@sha256:14a9ed19e570000000000000000000000000000000000000000014a9ed19e57"
 		with ec.oci.image_manifest as _mock_image_manifest
 		with ec.oci.blob as _mock_blob
 		with data.rule_data as d
@@ -414,7 +423,8 @@ test_leeway_rule_data_check if {
 	}
 
 	lib.assert_equal_results(cve.deny, expected) with input.attestations as _no_vuln_attestations
-		with input.image.ref as "registry.io/repository/image@sha256:image_digest"
+		# regal ignore:line-length
+with 		input.image.ref as "registry.io/repository/image@sha256:14a9ed19e570000000000000000000000000000000000000000014a9ed19e57"
 		with ec.oci.image_manifest as _mock_image_manifest
 		with ec.oci.blob as _mock_blob
 		with data.rule_data as d
@@ -467,19 +477,21 @@ unpatched_vulnerabilities := object.union_n([
 _clair_report := {"vulnerabilities": object.union(vulnerabilities, unpatched_vulnerabilities)}
 
 _manifests := {
-	"registry.io/repository/image@sha256:report_digest": {"layers": [{
+	"registry.io/repository/image@sha256:4e007d19e570000000000000000000000000000000004e007d19e57": {"layers": [{
 		"mediaType": cve._report_oci_mime_type,
-		"digest": "sha256:report_blob_digest",
+		"digest": "sha256:4e007b10bd19e5700000000000000000000000004e007b10bd19e57",
 	}]},
-	"registry.io/repository/image@sha256:no_vulnerabilities_report_digest": {"layers": [{
+	"registry.io/repository/image@sha256:00001e4a0007d19e5700000000000000000001e4a0007d19e57": {"layers": [{
 		"mediaType": cve._report_oci_mime_type,
-		"digest": "sha256:no_vulnerabilities_report_blob_digest",
+		"digest": "sha256:00001e4ab10bd19e5700000000000001e4ab10bd19e57",
 	}]},
 }
 
 _blobs := {
-	"registry.io/repository/image@sha256:report_blob_digest": json.marshal(_clair_report),
-	"registry.io/repository/image@sha256:no_vulnerabilities_report_blob_digest": json.marshal({"vulnerabilities": {}}),
+	# regal ignore:line-length
+	"registry.io/repository/image@sha256:4e007b10bd19e5700000000000000000000000004e007b10bd19e57": json.marshal(_clair_report),
+	# regal ignore:line-length
+	"registry.io/repository/image@sha256:00001e4ab10bd19e5700000000000001e4ab10bd19e57": json.marshal({"vulnerabilities": {}}),
 }
 
 _mock_image_manifest(ref) := _manifests[ref]
@@ -488,9 +500,11 @@ _mock_blob(ref) := _blobs[ref]
 
 _bundle := "registry.img/spam@sha256:4e388ab32b10dc8dbc7e28144f552830adc74787c1e2c0824032078a79f227fb"
 
-_no_vuln_attestations := _attestations_with_reports({"sha256:image_digest": "sha256:no_vulnerabilities_report_digest"})
+# regal ignore:line-length
+_no_vuln_attestations := _attestations_with_reports({"sha256:14a9ed19e570000000000000000000000000000000000000000014a9ed19e57": "sha256:00001e4a0007d19e5700000000000000000001e4a0007d19e57"})
 
-_with_vuln_attestations := _attestations_with_reports({"sha256:image_digest": "sha256:report_digest"})
+# regal ignore:line-length
+_with_vuln_attestations := _attestations_with_reports({"sha256:14a9ed19e570000000000000000000000000000000000000000014a9ed19e57": "sha256:4e007d19e570000000000000000000000000000000004e007d19e57"})
 
 _attestations_with_reports(reports) := attestations if {
 	slsav1_task_with_result := tekton_test.resolved_slsav1_task("clair-scan", [], [{

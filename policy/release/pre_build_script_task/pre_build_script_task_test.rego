@@ -10,19 +10,23 @@ test_good_pre_build_script_tasks if {
 	lib.assert_empty(pre_build_script_task.deny) with input.attestations as [_good_attestation, _cyclonedx_sbom_attestation]
 		with data.rule_data.allowed_registry_prefixes as _allowed_registries
 		with ec.oci.descriptor as {"mediaType": "application/vnd.oci.image.manifest.v1+json"}
-		with input.image as {"ref": "registry.io/repository/image@sha256:284e3029"}
+		# regal ignore:line-length
+with 		input.image as {"ref": "registry.io/repository/image@sha256:284e302900000000000000000000000000000000000000000000000284e3029"}
 
 	good_attestation_with_image_index := json.patch(_good_attestation, [{
 		"op": "add",
 		"path": "/statement/predicate/buildConfig/tasks/2",
 		"value": {
 			"name": "run-script-oci-ta-3",
-			"ref": {"kind": "Task", "name": "run-script-oci-ta", "bundle": "reg.img/spam@sha256:abc"},
+			# regal ignore:line-length
+			"ref": {"kind": "Task", "name": "run-script-oci-ta", "bundle": "reg.img/spam@sha256:abc0000000000000000000000000000000000000000000000000000000000abc"},
 			"invocation": {"parameters": {
 				"SCRIPT": "/some-other-script.sh",
-				"SCRIPT_RUNNER_IMAGE": "quay.io/konflux-ci/bazel6-ubi9@sha256:not-in-sbom",
+				# regal ignore:line-length
+				"SCRIPT_RUNNER_IMAGE": "quay.io/konflux-ci/bazel6-ubi9@sha256:007105b04000000000000000000000000000000000000000007105b04000",
 			}},
-			"results": [{"name": "SCRIPT_RUNNER_IMAGE_REFERENCE", "value": "quay.io/konflux-ci/bazel6-ubi9@sha256:not-in-sbom"}],
+			# regal ignore:line-length
+			"results": [{"name": "SCRIPT_RUNNER_IMAGE_REFERENCE", "value": "quay.io/konflux-ci/bazel6-ubi9@sha256:007105b04000000000000000000000000000000000000000007105b04000"}],
 		},
 	}])
 
@@ -32,27 +36,30 @@ test_good_pre_build_script_tasks if {
 	lib.assert_empty(pre_build_script_task.deny) with input.attestations as [good_attestation_with_image_index, _cyclonedx_sbom_attestation]
 		with data.rule_data.allowed_registry_prefixes as _allowed_registries
 		with ec.oci.descriptor as image_manifest
-		with input.image as {"ref": "registry.io/repository/image@sha256:284e3029"}
+		# regal ignore:line-length
+with 		input.image as {"ref": "registry.io/repository/image@sha256:284e302900000000000000000000000000000000000000000000000284e3029"}
 }
 
 test_disallowed_script_task_runner_image if {
 	expected := {{
 		"code": "pre_build_script_task.pre_build_script_task_runner_image_allowed",
-		"msg": "Pre-Build-Script task runner image \"malicious.io/img:latest@sha256:abc\" is from a disallowed registry",
+		# regal ignore:line-length
+		"msg": "Pre-Build-Script task runner image \"malicious.io/img:latest@sha256:abc0000000000000000000000000000000000000000000000000000000000abc\" is from a disallowed registry",
 		"term": "malicious.io/img",
 	}}
 
 	disallowed_image := json.patch(_good_attestation, [{
 		"op": "add",
 		"path": "/statement/predicate/buildConfig/tasks/0/invocation/parameters/SCRIPT_RUNNER_IMAGE",
-		"value": "malicious.io/img:latest@sha256:abc",
+		"value": "malicious.io/img:latest@sha256:abc0000000000000000000000000000000000000000000000000000000000abc",
 	}])
 
 	# regal ignore:line-length
 	lib.assert_equal_results(expected, pre_build_script_task.deny) with input.attestations as [disallowed_image, _cyclonedx_sbom_attestation]
 		with data.rule_data.allowed_registry_prefixes as _allowed_registries
 		with ec.oci.descriptor as {"mediaType": "application/vnd.oci.image.manifest.v1+json"}
-		with input.image as {"ref": "registry.io/repository/image@sha256:284e3029"}
+		# regal ignore:line-length
+with 		input.image as {"ref": "registry.io/repository/image@sha256:284e302900000000000000000000000000000000000000000000000284e3029"}
 }
 
 test_pre_build_image_not_in_task_result if {
@@ -70,7 +77,8 @@ test_pre_build_image_not_in_task_result if {
 	lib.assert_equal_results(expected, pre_build_script_task.deny) with input.attestations as [attestation_missing_task_result, _cyclonedx_sbom_attestation]
 		with data.rule_data.allowed_registry_prefixes as _allowed_registries
 		with ec.oci.descriptor as {"mediaType": "application/vnd.oci.image.manifest.v1+json"}
-		with input.image as {"ref": "registry.io/repository/image@sha256:284e3029"}
+		# regal ignore:line-length
+with 		input.image as {"ref": "registry.io/repository/image@sha256:284e302900000000000000000000000000000000000000000000000284e3029"}
 }
 
 test_pre_build_image_in_sbom if {
@@ -78,13 +86,15 @@ test_pre_build_image_in_sbom if {
 	lib.assert_empty(pre_build_script_task.deny) with input.attestations as [_good_attestation, _cyclonedx_sbom_attestation]
 		with data.rule_data.allowed_registry_prefixes as _allowed_registries
 		with ec.oci.descriptor as {"mediaType": "application/vnd.oci.image.manifest.v1+json"}
-		with input.image as {"ref": "registry.io/repository/image@sha256:284e3029"}
+		# regal ignore:line-length
+with 		input.image as {"ref": "registry.io/repository/image@sha256:284e302900000000000000000000000000000000000000000000000284e3029"}
 
 	# regal ignore:line-length
 	lib.assert_empty(pre_build_script_task.deny) with input.attestations as [_good_attestation, _spdx_sbom_attestation]
 		with data.rule_data.allowed_registry_prefixes as _allowed_registries
 		with ec.oci.descriptor as {"mediaType": "application/vnd.oci.image.manifest.v1+json"}
-		with input.image as {"ref": "registry.io/repository/image@sha256:284e3029"}
+		# regal ignore:line-length
+with 		input.image as {"ref": "registry.io/repository/image@sha256:284e302900000000000000000000000000000000000000000000000284e3029"}
 }
 
 test_pre_build_image_in_sbom_ignoring_tag if {
@@ -93,12 +103,13 @@ test_pre_build_image_in_sbom_ignoring_tag if {
 		{
 			"op": "replace",
 			"path": "/statement/predicate/buildConfig/tasks/0/results/0/value",
-			"value": "registry.redhat.io/ubi7:some-tag@sha256:bcd",
+			"value": "registry.redhat.io/ubi7:some-tag@sha256:bcd0000000000000000000000000000000000000000000000000000000000bcd",
 		},
 		{
 			"op": "replace",
 			"path": "/statement/predicate/buildConfig/tasks/1/results/0/value",
-			"value": "quay.io/konflux-ci/bazel6-ubi9:latest@sha256:def",
+			# regal ignore:line-length
+			"value": "quay.io/konflux-ci/bazel6-ubi9:latest@sha256:def0000000000000000000000000000000000000000000000000000000000def",
 		},
 	])
 
@@ -106,19 +117,22 @@ test_pre_build_image_in_sbom_ignoring_tag if {
 	lib.assert_empty(pre_build_script_task.deny) with input.attestations as [good_attestation_with_tag_in_image_ref, _cyclonedx_sbom_attestation]
 		with data.rule_data.allowed_registry_prefixes as _allowed_registries
 		with ec.oci.descriptor as {"mediaType": "application/vnd.oci.image.manifest.v1+json"}
-		with input.image as {"ref": "registry.io/repository/image@sha256:284e3029"}
+		# regal ignore:line-length
+with 		input.image as {"ref": "registry.io/repository/image@sha256:284e302900000000000000000000000000000000000000000000000284e3029"}
 
 	# regal ignore:line-length
 	lib.assert_empty(pre_build_script_task.deny) with input.attestations as [good_attestation_with_tag_in_image_ref, _spdx_sbom_attestation]
 		with data.rule_data.allowed_registry_prefixes as _allowed_registries
 		with ec.oci.descriptor as {"mediaType": "application/vnd.oci.image.manifest.v1+json"}
-		with input.image as {"ref": "registry.io/repository/image@sha256:284e3029"}
+		# regal ignore:line-length
+with 		input.image as {"ref": "registry.io/repository/image@sha256:284e302900000000000000000000000000000000000000000000000284e3029"}
 }
 
 test_pre_build_image_not_in_sbom if {
 	expected := {{
 		"code": "pre_build_script_task.pre_build_script_task_runner_image_in_sbom",
-		"msg": "Pre-Build-Script task runner image \"registry.redhat.io/ubi7@sha256:bcd\" is not in the SBOM",
+		# regal ignore:line-length
+		"msg": "Pre-Build-Script task runner image \"registry.redhat.io/ubi7@sha256:bcd0000000000000000000000000000000000000000000000000000000000bcd\" is not in the SBOM",
 	}}
 
 	incomplete_cyclonedx_sbom_attestation := json.patch(_cyclonedx_sbom_attestation, [{
@@ -130,7 +144,8 @@ test_pre_build_image_not_in_sbom if {
 	lib.assert_equal_results(expected, pre_build_script_task.deny) with input.attestations as [_good_attestation, incomplete_cyclonedx_sbom_attestation]
 		with data.rule_data.allowed_registry_prefixes as _allowed_registries
 		with ec.oci.descriptor as {"mediaType": "application/vnd.oci.image.manifest.v1+json"}
-		with input.image as {"ref": "registry.io/repository/image@sha256:284e3029"}
+		# regal ignore:line-length
+with 		input.image as {"ref": "registry.io/repository/image@sha256:284e302900000000000000000000000000000000000000000000000284e3029"}
 
 	incomplete_spdx_sbom_attestation := json.patch(_spdx_sbom_attestation, [{
 		"op": "remove",
@@ -141,7 +156,8 @@ test_pre_build_image_not_in_sbom if {
 	lib.assert_equal_results(expected, pre_build_script_task.deny) with input.attestations as [_good_attestation, incomplete_spdx_sbom_attestation]
 		with data.rule_data.allowed_registry_prefixes as _allowed_registries
 		with ec.oci.descriptor as {"mediaType": "application/vnd.oci.image.manifest.v1+json"}
-		with input.image as {"ref": "registry.io/repository/image@sha256:284e3029"}
+		# regal ignore:line-length
+with 		input.image as {"ref": "registry.io/repository/image@sha256:284e302900000000000000000000000000000000000000000000000284e3029"}
 }
 
 test_pre_build_image_reference_is_not_valid if {
@@ -161,7 +177,8 @@ test_pre_build_image_reference_is_not_valid if {
 	lib.assert_equal_results(expected, pre_build_script_task.deny) with input.attestations as [invalid_prebuild_img_attestation, _cyclonedx_sbom_attestation]
 		with data.rule_data.allowed_registry_prefixes as _allowed_registries
 		with ec.oci.descriptor as {"mediaType": "application/vnd.oci.image.manifest.v1+json"}
-		with input.image as {"ref": "registry.io/repository/image@sha256:284e3029"}
+		# regal ignore:line-length
+with 		input.image as {"ref": "registry.io/repository/image@sha256:284e302900000000000000000000000000000000000000000000000284e3029"}
 }
 
 _good_attestation := {"statement": {
@@ -171,21 +188,27 @@ _good_attestation := {"statement": {
 		"buildConfig": {"tasks": [
 			{
 				"name": "run-script-oci-ta-1",
-				"ref": {"kind": "Task", "name": "run-script-oci-ta", "bundle": "reg.img/spam@sha256:abc"},
+				# regal ignore:line-length
+				"ref": {"kind": "Task", "name": "run-script-oci-ta", "bundle": "reg.img/spam@sha256:abc0000000000000000000000000000000000000000000000000000000000abc"},
 				"invocation": {"parameters": {
 					"SCRIPT": "/some-script.sh",
-					"SCRIPT_RUNNER_IMAGE": "registry.redhat.io/ubi7@sha256:bcd",
+					# regal ignore:line-length
+					"SCRIPT_RUNNER_IMAGE": "registry.redhat.io/ubi7@sha256:bcd0000000000000000000000000000000000000000000000000000000000bcd",
 				}},
-				"results": [{"name": "SCRIPT_RUNNER_IMAGE_REFERENCE", "value": "registry.redhat.io/ubi7@sha256:bcd"}],
+				# regal ignore:line-length
+				"results": [{"name": "SCRIPT_RUNNER_IMAGE_REFERENCE", "value": "registry.redhat.io/ubi7@sha256:bcd0000000000000000000000000000000000000000000000000000000000bcd"}],
 			},
 			{
 				"name": "run-script-oci-ta-2",
-				"ref": {"kind": "Task", "name": "run-script-oci-ta", "bundle": "reg.img/spam@sha256:abc"},
+				# regal ignore:line-length
+				"ref": {"kind": "Task", "name": "run-script-oci-ta", "bundle": "reg.img/spam@sha256:abc0000000000000000000000000000000000000000000000000000000000abc"},
 				"invocation": {"parameters": {
 					"SCRIPT": "/some-other-script.sh",
-					"SCRIPT_RUNNER_IMAGE": "quay.io/konflux-ci/bazel6-ubi9@sha256:def",
+					# regal ignore:line-length
+					"SCRIPT_RUNNER_IMAGE": "quay.io/konflux-ci/bazel6-ubi9@sha256:def0000000000000000000000000000000000000000000000000000000000def",
 				}},
-				"results": [{"name": "SCRIPT_RUNNER_IMAGE_REFERENCE", "value": "quay.io/konflux-ci/bazel6-ubi9@sha256:def"}],
+				# regal ignore:line-length
+				"results": [{"name": "SCRIPT_RUNNER_IMAGE_REFERENCE", "value": "quay.io/konflux-ci/bazel6-ubi9@sha256:def0000000000000000000000000000000000000000000000000000000000def"}],
 			},
 		]},
 	},
@@ -199,18 +222,21 @@ _spdx_sbom_attestation := {"statement": {
 		{
 			"referenceCategory": "PACKAGE-MANAGER",
 			"referenceType": "purl",
-			"referenceLocator": "pkg:oci/spam@sha256:abc?repository_url=example.com/org/spam",
+			# regal ignore:line-length
+			"referenceLocator": "pkg:oci/spam@sha256:abc0000000000000000000000000000000000000000000000000000000000abc?repository_url=example.com/org/spam",
 		},
 		{
 			"referenceCategory": "PACKAGE-MANAGER",
 			"referenceType": "purl",
-			"referenceLocator": "pkg:oci/ubi7@sha256:bcd?repository_url=registry.redhat.io/ubi7",
+			# regal ignore:line-length
+			"referenceLocator": "pkg:oci/ubi7@sha256:bcd0000000000000000000000000000000000000000000000000000000000bcd?repository_url=registry.redhat.io/ubi7",
 		},
 		{
 			# Intentionally different referenceCategory here
 			"referenceCategory": "PACKAGE_MANAGER",
 			"referenceType": "purl",
-			"referenceLocator": "pkg:oci/bazel6-ubi9@sha256:def?repository_url=quay.io/konflux-ci/bazel6-ubi9",
+			# regal ignore:line-length
+			"referenceLocator": "pkg:oci/bazel6-ubi9@sha256:def0000000000000000000000000000000000000000000000000000000000def?repository_url=quay.io/konflux-ci/bazel6-ubi9",
 		},
 	]}]},
 }}
@@ -218,8 +244,11 @@ _spdx_sbom_attestation := {"statement": {
 _cyclonedx_sbom_attestation := {"statement": {
 	"predicateType": "https://cyclonedx.org/bom",
 	"predicate": {"components": [
-		{"purl": "pkg:oci/spam@sha256:abc?repository_url=example.com/org/spam"},
-		{"purl": "pkg:oci/ubi7@sha256:bcd?repository_url=registry.redhat.io/ubi7"},
-		{"purl": "pkg:oci/bazel6-ubi9@sha256:def?repository_url=quay.io/konflux-ci/bazel6-ubi9"},
+		# regal ignore:line-length
+		{"purl": "pkg:oci/spam@sha256:abc0000000000000000000000000000000000000000000000000000000000abc?repository_url=example.com/org/spam"},
+		# regal ignore:line-length
+		{"purl": "pkg:oci/ubi7@sha256:bcd0000000000000000000000000000000000000000000000000000000000bcd?repository_url=registry.redhat.io/ubi7"},
+		# regal ignore:line-length
+		{"purl": "pkg:oci/bazel6-ubi9@sha256:def0000000000000000000000000000000000000000000000000000000000def?repository_url=quay.io/konflux-ci/bazel6-ubi9"},
 	]},
 }}

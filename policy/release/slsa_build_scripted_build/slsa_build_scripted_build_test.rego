@@ -148,7 +148,8 @@ test_build_script_used_many_build_tasks if {
 	# none of the build tasks produced the expected results
 	expected_results := {{
 		"code": "slsa_build_scripted_build.subject_build_task_matches",
-		"msg": `The attestation subject, "some.image/foo:bar@sha256:123", does not match any of the images built`,
+		# regal ignore:line-length
+		"msg": `The attestation subject, "some.image/foo:bar@sha256:1230000000000000000000000000000000000000000000000000000000000123", does not match any of the images built`,
 	}}
 	lib.assert_equal_results(
 		expected_results,
@@ -255,7 +256,7 @@ test_subject_mismatch if {
 	tasks := [{
 		"results": [
 			{"name": "IMAGE_URL", "value": _image_url},
-			{"name": "IMAGE_DIGEST", "value": "sha256:anotherdigest"},
+			{"name": "IMAGE_DIGEST", "value": "sha256:a007e4d19e5700000000000000000000000000000000000000a007e4d19e57"},
 		],
 		"ref": {"bundle": mock_bundle},
 		"steps": [{"entrypoint": "/bin/bash"}],
@@ -263,7 +264,8 @@ test_subject_mismatch if {
 
 	expected := {{
 		"code": "slsa_build_scripted_build.subject_build_task_matches",
-		"msg": `The attestation subject, "some.image/foo:bar@sha256:123", does not match any of the images built`,
+		# regal ignore:line-length
+		"msg": `The attestation subject, "some.image/foo:bar@sha256:1230000000000000000000000000000000000000000000000000000000000123", does not match any of the images built`,
 	}}
 
 	lib.assert_equal_results(
@@ -276,7 +278,7 @@ test_subject_with_tag_and_digest_is_good if {
 	tasks := [{
 		"results": [
 			{"name": "IMAGE_URL", "value": "registry.io/repository/image:tag"},
-			{"name": "IMAGE_DIGEST", "value": "sha256:digest"},
+			{"name": "IMAGE_DIGEST", "value": "sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		],
 		"ref": {"bundle": mock_bundle},
 		"steps": [{"entrypoint": "/bin/bash"}],
@@ -285,7 +287,7 @@ test_subject_with_tag_and_digest_is_good if {
 	lib.assert_empty(slsa_build_scripted_build.deny) with input.attestations as [{"statement": {
 		"subject": [{
 			"name": "registry.io/repository/image",
-			"digest": {"sha256": "digest"},
+			"digest": {"sha256": "d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		}],
 		"predicateType": "https://slsa.dev/provenance/v0.2",
 		"predicate": {
@@ -299,7 +301,7 @@ test_subject_with_tag_and_digest_mismatch_tag_is_good if {
 	tasks := [{
 		"results": [
 			{"name": "IMAGE_URL", "value": "registry.io/repository/image:tag"},
-			{"name": "IMAGE_DIGEST", "value": "sha256:digest"},
+			{"name": "IMAGE_DIGEST", "value": "sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		],
 		"ref": {"bundle": mock_bundle},
 		"steps": [{"entrypoint": "/bin/bash"}],
@@ -308,7 +310,7 @@ test_subject_with_tag_and_digest_mismatch_tag_is_good if {
 	lib.assert_empty(slsa_build_scripted_build.deny) with input.attestations as [{"statement": {
 		"subject": [{
 			"name": "registry.io/repository/image:different",
-			"digest": {"sha256": "digest"},
+			"digest": {"sha256": "d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		}],
 		"predicateType": "https://slsa.dev/provenance/v0.2",
 		"predicate": {
@@ -322,7 +324,7 @@ test_subject_with_tag_and_digest_mismatch_digest_fails if {
 	tasks := [{
 		"results": [
 			{"name": "IMAGE_URL", "value": "registry.io/repository/image:tag"},
-			{"name": "IMAGE_DIGEST", "value": "sha256:digest"},
+			{"name": "IMAGE_DIGEST", "value": "sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		],
 		"ref": {"bundle": mock_bundle},
 		"steps": [{"entrypoint": "/bin/bash"}],
@@ -331,13 +333,13 @@ test_subject_with_tag_and_digest_mismatch_digest_fails if {
 	expected := {{
 		"code": "slsa_build_scripted_build.subject_build_task_matches",
 		# regal ignore:line-length
-		"msg": `The attestation subject, "registry.io/repository/image@sha256:unexpected", does not match any of the images built`,
+		"msg": `The attestation subject, "registry.io/repository/image@sha256:00e0ec7ed000000000000000000000000000000000000000000000e0ec7ed0", does not match any of the images built`,
 	}}
 
 	lib.assert_equal_results(expected, slsa_build_scripted_build.deny) with input.attestations as [{"statement": {
 		"subject": [{
 			"name": "registry.io/repository/image",
-			"digest": {"sha256": "unexpected"},
+			"digest": {"sha256": "00e0ec7ed000000000000000000000000000000000000000000000e0ec7ed0"},
 		}],
 		"predicateType": "https://slsa.dev/provenance/v0.2",
 		"predicate": {
@@ -352,7 +354,7 @@ test_image_built_by_trusted_task_no_build_task if {
 		_mock_attestation([{
 			"results": [
 				{"name": "IMAGE_URL", "value": _image_url},
-				{"name": "IMAGE_DIGEST", "value": "sha256:abc"},
+				{"name": "IMAGE_DIGEST", "value": "sha256:abc0000000000000000000000000000000000000000000000000000000000abc"},
 			],
 			"ref": {"bundle": mock_bundle},
 			"steps": [{"entrypoint": "/bin/bash"}],
@@ -360,7 +362,7 @@ test_image_built_by_trusted_task_no_build_task if {
 		[{
 			"op": "add",
 			"path": "/statement/subject/0/digest/sha256",
-			"value": "abc",
+			"value": "abc0000000000000000000000000000000000000000000000000000000000abc",
 		}],
 	)
 
@@ -368,7 +370,8 @@ test_image_built_by_trusted_task_no_build_task if {
 
 	expected := {{
 		"code": "slsa_build_scripted_build.image_built_by_trusted_task",
-		"msg": "Image \"some.image/foo:bar@sha256:123\" not built by a trusted task: No Pipeline Tasks built the image",
+		# regal ignore:line-length
+		"msg": "Image \"some.image/foo:bar@sha256:1230000000000000000000000000000000000000000000000000000000000123\" not built by a trusted task: No Pipeline Tasks built the image",
 	}}
 
 	lib.assert_equal_results(expected, slsa_build_scripted_build.deny) with input.image as image
@@ -397,7 +400,7 @@ test_image_built_by_trusted_task_not_trusted if {
 	expected := {{
 		"code": "slsa_build_scripted_build.image_built_by_trusted_task",
 		# regal ignore:line-length
-		"msg": `Image "some.image/foo:bar@sha256:123" not built by a trusted task: Build Task(s) "buildah" are not trusted`,
+		"msg": `Image "some.image/foo:bar@sha256:1230000000000000000000000000000000000000000000000000000000000123" not built by a trusted task: Build Task(s) "buildah" are not trusted`,
 	}}
 
 	lib.assert_equal_results(expected, slsa_build_scripted_build.deny) with input.image as image
@@ -443,7 +446,7 @@ test_image_built_by_multiple_not_trusted_tasks if {
 	expected := {{
 		"code": "slsa_build_scripted_build.image_built_by_trusted_task",
 		# regal ignore:line-length
-		"msg": `Image "some.image/foo:bar@sha256:123" not built by a trusted task: Build Task(s) "buildah-1,buildah-2" are not trusted`,
+		"msg": `Image "some.image/foo:bar@sha256:1230000000000000000000000000000000000000000000000000000000000123" not built by a trusted task: Build Task(s) "buildah-1,buildah-2" are not trusted`,
 	}}
 
 	lib.assert_equal_results(expected, slsa_build_scripted_build.deny) with input.image as image
@@ -454,7 +457,7 @@ _image_url := "some.image/foo:bar"
 
 _image_digest_algorithm := "sha256"
 
-_image_digest_value := "123"
+_image_digest_value := "1230000000000000000000000000000000000000000000000000000000000123"
 
 _image_digest := concat(":", [_image_digest_algorithm, _image_digest_value])
 

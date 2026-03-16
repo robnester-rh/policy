@@ -593,7 +593,7 @@ test_all_image_processed if {
 test_all_images_not_processed if {
 	# Combine both results into a single v0.2 attestation since lib.pipelinerun_attestations
 	# only returns the latest attestation per type
-	digests_processed := {"image": {"digests": ["sha256:wrongDigest"]}}
+	digests_processed := {"image": {"digests": ["sha256:0409d19e5700000000000000000000000000000000000000000000409d19e57"]}}
 	attestation := json.patch(
 		lib_test.att_mock_helper_ref("IMAGES_PROCESSED", digests_processed, "success_23", _bundle),
 		[{
@@ -618,7 +618,7 @@ test_all_images_not_processed if {
 test_all_images_matrix_tasks if {
 	# Matrix task scenario: same task name and bundle but different digests processed by each instance
 	digests_task1 := {"image": {"digests": ["sha256:4e388ab32b10dc8dbc7e28144f552830adc74787c1e2c0824032078a79f227fb"]}}
-	digests_task2 := {"image": {"digests": ["sha256:otherDigest"]}}
+	digests_task2 := {"image": {"digests": ["sha256:07e4d19e5700000000000000000000000000000000000000000007e4d19e57"]}}
 
 	matrix_task1 := lib_test.att_mock_helper_ref("IMAGES_PROCESSED", digests_task1, "matrix-test", _bundle)
 	matrix_task2 := lib_test.att_mock_helper_ref("IMAGES_PROCESSED", digests_task2, "matrix-test", _bundle)
