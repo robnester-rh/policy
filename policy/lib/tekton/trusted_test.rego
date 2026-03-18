@@ -236,13 +236,16 @@ test_is_trusted_task_with_rules if {
 		{"name": "name", "value": "task-something"},
 		{"name": "kind", "value": "task"},
 	]}}}
+
+	# regal ignore:line-length
 	allowed_task_manifests := _mock_bundle_manifests(
-		"quay.io/konflux-ci/tekton-catalog/task-something:0.4@sha256:digest",
+		"quay.io/konflux-ci/tekton-catalog/task-something:0.4@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700", # regal ignore:line-length
 		"0.4",
 	)
 
 	# regal ignore:line-length
 	tekton.is_trusted_task(allowed_task, allowed_task_manifests) with data.rule_data.trusted_task_rules as trusted_task_rules
+		with ec.oci.image_manifests as _mock_image_manifests
 
 	# Task that matches deny rule should not be trusted (deny takes precedence)
 	denied_task := {"spec": {"taskRef": {"resolver": "bundles", "params": [
@@ -251,13 +254,16 @@ test_is_trusted_task_with_rules if {
 		{"name": "name", "value": "task-buildah"},
 		{"name": "kind", "value": "task"},
 	]}}}
+
+	# regal ignore:line-length
 	denied_task_manifests := _mock_bundle_manifests(
-		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.3@sha256:digest",
+		"quay.io/konflux-ci/tekton-catalog/task-buildah:0.3@sha256:digest", # regal ignore:line-length
 		"0.3",
 	)
 
 	# regal ignore:line-length
 	not tekton.is_trusted_task(denied_task, denied_task_manifests) with data.rule_data.trusted_task_rules as trusted_task_rules
+		with ec.oci.image_manifests as _mock_image_manifests
 
 	# Task that matches allow pattern (registry.local) should be trusted
 	# Note: The key format is oci://registry.local/trusty:1.0 (with tag), so pattern oci://registry.local/* matches
@@ -267,10 +273,13 @@ test_is_trusted_task_with_rules if {
 		{"name": "name", "value": "trusty"},
 		{"name": "kind", "value": "task"},
 	]}}}
+
+	# regal ignore:line-length
 	registry_local_manifests := _mock_bundle_manifests("registry.local/trusty:1.0@sha256:digest", "1.0")
 
 	# regal ignore:line-length
 	tekton.is_trusted_task(registry_local_task, registry_local_manifests) with data.rule_data.trusted_task_rules as trusted_task_rules
+		with ec.oci.image_manifests as _mock_image_manifests
 
 	# Task that doesn't match any allow rule should not be trusted
 	# Note: This task uses a different path (untrusted) that doesn't match the pattern
@@ -280,10 +289,13 @@ test_is_trusted_task_with_rules if {
 		{"name": "name", "value": "untrusted"},
 		{"name": "kind", "value": "task"},
 	]}}}
+
+	# regal ignore:line-length
 	not_allowed_manifests := _mock_bundle_manifests("other-registry.io/untrusted:1.0@sha256:digest", "1.0")
 
 	# regal ignore:line-length
 	not tekton.is_trusted_task(not_allowed_task, not_allowed_manifests) with data.rule_data.trusted_task_rules as trusted_task_rules
+		with ec.oci.image_manifests as _mock_image_manifests
 
 	# Tasks satisfying at least one deny rule version constraints should be denied
 	deny_constrained_task_denied_version := {"spec": {"taskRef": {"resolver": "bundles", "params": [
@@ -298,42 +310,52 @@ test_is_trusted_task_with_rules if {
 
 	# regal ignore:line-length
 	not tekton.is_trusted_task(deny_constrained_task_denied_version, deny_constrained_denied_manifests) with data.rule_data.trusted_task_rules as trusted_task_rules
+		with ec.oci.image_manifests as _mock_image_manifests
 
 	# Task not satisfying any deny rule version constraints should not be denied
 	deny_constrained_task_valid_version := {"spec": {"taskRef": {"resolver": "bundles", "params": [
 		# regal ignore:line-length
-		{"name": "bundle", "value": "quay.io/konflux-ci/tekton-catalog/deny-task-constrained:1.2.3@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
+		{"name": "bundle", "value": "quay.io/konflux-ci/tekton-catalog/deny-task-constrained:1.2.3@sha256:digest"},
 		{"name": "name", "value": "constrained"},
 		{"name": "kind", "value": "task"},
 	]}}}
 
 	# regal ignore:line-length
 	deny_constrained_valid_manifests := _mock_bundle_manifests("quay.io/konflux-ci/tekton-catalog/deny-task-constrained:1.2.3@sha256:digest", "1.2.3")
-	tekton.is_trusted_task(deny_constrained_task_valid_version, deny_constrained_valid_manifests) with data.rule_data.trusted_task_rules as trusted_task_rules # regal ignore:line-length
+
+	# regal ignore:line-length
+	tekton.is_trusted_task(deny_constrained_task_valid_version, deny_constrained_valid_manifests) with data.rule_data.trusted_task_rules as trusted_task_rules
+		with ec.oci.image_manifests as _mock_image_manifests
 
 	# Tasks satisfying all the allow-rule version constraints should be allowed
 	allow_constrained_task_valid_version := {"spec": {"taskRef": {"resolver": "bundles", "params": [
 		# regal ignore:line-length
-		{"name": "bundle", "value": "quay.io/konflux-ci/another-catalog/allow-task-constrained:1.5@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
+		{"name": "bundle", "value": "quay.io/konflux-ci/another-catalog/allow-task-constrained:1.5@sha256:digest"},
 		{"name": "name", "value": "constrained"},
 		{"name": "kind", "value": "task"},
 	]}}}
 
 	# regal ignore:line-length
 	allow_constrained_valid_manifests := _mock_bundle_manifests("quay.io/konflux-ci/another-catalog/allow-task-constrained:1.5@sha256:digest", "1.5")
-	tekton.is_trusted_task(allow_constrained_task_valid_version, allow_constrained_valid_manifests) with data.rule_data.trusted_task_rules as trusted_task_rules # regal ignore:line-length
+
+	# regal ignore:line-length
+	tekton.is_trusted_task(allow_constrained_task_valid_version, allow_constrained_valid_manifests) with data.rule_data.trusted_task_rules as trusted_task_rules
+		with ec.oci.image_manifests as _mock_image_manifests
 
 	# Tasks *NOT* satisfying all the allow-rule version constraints should be denied
 	allow_constrained_task_denied_version := {"spec": {"taskRef": {"resolver": "bundles", "params": [
 		# regal ignore:line-length
-		{"name": "bundle", "value": "quay.io/konflux-ci/another-catalog/allow-task-constrained:1.2.3@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
+		{"name": "bundle", "value": "quay.io/konflux-ci/another-catalog/allow-task-constrained:1.2.3@sha256:digest"},
 		{"name": "name", "value": "constrained"},
 		{"name": "kind", "value": "task"},
 	]}}}
 
 	# regal ignore:line-length
 	allow_constrained_denied_manifests := _mock_bundle_manifests("quay.io/konflux-ci/another-catalog/allow-task-constrained:1.2.3@sha256:digest", "1.2.3")
-	not tekton.is_trusted_task(allow_constrained_task_denied_version, allow_constrained_denied_manifests) with data.rule_data.trusted_task_rules as trusted_task_rules # regal ignore:line-length
+
+	# regal ignore:line-length
+	not tekton.is_trusted_task(allow_constrained_task_denied_version, allow_constrained_denied_manifests) with data.rule_data.trusted_task_rules as trusted_task_rules
+		with ec.oci.image_manifests as _mock_image_manifests
 
 	# Task with mismatching versions between ref and manifest annotations.
 	# Only the manifest annotation is taken into consideration
@@ -347,13 +369,16 @@ test_is_trusted_task_with_rules if {
 	# Manifest has 1.2.3 even though ref has 1.5 - manifest version is used
 	# regal ignore:line-length
 	mismatch_manifests_1 := _mock_bundle_manifests("quay.io/konflux-ci/another-catalog/allow-task-constrained:1.5@sha256:digest", "1.2.3")
-	not tekton.is_trusted_task(allow_constrained_task_denied_version_mismatching_1, mismatch_manifests_1) with data.rule_data.trusted_task_rules as trusted_task_rules # regal ignore:line-length
+
+	# regal ignore:line-length
+	not tekton.is_trusted_task(allow_constrained_task_denied_version_mismatching_1, mismatch_manifests_1) with data.rule_data.trusted_task_rules as trusted_task_rules
+		with ec.oci.image_manifests as _mock_image_manifests
 
 	# Task with mismatching versions between ref and manifest annotations.
 	# Only the manifest annotation is taken into consideration
 	allow_constrained_task_denied_version_mismatching_2 := {"spec": {"taskRef": {"resolver": "bundles", "params": [
 		# regal ignore:line-length
-		{"name": "bundle", "value": "quay.io/konflux-ci/another-catalog/allow-task-constrained:1.2.3@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
+		{"name": "bundle", "value": "quay.io/konflux-ci/another-catalog/allow-task-constrained:1.2.3@sha256:digest"},
 		{"name": "name", "value": "constrained"},
 		{"name": "kind", "value": "task"},
 	]}}}
@@ -361,7 +386,10 @@ test_is_trusted_task_with_rules if {
 	# Manifest has 1.5 even though ref has 1.2.3 - manifest version is used
 	# regal ignore:line-length
 	mismatch_manifests_2 := _mock_bundle_manifests("quay.io/konflux-ci/another-catalog/allow-task-constrained:1.2.3@sha256:digest", "1.5")
-	tekton.is_trusted_task(allow_constrained_task_denied_version_mismatching_2, mismatch_manifests_2) with data.rule_data.trusted_task_rules as trusted_task_rules # regal ignore:line-length
+
+	# regal ignore:line-length
+	tekton.is_trusted_task(allow_constrained_task_denied_version_mismatching_2, mismatch_manifests_2) with data.rule_data.trusted_task_rules as trusted_task_rules
+		with ec.oci.image_manifests as _mock_image_manifests
 }
 
 test_trusted_task_records if {
@@ -570,6 +598,7 @@ test_denying_pattern if {
 	# Should return a list with the pattern that denied it
 	# regal ignore:line-length
 	patterns := tekton.denying_pattern(denied_task, _empty_bundle_manifests) with data.rule_data.trusted_task_rules as trusted_task_rules
+		with ec.oci.image_manifests as _mock_image_manifests
 	lib.assert_equal(["oci://quay.io/konflux-ci/tekton-catalog/task-buildah*"], patterns)
 
 	# Task that doesn't match any deny rule should return empty list
@@ -582,6 +611,7 @@ test_denying_pattern if {
 
 	# regal ignore:line-length
 	patterns_empty := tekton.denying_pattern(non_matching_task, _empty_bundle_manifests) with data.rule_data.trusted_task_rules as trusted_task_rules
+		with ec.oci.image_manifests as _mock_image_manifests
 	lib.assert_equal([], patterns_empty)
 }
 
@@ -646,6 +676,7 @@ test_denial_reason if {
 
 	# regal ignore:line-length
 	reason_deny := tekton.denial_reason(denied_task, _empty_bundle_manifests) with data.rule_data.trusted_task_rules as trusted_task_rules
+		with ec.oci.image_manifests as _mock_image_manifests
 	lib.assert_equal("deny_rule", reason_deny.type)
 	lib.assert_equal(["oci://quay.io/konflux-ci/tekton-catalog/task-buildah*"], reason_deny.pattern)
 	lib.assert_equal(["This version is deprecated"], reason_deny.messages)
@@ -660,6 +691,7 @@ test_denial_reason if {
 
 	# regal ignore:line-length
 	reason_not_allowed := tekton.denial_reason(not_allowed_task, _empty_bundle_manifests) with data.rule_data.trusted_task_rules as trusted_task_rules
+		with ec.oci.image_manifests as _mock_image_manifests
 	lib.assert_equal("not_allowed", reason_not_allowed.type)
 	lib.assert_equal([], reason_not_allowed.pattern)
 	lib.assert_equal([], reason_not_allowed.messages)
@@ -674,11 +706,13 @@ test_denial_reason if {
 
 	# regal ignore:line-length
 	not tekton.denial_reason(allowed_task, _empty_bundle_manifests) with data.rule_data.trusted_task_rules as trusted_task_rules
+		with ec.oci.image_manifests as _mock_image_manifests
 
 	# Task in legacy trusted_tasks but doesn't match allow rules should return "not_allowed"
 	# (denial_reason only works with trusted_task_rules, not legacy)
 	# regal ignore:line-length
 	reason_legacy := tekton.denial_reason(trusted_bundle_task, _empty_bundle_manifests) with data.rule_data.trusted_task_rules as trusted_task_rules
+		with ec.oci.image_manifests as _mock_image_manifests
 		with data.trusted_tasks as trusted_tasks
 	lib.assert_equal("not_allowed", reason_legacy.type)
 	lib.assert_equal([], reason_legacy.pattern)
@@ -1115,4 +1149,21 @@ test_result_satisfies_operator if {
 	not tekton._result_satisfies_operator(1, "<2")
 	not tekton._result_satisfies_operator(0, "<2")
 	tekton._result_satisfies_operator(-1, "<2")
+}
+
+# Mock function for ec.oci.image_manifests
+_mock_image_manifests(refs) := {ref: {} | some ref in refs}
+
+# Mock function for ec.oci.image_manifest (singular)
+_mock_image_manifest(_) := {}
+
+test_mock_image_manifests if {
+	result := _mock_image_manifests({"ref1", "ref2"})
+	expected := {"ref1": {}, "ref2": {}}
+	lib.assert_equal(expected, result)
+}
+
+test_mock_image_manifest if {
+	result := _mock_image_manifest("any-ref")
+	lib.assert_equal({}, result)
 }

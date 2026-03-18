@@ -47,8 +47,12 @@ test_bundle_reference_valid if {
 		"taskRef": {"bundle": "reg.com/repo:v2@sha256:abc0000000000000000000000000000000000000000000000000000000000abc"},
 	}]
 
-	lib.assert_empty(task_bundle.deny) with input.spec.tasks as tasks with data.trusted_tasks as trusted_tasks
-	lib.assert_empty(task_bundle.warn) with input.spec.tasks as tasks with data.trusted_tasks as trusted_tasks
+	lib.assert_empty(task_bundle.deny) with input.spec.tasks as tasks
+		with data.trusted_tasks as trusted_tasks
+		with ec.oci.image_manifests as _mock_image_manifests
+	lib.assert_empty(task_bundle.warn) with input.spec.tasks as tasks
+		with data.trusted_tasks as trusted_tasks
+		with ec.oci.image_manifests as _mock_image_manifests
 }
 
 # All good when the most recent bundle is used.
@@ -58,9 +62,11 @@ test_trusted_bundle_up_to_date if {
 
 	lib.assert_empty(task_bundle.warn) with input.spec.tasks as tasks
 		with data.trusted_tasks as trusted_tasks
+		with ec.oci.image_manifests as _mock_image_manifests
 
 	lib.assert_empty(task_bundle.deny) with input.spec.tasks as tasks
 		with data.trusted_tasks as trusted_tasks
+		with ec.oci.image_manifests as _mock_image_manifests
 }
 
 # All good when the most recent bundle is used for a version that is still maintained
@@ -70,9 +76,11 @@ test_trusted_bundle_up_to_date_maintained_version if {
 
 	lib.assert_empty(task_bundle.warn) with input.spec.tasks as tasks
 		with data.trusted_tasks as trusted_tasks
+		with ec.oci.image_manifests as _mock_image_manifests
 
 	lib.assert_empty(task_bundle.deny) with input.spec.tasks as tasks
 		with data.trusted_tasks as trusted_tasks
+		with ec.oci.image_manifests as _mock_image_manifests
 }
 
 # Warn about out of date bundles that are still trusted.
@@ -87,10 +95,12 @@ test_trusted_bundle_out_of_date_past if {
 	}}) with input.spec.tasks as tasks
 		with data.trusted_tasks as trusted_tasks
 		with data.config.policy.when_ns as time.parse_rfc3339_ns("2022-03-12T00:00:00Z")
+		with ec.oci.image_manifests as _mock_image_manifests
 
 	lib.assert_empty(task_bundle.deny) with input.spec.tasks as tasks
 		with data.trusted_tasks as trusted_tasks
 		with data.config.policy.when_ns as time.parse_rfc3339_ns("2022-03-12T00:00:00Z")
+		with ec.oci.image_manifests as _mock_image_manifests
 }
 
 # Deny bundles that are no longer active.
@@ -100,6 +110,7 @@ test_trusted_bundle_expired if {
 
 	lib.assert_empty(task_bundle.warn) with input.spec.tasks as tasks
 		with data.trusted_tasks as trusted_tasks
+		with ec.oci.image_manifests as _mock_image_manifests
 
 	lib.assert_equal_results(task_bundle.deny, {{
 		"code": "task_bundle.untrusted_task_bundle",
@@ -107,6 +118,7 @@ test_trusted_bundle_expired if {
 		"msg": "Pipeline task 'my-task' uses an untrusted task bundle 'reg.com/repo@sha256:def0000000000000000000000000000000000000000000000000000000000def'",
 	}}) with input.spec.tasks as tasks
 		with data.trusted_tasks as trusted_tasks
+		with ec.oci.image_manifests as _mock_image_manifests
 }
 
 test_ec316 if {
@@ -133,9 +145,11 @@ test_ec316 if {
 
 	lib.assert_empty(task_bundle.warn) with input.spec.tasks as tasks
 		with data.trusted_tasks as trusted_tasks
+		with ec.oci.image_manifests as _mock_image_manifests
 
 	lib.assert_empty(task_bundle.deny) with input.spec.tasks as tasks
 		with data.trusted_tasks as trusted_tasks
+		with ec.oci.image_manifests as _mock_image_manifests
 }
 
 test_missing_required_data if {
@@ -166,3 +180,6 @@ trusted_tasks := {
 		{"ref": "sha256:def0000000000000000000000000000000000000000000000000000000000def", "effective_on": "2021-01-01T00:00:00Z", "expires_on": "2022-02-01T00:00:00Z"},
 	],
 }
+
+# Mock function for ec.oci.image_manifests
+_mock_image_manifests(refs) := {ref: {} | some ref in refs}
