@@ -29,7 +29,12 @@ _all_bundle_refs contains bundle if {
 # We need to fetch each image to get the version annotation. Doing this separately for each bundle
 # is too slow.
 # This returns a map of bundle_ref -> manifest
-_manifests := ec.oci.image_manifests(_all_bundle_refs)
+default _manifests := {}
+
+_manifests := ec.oci.image_manifests(_all_bundle_refs) if {
+	count(_all_bundle_refs) > 0
+	count(input.spec.tasks) > 0
+}
 
 # =============================================================================
 
