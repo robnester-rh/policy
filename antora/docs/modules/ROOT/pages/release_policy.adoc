@@ -243,6 +243,7 @@ Rules included:
 * xref:packages/release_attestation_type.adoc#attestation_type__known_attestation_types_provided[Attestation type: Known attestation types provided]        
 * xref:packages/release_attestation_type.adoc#attestation_type__pipelinerun_attestation_found[Attestation type: PipelineRun attestation found]        
 * xref:packages/release_cve.adoc#cve__unpatched_cve_blockers[CVE checks: Blocking unpatched CVE check]        
+* xref:packages/release_cve.adoc#cve__cve_results_found[CVE checks: CVE scan results found]        
 * xref:packages/release_cve.adoc#cve__cve_warnings[CVE checks: Non-blocking CVE check]        
 * xref:packages/release_cve.adoc#cve__rule_data_provided[CVE checks: Rule data provided]        
 * xref:packages/release_git_branch.adoc#git_branch__git_branch[Git branch checks: Builds have a trusted target branch]        
@@ -297,6 +298,7 @@ Rules included:
 * xref:packages/release_test.adoc#test__no_skipped_tests[Test: No tests were skipped]        
 * xref:packages/release_test.adoc#test__test_results_known[Test: No unsupported test result values found]        
 * xref:packages/release_test.adoc#test__rule_data_provided[Test: Rule data provided]        
+* xref:packages/release_test.adoc#test__test_data_found[Test: Test data found in task results]        
 * xref:packages/release_test.adoc#test__test_results_found[Test: Test data includes results key]        
 * xref:packages/release_trusted_task.adoc#trusted_task__data_format[Trusted Task checks: Data format]        
 * xref:packages/release_trusted_task.adoc#trusted_task__pinned[Trusted Task checks: Task references are pinned]        
@@ -318,6 +320,8 @@ a| Includes policy rules required to meet SLSA Level 3.
 
 Rules included:
         
+* xref:packages/release_attestation_type.adoc#attestation_type__known_attestation_type[Attestation type: Known attestation type found]        
+* xref:packages/release_attestation_type.adoc#attestation_type__pipelinerun_attestation_found[Attestation type: PipelineRun attestation found]        
 * xref:packages/release_slsa_build_build_service.adoc#slsa_build_build_service__allowed_builder_ids_provided[SLSA - Build - Build Service: Allowed builder IDs provided]        
 * xref:packages/release_slsa_build_build_service.adoc#slsa_build_build_service__slsa_builder_id_found[SLSA - Build - Build Service: SLSA Builder ID found]        
 * xref:packages/release_slsa_build_build_service.adoc#slsa_build_build_service__slsa_builder_id_accepted[SLSA - Build - Build Service: SLSA Builder ID is known and accepted]        

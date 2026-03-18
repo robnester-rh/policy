@@ -7,8 +7,8 @@ import data.lib
 
 opa_inspect_valid := {
 	"namespaces": {
-		"data.policy.release.attestation_task_bundle": ["policy/release/attestation_task_bundle.rego"],
-		"data.policy.release.attestation_type": ["policy/release/attestation_type.rego"],
+		"data.attestation_task_bundle": ["policy/release/attestation_task_bundle.rego"],
+		"data.attestation_type": ["policy/release/attestation_type.rego"],
 	},
 	"annotations": [
 		{
@@ -74,7 +74,7 @@ test_required_annotations_valid if {
 }
 
 opa_inspect_missing_annotations := {
-	"namespaces": {"data.policy.release.attestation_task_bundle": [
+	"namespaces": {"data.attestation_task_bundle": [
 		"policy/release/attestation_task_bundle.rego",
 		"policy/release/attestation_task_bundle_test.rego",
 	]},
@@ -96,7 +96,7 @@ opa_inspect_missing_annotations := {
 }
 
 opa_inspect_missing_dependency := {
-	"namespaces": {"data.policy.release.attestation_task_bundle": [
+	"namespaces": {"data.attestation_task_bundle": [
 		"policy/release/attestation_task_bundle.rego",
 		"policy/release/attestation_task_bundle_test.rego",
 	]},
@@ -121,7 +121,7 @@ opa_inspect_missing_dependency := {
 }
 
 opa_inspect_duplicate := {
-	"namespaces": {"data.policy.release.attestation_type": ["policy/release/attestation_type.rego"]},
+	"namespaces": {"data.attestation_type": ["policy/release/attestation_type.rego"]},
 	"annotations": [
 		{
 			"annotations": {
@@ -163,7 +163,7 @@ opa_inspect_duplicate := {
 }
 
 opa_inspect_effective_on := {
-	"namespaces": {"data.policy.release.effective_on": ["policy/release/effective_on.rego"]},
+	"namespaces": {"data.effective_on": ["policy/release/effective_on.rego"]},
 	"annotations": [
 		{
 			"annotations": {
@@ -209,20 +209,210 @@ test_required_annotations_invalid if {
 
 test_missing_dependency_invalid if {
 	# regal ignore:line-length
-	err = `ERROR: Missing dependency rule "data.policy.release.attestation_type.known_attestation_type" at policy/release/attestation_task_bundle.rego:71`
+	err = `ERROR: Missing dependency rule "data.attestation_type.known_attestation_type" at policy/release/attestation_task_bundle.rego:71`
 	lib.assert_equal({err}, checks.violation) with input as opa_inspect_missing_dependency
 }
 
 test_duplicate_rules if {
 	# regal ignore:line-length
-	err1 = `ERROR: Found non-unique code "data.policy.release.attestation_type.known_attestation_type" at policy/release/attestation_type.rego:30`
+	err1 = `ERROR: Found non-unique code "data.attestation_type.known_attestation_type" at policy/release/attestation_type.rego:30`
 
 	# regal ignore:line-length
-	err2 = `ERROR: Found non-unique code "data.policy.release.attestation_type.known_attestation_type" at policy/release/attestation_type.rego:50`
+	err2 = `ERROR: Found non-unique code "data.attestation_type.known_attestation_type" at policy/release/attestation_type.rego:50`
 	lib.assert_equal({err1, err2}, checks.violation) with input as opa_inspect_duplicate
 }
 
 test_effective_on if {
 	err := `ERROR: wrong syntax of effective_on value "wubba lubba dub dub" at policy/release/effective_on.rego:10`
 	lib.assert_equal({err}, checks.violation) with input as opa_inspect_effective_on
+}
+
+opa_inspect_collection_mismatch := {
+	"namespaces": {
+		"data.attestation_type": ["policy/release/attestation_type.rego"],
+		"data.tasks": ["policy/release/tasks.rego"],
+	},
+	"annotations": [
+		{
+			"annotations": {
+				"custom": {
+					"collections": ["minimal", "redhat"],
+					"short_name": "pipelinerun_attestation_found",
+					"failure_msg": "Missing pipelinerun attestation",
+				},
+				"description": "Confirm at least one PipelineRun attestation is present.",
+				"scope": "rule",
+				"title": "PipelineRun attestation found",
+			},
+			"location": {
+				"file": "policy/release/attestation_type.rego",
+				"row": 60,
+				"col": 1,
+			},
+		},
+		{
+			"annotations": {
+				"custom": {
+					"collections": ["minimal", "redhat", "slsa3"],
+					"depends_on": ["attestation_type.pipelinerun_attestation_found"],
+					"short_name": "pipeline_has_tasks",
+					"failure_msg": "No tasks found",
+				},
+				"description": "Ensure that at least one Task is present in the PipelineRun attestation.",
+				"scope": "rule",
+				"title": "Pipeline run includes at least one task",
+			},
+			"location": {
+				"file": "policy/release/tasks.rego",
+				"row": 30,
+				"col": 1,
+			},
+		},
+	],
+}
+
+test_dependency_collection_mismatch if {
+	# regal ignore:line-length
+	err := `ERROR: Dependency "attestation_type.pipelinerun_attestation_found" is missing from collections ["slsa3"] (required by rule at policy/release/tasks.rego:30 which is in collections ["minimal", "redhat", "slsa3"])`
+	lib.assert_equal({err}, checks.violation) with input as opa_inspect_collection_mismatch
+}
+
+opa_inspect_collection_valid := {
+	"namespaces": {
+		"data.attestation_type": ["policy/release/attestation_type.rego"],
+		"data.tasks": ["policy/release/tasks.rego"],
+	},
+	"annotations": [
+		{
+			"annotations": {
+				"custom": {
+					"collections": ["minimal", "redhat", "slsa3"],
+					"short_name": "pipelinerun_attestation_found",
+					"failure_msg": "Missing pipelinerun attestation",
+				},
+				"description": "Confirm at least one PipelineRun attestation is present.",
+				"scope": "rule",
+				"title": "PipelineRun attestation found",
+			},
+			"location": {
+				"file": "policy/release/attestation_type.rego",
+				"row": 60,
+				"col": 1,
+			},
+		},
+		{
+			"annotations": {
+				"custom": {
+					"collections": ["minimal", "redhat", "slsa3"],
+					"depends_on": ["attestation_type.pipelinerun_attestation_found"],
+					"short_name": "pipeline_has_tasks",
+					"failure_msg": "No tasks found",
+				},
+				"description": "Ensure that at least one Task is present in the PipelineRun attestation.",
+				"scope": "rule",
+				"title": "Pipeline run includes at least one task",
+			},
+			"location": {
+				"file": "policy/release/tasks.rego",
+				"row": 30,
+				"col": 1,
+			},
+		},
+	],
+}
+
+test_dependency_collection_valid if {
+	lib.assert_empty(checks.violation) with input as opa_inspect_collection_valid
+}
+
+opa_inspect_dependency_no_collections := {
+	"namespaces": {
+		"data.attestation_type": ["policy/release/attestation_type.rego"],
+		"data.tasks": ["policy/release/tasks.rego"],
+	},
+	"annotations": [
+		{
+			"annotations": {
+				"custom": {
+					"short_name": "pipelinerun_attestation_found",
+					"failure_msg": "Missing pipelinerun attestation",
+				},
+				"description": "Confirm at least one PipelineRun attestation is present.",
+				"scope": "rule",
+				"title": "PipelineRun attestation found",
+			},
+			"location": {
+				"file": "policy/release/attestation_type.rego",
+				"row": 60,
+				"col": 1,
+			},
+		},
+		{
+			"annotations": {
+				"custom": {
+					"collections": ["minimal", "redhat", "slsa3"],
+					"depends_on": ["attestation_type.pipelinerun_attestation_found"],
+					"short_name": "pipeline_has_tasks",
+					"failure_msg": "No tasks found",
+				},
+				"description": "Ensure that at least one Task is present in the PipelineRun attestation.",
+				"scope": "rule",
+				"title": "Pipeline run includes at least one task",
+			},
+			"location": {
+				"file": "policy/release/tasks.rego",
+				"row": 30,
+				"col": 1,
+			},
+		},
+	],
+}
+
+test_dependency_no_collections if {
+	# When a dependent rule has collections but its dependency lacks collections entirely,
+	# the dependency should be considered missing from all the dependent's collections
+	# regal ignore:line-length
+	err := `ERROR: Dependency "attestation_type.pipelinerun_attestation_found" is missing from collections ["minimal", "redhat", "slsa3"] (required by rule at policy/release/tasks.rego:30 which is in collections ["minimal", "redhat", "slsa3"])`
+	lib.assert_equal({err}, checks.violation) with input as opa_inspect_dependency_no_collections
+}
+
+test_policy_rule_files_includes_policy_directory if {
+	namespaces := {"data.policy.release.tasks": [
+		"policy/release/tasks.rego",
+		"policy/release/tasks_test.rego",
+	]}
+
+	result := checks.policy_rule_files(namespaces)
+	expected := {{
+		"namespace": "data.policy.release.tasks",
+		"files": {"policy/release/tasks.rego"},
+	}}
+
+	lib.assert_equal(expected, result)
+}
+
+test_policy_rule_files_excludes_lib_directory if {
+	namespaces := {
+		"data.policy.lib.utils": [
+			"policy/lib/utils.rego",
+			"policy/lib/utils_test.rego",
+		],
+		"data.policy.release.lib": [
+			"policy/release/lib/utils.rego",
+			"policy/release/lib/utils_test.rego",
+		],
+	}
+
+	result := checks.policy_rule_files(namespaces)
+	lib.assert_empty(result)
+}
+
+test_policy_rule_files_excludes_non_policy_directory if {
+	namespaces := {
+		"data.checks": ["checks/annotations.rego"],
+		"data.other": ["other/file.rego"],
+	}
+
+	result := checks.policy_rule_files(namespaces)
+	lib.assert_empty(result)
 }

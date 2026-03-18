@@ -26,6 +26,7 @@ import data.lib.json as j
 #   - minimal
 #   - redhat
 #   - redhat_rpms
+#   - slsa3
 #   depends_on:
 #   - attestation_type.pipelinerun_attestation_found
 #
@@ -69,6 +70,7 @@ deny contains result if {
 #   - minimal
 #   - redhat
 #   - redhat_rpms
+#   - slsa3
 #
 deny contains result if {
 	count(lib.pipelinerun_attestations) == 0

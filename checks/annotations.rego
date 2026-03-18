@@ -13,11 +13,18 @@ required_annotations := {
 # returns Rego files corresponding to policy rules
 policy_rule_files(namespaces) := {rule |
 	some namespace, files in namespaces
-	startswith(namespace, "data.policy") # look only in the policy namespace
-	rule := {"namespace": namespace, "files": {file |
-		some file in files
-		not endswith(file, "_test.rego") # disregard test Rego files
-	}}
+
+	# Filter to get only policy files (not lib, not tests) from this namespace
+	policy_files := {f |
+		some f in files
+		startswith(f, "policy/") # look only in the policy directory
+		not contains(f, "/lib/") # exclude library files
+		not endswith(f, "_test.rego") # disregard test Rego files
+	}
+
+	# Only include this namespace if it has policy files
+	count(policy_files) > 0
+	rule := {"namespace": namespace, "files": policy_files}
 }
 
 # for annotations defined as:
@@ -96,7 +103,7 @@ violation contains msg if {
 	])
 }
 
-# Validates that the `depends_op` annotation points to an existing rule
+# Validates that the `depends_on` annotation points to an existing rule
 violation contains msg if {
 	some policy_files in policy_rule_files(input.namespaces)
 
@@ -106,7 +113,7 @@ violation contains msg if {
 	annotation.location.file == file
 
 	some depends_on in annotation.annotations.custom.depends_on
-	dependency_rule_name := sprintf("data.policy.release.%s", [depends_on])
+	dependency_rule_name := sprintf("data.%s", [depends_on])
 
 	count({dependency_rule_name} & all_rule_names) == 0
 	msg := sprintf("ERROR: Missing dependency rule %q at %s:%d", [dependency_rule_name, file, annotation.location.row])
@@ -143,4 +150,69 @@ violation contains msg if {
 	not time.parse_rfc3339_ns(effective_on)
 
 	msg := sprintf("ERROR: wrong syntax of effective_on value %q at %s:%d", [effective_on, file, annotation.location.row])
+}
+
+# Validates that dependency collections are a superset of dependent rule collections
+# This ensures that whenever a dependent rule runs, its dependencies are also evaluated.
+#
+# For example, if rule A is in collections [minimal, redhat, slsa3] and depends on rule B,
+# then rule B must be in all three collections [minimal, redhat, slsa3]. Otherwise, when
+# evaluating the slsa3 collection, rule A would run but rule B would not, breaking the
+# dependency assumption.
+violation contains msg if {
+	collections_by_rule := _build_rule_collections_map(input.namespaces, input.annotations)
+
+	some annotation in _annotated_rules(input.namespaces, input.annotations)
+	some dependency_name in annotation.annotations.custom.depends_on
+
+	dependent_rule_collections := annotation.annotations.custom.collections
+	dependency_rule_name := sprintf("data.%s", [dependency_name])
+
+	# Get dependency collections, defaulting to empty array if not present
+	dependency_collections := object.get(collections_by_rule, dependency_rule_name, [])
+
+	missing_collections_set := _missing_from_dependency(dependent_rule_collections, dependency_collections)
+	count(missing_collections_set) > 0
+
+	# Convert set to array for consistent output formatting
+	missing_collections := [c | some c in missing_collections_set]
+
+	msg := sprintf(
+		"ERROR: Dependency %q is missing from collections %v (required by rule at %s:%d which is in collections %v)",
+		[
+			dependency_name,
+			missing_collections,
+			annotation.location.file,
+			annotation.location.row,
+			dependent_rule_collections,
+		],
+	)
+}
+
+# Helper to get all policy rule annotations with their file locations
+_annotated_rules(namespaces, annotations) := {annotation |
+	some policy_files in policy_rule_files(namespaces)
+	some file in policy_files.files
+	some annotation in annotations
+	annotation.location.file == file
+}
+
+# Returns collections that the dependent has but the dependency lacks
+_missing_from_dependency(dependent_collections, dependency_collections) := missing if {
+	dependent_set := {c | some c in dependent_collections}
+	dependency_set := {c | some c in dependency_collections}
+	missing := dependent_set - dependency_set
+}
+
+# Helper to build a map of rule names to their collections
+# Returns a map where:
+#   key: fully qualified rule name (e.g., "data.policy.release.attestation_type.known_attestation_type")
+#   value: array of collection names the rule belongs to (e.g., ["minimal", "redhat", "slsa3"])
+_build_rule_collections_map(namespaces, annotations) := {rule_name: annotation.annotations.custom.collections |
+	some policy_files in policy_rule_files(namespaces)
+	some file in policy_files.files
+	some annotation in annotations
+	annotation.location.file == file
+
+	rule_name := sprintf("%s.%s", [policy_files.namespace, annotation.annotations.custom.short_name])
 }

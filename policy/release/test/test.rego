@@ -74,6 +74,7 @@ warn contains result if {
 #     Confirm at least one task in the build pipeline contains a result named TEST_OUTPUT.
 #   collections:
 #   - redhat
+#   - redhat_rpms
 #   depends_on:
 #   - attestation_type.known_attestation_type
 #
