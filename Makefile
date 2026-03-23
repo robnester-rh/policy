@@ -30,7 +30,7 @@ TEST_CMD_DEFAULT=$(OPA) test $(TEST_FILES) $(TEST_FILTER)
 ifeq ($(shell command -v unshare),)
   TEST_CMD=$(TEST_CMD_DEFAULT)
 else
-  TEST_CMD=$(EC) version > /dev/null 2>&1 && unshare -r -n $(TEST_CMD_DEFAULT) 2>/dev/null
+  TEST_CMD=$(EC) version > /dev/null && unshare -r -n $(TEST_CMD_DEFAULT)
 endif
 
 LICENSE_IGNORE=-ignore '.git/**' -ignore '.idea/**'
@@ -41,11 +41,11 @@ COVERAGE_CMD_DEFAULT=$(OPA) test --coverage --format json $(TEST_FILES)
 ifeq ($(shell command -v unshare),)
   COVERAGE_CMD=$(COVERAGE_CMD_DEFAULT)
 else
-  COVERAGE_CMD=$(EC) version > /dev/null 2>&1 && unshare -r -n $(COVERAGE_CMD_DEFAULT)
+  COVERAGE_CMD=$(EC) version > /dev/null && unshare -r -n $(COVERAGE_CMD_DEFAULT)
 endif
 
 define COVERAGE
-@$(COVERAGE_CMD) 2>/dev/null | { \
+@$(COVERAGE_CMD) | { \
 	T=$$(mktemp); tee "$${T}"; $(OPA) eval --format pretty \
 	--input "$${T}" \
 	--data hack/simplecov.rego \
