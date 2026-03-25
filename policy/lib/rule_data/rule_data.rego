@@ -87,6 +87,10 @@ defaults := {
 		"features.operators.openshift.io/token-auth-azure",
 		"features.operators.openshift.io/token-auth-gcp",
 	],
+	# Used in release/olm.rego - FIPS compliance cutoff date for OLM bundles.
+	# Bundles created before this date (via createdAt annotation) are exempt from
+	# FIPS annotation requirements. Format: RFC3339 timestamp.
+	"fips_exempt_created_before": "2025-01-31T00:00:00Z",
 	# Used in release/olm.rego
 	"allowed_olm_image_registry_prefixes": [
 		"registry.access.redhat.com/",

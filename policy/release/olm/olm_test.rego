@@ -240,6 +240,257 @@ test_feature_annotations_format_custom_rule_data if {
 		with data.rule_data.allowed_olm_resource_kinds as ["ClusterServiceVersion"]
 }
 
+# Test: Bundle created before FIPS cutoff date is exempt from FIPS check
+test_fips_exempt_for_legacy_bundle if {
+	# Remove FIPS annotation but add createdAt before the cutoff date
+	legacy_manifest := json.patch(manifest, [
+		{"op": "remove", "path": "/metadata/annotations/features.operators.openshift.io~1fips-compliant"},
+		{"op": "add", "path": "/metadata/annotations/createdAt", "value": "2025-01-15T00:00:00Z"},
+	])
+
+	# Should NOT have FIPS annotation violation (exempt due to creation date before cutoff)
+	assertions.assert_empty(olm.deny) with input.image.files as {"manifests/csv.yaml": legacy_manifest}
+		with input.image.config.Labels as {olm.manifestv1: "manifests/"}
+		with data.rule_data.allowed_olm_image_registry_prefixes as ["registry.io"]
+		with data.rule_data.allowed_olm_resource_kinds as ["ClusterServiceVersion"]
+		with data.rule_data.fips_exempt_created_before as "2025-01-31T00:00:00Z"
+}
+
+# Test: FIPS exemption works with default cutoff date from rule_data.rego
+test_fips_exempt_uses_default_cutoff if {
+	# Remove FIPS annotation but add createdAt before the default cutoff (2025-01-31T00:00:00Z)
+	legacy_manifest := json.patch(manifest, [
+		{"op": "remove", "path": "/metadata/annotations/features.operators.openshift.io~1fips-compliant"},
+		{"op": "add", "path": "/metadata/annotations/createdAt", "value": "2025-01-15T00:00:00Z"},
+	])
+
+	# Should be exempt using the default cutoff date from rule_data.rego
+	# (not explicitly setting fips_exempt_created_before)
+	assertions.assert_empty(olm.deny) with input.image.files as {"manifests/csv.yaml": legacy_manifest}
+		with input.image.config.Labels as {olm.manifestv1: "manifests/"}
+		with data.rule_data.allowed_olm_image_registry_prefixes as ["registry.io"]
+		with data.rule_data.allowed_olm_resource_kinds as ["ClusterServiceVersion"]
+}
+
+# Test: Bundle created after FIPS cutoff date is NOT exempt from FIPS check
+test_fips_not_exempt_for_new_bundle if {
+	# Remove FIPS annotation but add createdAt after the cutoff date
+	new_manifest := json.patch(manifest, [
+		{"op": "remove", "path": "/metadata/annotations/features.operators.openshift.io~1fips-compliant"},
+		{"op": "add", "path": "/metadata/annotations/createdAt", "value": "2025-02-15T00:00:00Z"},
+	])
+
+	expected := {{
+		"code": "olm.feature_annotations_format",
+		# regal ignore:line-length
+		"msg": "The annotation \"features.operators.openshift.io/fips-compliant\" is either missing or has an unexpected value",
+		"term": "features.operators.openshift.io/fips-compliant",
+	}}
+
+	assertions.assert_equal_results(olm.deny, expected) with input.image.files as {"manifests/csv.yaml": new_manifest}
+		with input.image.config.Labels as {olm.manifestv1: "manifests/"}
+		with data.rule_data.allowed_olm_image_registry_prefixes as ["registry.io"]
+		with data.rule_data.allowed_olm_resource_kinds as ["ClusterServiceVersion"]
+		with data.rule_data.fips_exempt_created_before as "2025-01-31T00:00:00Z"
+}
+
+# Test: Bundle without createdAt annotation is NOT exempt from FIPS check
+test_fips_not_exempt_without_created_at if {
+	# Remove FIPS annotation without adding createdAt
+	# regal ignore:line-length
+	no_date_manifest := json.patch(manifest, [{"op": "remove", "path": "/metadata/annotations/features.operators.openshift.io~1fips-compliant"}])
+
+	expected := {{
+		"code": "olm.feature_annotations_format",
+		# regal ignore:line-length
+		"msg": "The annotation \"features.operators.openshift.io/fips-compliant\" is either missing or has an unexpected value",
+		"term": "features.operators.openshift.io/fips-compliant",
+	}}
+
+	assertions.assert_equal_results(olm.deny, expected) with input.image.files as {"manifests/csv.yaml": no_date_manifest}
+		with input.image.config.Labels as {olm.manifestv1: "manifests/"}
+		with data.rule_data.allowed_olm_image_registry_prefixes as ["registry.io"]
+		with data.rule_data.allowed_olm_resource_kinds as ["ClusterServiceVersion"]
+		with data.rule_data.fips_exempt_created_before as "2025-01-31T00:00:00Z"
+}
+
+# Test: Only FIPS annotation is exempt for legacy bundles; other annotations still checked
+test_fips_exempt_other_annotations_still_checked if {
+	# Remove both FIPS and another annotation, with old creation date
+	multi_missing_manifest := json.patch(manifest, [
+		{"op": "remove", "path": "/metadata/annotations/features.operators.openshift.io~1fips-compliant"},
+		{"op": "remove", "path": "/metadata/annotations/features.operators.openshift.io~1disconnected"},
+		{"op": "add", "path": "/metadata/annotations/createdAt", "value": "2024-06-15T00:00:00Z"},
+	])
+
+	# FIPS should be exempt, but disconnected should still be checked
+	expected := {{
+		"code": "olm.feature_annotations_format",
+		# regal ignore:line-length
+		"msg": "The annotation \"features.operators.openshift.io/disconnected\" is either missing or has an unexpected value",
+		"term": "features.operators.openshift.io/disconnected",
+	}}
+
+	assertions.assert_equal_results(olm.deny, expected) with input.image.files as {"manifests/csv.yaml": multi_missing_manifest}
+		with input.image.config.Labels as {olm.manifestv1: "manifests/"}
+		with data.rule_data.allowed_olm_image_registry_prefixes as ["registry.io"]
+		with data.rule_data.allowed_olm_resource_kinds as ["ClusterServiceVersion"]
+		with data.rule_data.fips_exempt_created_before as "2025-01-31T00:00:00Z"
+}
+
+# Test: Bundle created exactly on cutoff date is NOT exempt
+test_fips_not_exempt_on_cutoff_date if {
+	# Create bundle with createdAt exactly on the cutoff date
+	on_cutoff_manifest := json.patch(manifest, [
+		{"op": "remove", "path": "/metadata/annotations/features.operators.openshift.io~1fips-compliant"},
+		{"op": "add", "path": "/metadata/annotations/createdAt", "value": "2025-01-31T00:00:00Z"},
+	])
+
+	# Should NOT be exempt because it's not strictly before the cutoff
+	expected := {{
+		"code": "olm.feature_annotations_format",
+		# regal ignore:line-length
+		"msg": "The annotation \"features.operators.openshift.io/fips-compliant\" is either missing or has an unexpected value",
+		"term": "features.operators.openshift.io/fips-compliant",
+	}}
+
+	assertions.assert_equal_results(olm.deny, expected) with input.image.files as {"manifests/csv.yaml": on_cutoff_manifest}
+		with input.image.config.Labels as {olm.manifestv1: "manifests/"}
+		with data.rule_data.allowed_olm_image_registry_prefixes as ["registry.io"]
+		with data.rule_data.allowed_olm_resource_kinds as ["ClusterServiceVersion"]
+		with data.rule_data.fips_exempt_created_before as "2025-01-31T00:00:00Z"
+}
+
+# Test: Bundle created just before cutoff is exempt
+test_fips_exempt_just_before_cutoff if {
+	# Create bundle with createdAt just before the cutoff date
+	just_before_manifest := json.patch(manifest, [
+		{"op": "remove", "path": "/metadata/annotations/features.operators.openshift.io~1fips-compliant"},
+		{"op": "add", "path": "/metadata/annotations/createdAt", "value": "2025-01-30T23:59:59Z"},
+	])
+
+	# Should be exempt because it's before the cutoff
+	assertions.assert_empty(olm.deny) with input.image.files as {"manifests/csv.yaml": just_before_manifest}
+		with input.image.config.Labels as {olm.manifestv1: "manifests/"}
+		with data.rule_data.allowed_olm_image_registry_prefixes as ["registry.io"]
+		with data.rule_data.allowed_olm_resource_kinds as ["ClusterServiceVersion"]
+		with data.rule_data.fips_exempt_created_before as "2025-01-31T00:00:00Z"
+}
+
+# Test: Invalid createdAt date format is NOT exempt (fail closed for security)
+test_fips_not_exempt_invalid_date_format if {
+	# Create bundle with invalid date format (not RFC3339)
+	invalid_date_manifest := json.patch(manifest, [
+		{"op": "remove", "path": "/metadata/annotations/features.operators.openshift.io~1fips-compliant"},
+		{"op": "add", "path": "/metadata/annotations/createdAt", "value": "2025-01-15"},
+	])
+
+	# Should NOT be exempt because date format is invalid (fail closed)
+	expected_deny := {{
+		"code": "olm.feature_annotations_format",
+		# regal ignore:line-length
+		"msg": "The annotation \"features.operators.openshift.io/fips-compliant\" is either missing or has an unexpected value",
+		"term": "features.operators.openshift.io/fips-compliant",
+	}}
+
+	assertions.assert_equal_results(olm.deny, expected_deny) with input.image.files as {"manifests/csv.yaml": invalid_date_manifest}
+		with input.image.config.Labels as {olm.manifestv1: "manifests/"}
+		with data.rule_data.allowed_olm_image_registry_prefixes as ["registry.io"]
+		with data.rule_data.allowed_olm_resource_kinds as ["ClusterServiceVersion"]
+		with data.rule_data.fips_exempt_created_before as "2025-01-31T00:00:00Z"
+
+	# Should also emit a warning about the malformed date
+	expected_warn := {{
+		"code": "olm.malformed_created_at",
+		# regal ignore:line-length
+		"msg": "The createdAt annotation \"2025-01-15\" is not a valid RFC3339 timestamp. FIPS exemption for legacy bundles cannot be determined. Expected format: 2006-01-02T15:04:05Z or with timezone offset.",
+	}}
+
+	assertions.assert_equal_results(olm.warn, expected_warn) with input.image.files as {"manifests/csv.yaml": invalid_date_manifest}
+		with input.image.config.Labels as {olm.manifestv1: "manifests/"}
+		with data.rule_data.allowed_olm_image_registry_prefixes as ["registry.io"]
+		with data.rule_data.allowed_olm_resource_kinds as ["ClusterServiceVersion"]
+		with data.rule_data.fips_exempt_created_before as "2025-01-31T00:00:00Z"
+}
+
+# Test: Empty string createdAt value triggers warning (distinct from missing annotation)
+test_fips_warns_on_empty_created_at if {
+	# Create bundle with empty createdAt annotation
+	empty_date_manifest := json.patch(manifest, [
+		{"op": "remove", "path": "/metadata/annotations/features.operators.openshift.io~1fips-compliant"},
+		{"op": "add", "path": "/metadata/annotations/createdAt", "value": ""},
+	])
+
+	# Should emit a warning about the empty/malformed date
+	expected_warn := {{
+		"code": "olm.malformed_created_at",
+		# regal ignore:line-length
+		"msg": "The createdAt annotation \"\" is not a valid RFC3339 timestamp. FIPS exemption for legacy bundles cannot be determined. Expected format: 2006-01-02T15:04:05Z or with timezone offset.",
+	}}
+
+	assertions.assert_equal_results(olm.warn, expected_warn) with input.image.files as {"manifests/csv.yaml": empty_date_manifest}
+		with input.image.config.Labels as {olm.manifestv1: "manifests/"}
+		with data.rule_data.allowed_olm_image_registry_prefixes as ["registry.io"]
+		with data.rule_data.allowed_olm_resource_kinds as ["ClusterServiceVersion"]
+		with data.rule_data.fips_exempt_created_before as "2025-01-31T00:00:00Z"
+}
+
+# Test: Timezone handling - bundle created before cutoff in different timezone is exempt
+test_fips_exempt_with_timezone_offset if {
+	# 2025-01-30T19:00:00-05:00 (EST) = 2025-01-31T00:00:00Z (UTC)
+	# So 2025-01-30T18:59:59-05:00 is just before the cutoff
+	timezone_manifest := json.patch(manifest, [
+		{"op": "remove", "path": "/metadata/annotations/features.operators.openshift.io~1fips-compliant"},
+		{"op": "add", "path": "/metadata/annotations/createdAt", "value": "2025-01-30T18:59:59-05:00"},
+	])
+
+	# Should be exempt because the actual instant is before the cutoff
+	assertions.assert_empty(olm.deny) with input.image.files as {"manifests/csv.yaml": timezone_manifest}
+		with input.image.config.Labels as {olm.manifestv1: "manifests/"}
+		with data.rule_data.allowed_olm_image_registry_prefixes as ["registry.io"]
+		with data.rule_data.allowed_olm_resource_kinds as ["ClusterServiceVersion"]
+		with data.rule_data.fips_exempt_created_before as "2025-01-31T00:00:00Z"
+}
+
+# Test: Timezone handling - bundle created at cutoff in different timezone is NOT exempt
+test_fips_not_exempt_with_timezone_at_cutoff if {
+	# 2025-01-30T19:00:00-05:00 (EST) = 2025-01-31T00:00:00Z (UTC) exactly
+	timezone_manifest := json.patch(manifest, [
+		{"op": "remove", "path": "/metadata/annotations/features.operators.openshift.io~1fips-compliant"},
+		{"op": "add", "path": "/metadata/annotations/createdAt", "value": "2025-01-30T19:00:00-05:00"},
+	])
+
+	# Should NOT be exempt because it's exactly at the cutoff (not strictly before)
+	expected := {{
+		"code": "olm.feature_annotations_format",
+		# regal ignore:line-length
+		"msg": "The annotation \"features.operators.openshift.io/fips-compliant\" is either missing or has an unexpected value",
+		"term": "features.operators.openshift.io/fips-compliant",
+	}}
+
+	assertions.assert_equal_results(olm.deny, expected) with input.image.files as {"manifests/csv.yaml": timezone_manifest}
+		with input.image.config.Labels as {olm.manifestv1: "manifests/"}
+		with data.rule_data.allowed_olm_image_registry_prefixes as ["registry.io"]
+		with data.rule_data.allowed_olm_resource_kinds as ["ClusterServiceVersion"]
+		with data.rule_data.fips_exempt_created_before as "2025-01-31T00:00:00Z"
+}
+
+# Test: Invalid fips_exempt_created_before configuration surfaces as error
+test_fips_invalid_cutoff_config if {
+	expected := {{
+		"code": "olm.required_olm_features_annotations_provided",
+		# regal ignore:line-length
+		"msg": "Rule data fips_exempt_created_before has invalid RFC3339 format: \"invalid-date\"",
+		"severity": "failure",
+	}}
+
+	assertions.assert_equal_results(olm.deny, expected) with input.image.files as {"manifests/csv.yaml": manifest}
+		with input.image.config.Labels as {olm.manifestv1: "manifests/"}
+		with data.rule_data.allowed_olm_image_registry_prefixes as ["registry.io"]
+		with data.rule_data.allowed_olm_resource_kinds as ["ClusterServiceVersion"]
+		with data.rule_data.fips_exempt_created_before as "invalid-date"
+}
+
 test_required_olm_features_annotations_provided if {
 	expected_empty := {{
 		"code": "olm.required_olm_features_annotations_provided",

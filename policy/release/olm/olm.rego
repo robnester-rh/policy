@@ -82,6 +82,10 @@ deny contains result if {
 deny contains result if {
 	some manifest in _csv_manifests
 	some annotation in rule_data.get("required_olm_features_annotations")
+
+	# Skip FIPS annotation check for legacy bundles
+	not _fips_exempt_legacy_bundle(manifest, annotation)
+
 	value := object.get(manifest.metadata.annotations, annotation, "")
 	not value in {"true", "false"}
 	result := metadata.result_helper_with_term(rego.metadata.chain(), [annotation], annotation)
@@ -382,6 +386,32 @@ deny contains result if {
 	result := metadata.result_helper_with_term(rego.metadata.chain(), [manifest.kind], manifest.kind)
 }
 
+# METADATA
+# title: Malformed createdAt annotation
+# description: >-
+#   Check if the createdAt annotation in the ClusterServiceVersion manifest has a valid RFC3339
+#   timestamp format. This annotation is used to determine if a bundle is exempt from FIPS
+#   compliance requirements based on its creation date. A malformed date prevents the exemption
+#   from being applied.
+# custom:
+#   short_name: malformed_created_at
+#   failure_msg: >-
+#     The createdAt annotation %q is not a valid RFC3339 timestamp. FIPS exemption for legacy
+#     bundles cannot be determined. Expected format: 2006-01-02T15:04:05Z or with timezone offset.
+#   solution: >-
+#     Update the ClusterServiceVersion manifest to use a valid RFC3339 timestamp for the createdAt
+#     annotation, e.g. "2025-01-15T12:00:00Z".
+#   collections:
+#   - redhat
+#
+warn contains result if {
+	some manifest in _csv_manifests
+	created_at := object.get(manifest.metadata.annotations, "createdAt", null)
+	created_at != null
+	_parse_rfc3339_safe(created_at) == null
+	result := metadata.result_helper(rego.metadata.chain(), [created_at])
+}
+
 _name(o) := n if {
 	n := o.name
 } else := "unnamed"
@@ -563,6 +593,18 @@ _rule_data_errors contains error if {
 	}
 }
 
+# Verify fips_exempt_created_before is a valid RFC3339 timestamp if provided
+_rule_data_errors contains error if {
+	cutoff_date := rule_data.get("fips_exempt_created_before")
+	cutoff_date != null
+	cutoff_date != ""
+	_parse_rfc3339_safe(cutoff_date) == null
+	error := {
+		"message": sprintf("Rule data fips_exempt_created_before has invalid RFC3339 format: %q", [cutoff_date]),
+		"severity": "failure",
+	}
+}
+
 _rule_data_keys := [
 	"required_olm_features_annotations",
 	"allowed_olm_image_registry_prefixes",
@@ -639,3 +681,25 @@ _image_ref(unmatched_image) := ref if {
 	unmatched_image.tag == ""
 	ref := unmatched_image.repo
 }
+
+# FIPS exemption for legacy bundles created before the requirement date
+_fips_exempt_legacy_bundle(manifest, annotation) if {
+	annotation == "features.operators.openshift.io/fips-compliant"
+	created_at := object.get(manifest.metadata.annotations, "createdAt", "")
+	created_at != ""
+	cutoff_date := rule_data.get("fips_exempt_created_before")
+	cutoff_date != ""
+	_date_before_cutoff(created_at, cutoff_date)
+}
+
+_date_before_cutoff(created_at, cutoff_date) if {
+	created_ns := _parse_rfc3339_safe(created_at)
+	created_ns != null
+	cutoff_ns := _parse_rfc3339_safe(cutoff_date)
+	cutoff_ns != null
+	created_ns < cutoff_ns
+}
+
+_parse_rfc3339_safe(date_str) := ns if {
+	ns := time.parse_rfc3339_ns(date_str)
+} else := null
