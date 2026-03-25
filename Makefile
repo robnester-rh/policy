@@ -36,8 +36,16 @@ endif
 LICENSE_IGNORE=-ignore '.git/**' -ignore '.idea/**'
 
 TEST_FILES = $(DATA_DIR)/rule_data.yml $(POLICY_DIR) checks
+
+COVERAGE_CMD_DEFAULT=$(OPA) test --coverage --format json $(TEST_FILES)
+ifeq ($(shell command -v unshare),)
+  COVERAGE_CMD=$(COVERAGE_CMD_DEFAULT)
+else
+  COVERAGE_CMD=$(EC) version > /dev/null && unshare -r -n $(COVERAGE_CMD_DEFAULT)
+endif
+
 define COVERAGE
-@$(OPA) test --coverage --format json $(TEST_FILES) | { \
+@$(COVERAGE_CMD) | { \
 	T=$$(mktemp); tee "$${T}"; $(OPA) eval --format pretty \
 	--input "$${T}" \
 	--data hack/simplecov.rego \

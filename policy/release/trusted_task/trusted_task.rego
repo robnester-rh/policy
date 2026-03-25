@@ -16,6 +16,7 @@ import rego.v1
 
 import data.lib
 import data.lib.image
+import data.lib.metadata
 import data.lib.tekton
 
 # Batch fetch all manifests for tasks in the pipelineRun attestation
@@ -42,7 +43,7 @@ _digest_patterns := {`sha256:[0-9a-f]{64}`}
 #
 warn contains result if {
 	some task in tekton.untagged_task_references(lib.tasks_from_pipelinerun)
-	result := lib.result_helper_with_term(
+	result := metadata.result_helper_with_term(
 		rego.metadata.chain(),
 		[tekton.pipeline_task_name(task), _task_info(task)],
 		tekton.task_name(task),
@@ -68,7 +69,7 @@ warn contains result if {
 #
 warn contains result if {
 	some task in tekton.unpinned_task_references(lib.tasks_from_pipelinerun)
-	result := lib.result_helper_with_term(
+	result := metadata.result_helper_with_term(
 		rego.metadata.chain(),
 		[tekton.pipeline_task_name(task), _task_info(task)],
 		tekton.task_name(task),
@@ -101,7 +102,7 @@ warn contains result if {
 	tekton.missing_trusted_task_rules_data
 	some task in lib.tasks_from_pipelinerun
 	expiry := tekton.expiry_of(task)
-	result := lib.result_helper_with_term(
+	result := metadata.result_helper_with_term(
 		rego.metadata.chain(),
 		[tekton.pipeline_task_name(task), time.format(expiry), _task_info(task), tekton.latest_trusted_ref(task)],
 		tekton.task_name(task),
@@ -127,7 +128,7 @@ warn contains result if {
 	not tekton.missing_trusted_task_rules_data
 	some task in lib.tasks_from_pipelinerun
 	some rule in tekton.future_deny_rules_for_task(task, _manifests)
-	result := lib.result_helper_with_term(
+	result := metadata.result_helper_with_term(
 		rego.metadata.chain(),
 		[tekton.pipeline_task_name(task), rule.pattern, rule.effective_on],
 		tekton.task_name(task),
@@ -157,7 +158,7 @@ warn contains result if {
 #
 deny contains result if {
 	some err in _trust_errors
-	result := lib.result_helper_with_term(rego.metadata.chain(), [err.msg], err.term)
+	result := metadata.result_helper_with_term(rego.metadata.chain(), [err.msg], err.term)
 }
 
 # METADATA
@@ -190,7 +191,7 @@ deny contains result if {
 	params_digests := _digests_from_values(lib.param_values(param_value))
 
 	some untrusted_digest in (params_digests - _trusted_build_digests)
-	result := lib.result_helper(
+	result := metadata.result_helper(
 		rego.metadata.chain(),
 		[param_name, tekton.pipeline_task_name(build_task), untrusted_digest],
 	)
@@ -227,7 +228,7 @@ deny contains result if {
 
 	task_name = tekton.pipeline_task_name(task)
 
-	result := lib.result_helper_with_term(
+	result := metadata.result_helper_with_term(
 		rego.metadata.chain(),
 		[invalid_input, task_name],
 		invalid_input,
@@ -251,7 +252,7 @@ deny contains result if {
 #
 deny contains result if {
 	tekton.missing_all_trusted_tasks_data
-	result := lib.result_helper(rego.metadata.chain(), [])
+	result := metadata.result_helper(rego.metadata.chain(), [])
 }
 
 # METADATA
@@ -269,7 +270,7 @@ deny contains result if {
 #
 deny contains result if {
 	some error in tekton.data_errors
-	result := lib.result_helper_with_severity(rego.metadata.chain(), [error.message], error.severity)
+	result := metadata.result_helper_with_severity(rego.metadata.chain(), [error.message], error.severity)
 }
 
 # #############################################################################

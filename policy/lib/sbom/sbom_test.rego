@@ -3,11 +3,12 @@ package lib.sbom_test
 import rego.v1
 
 import data.lib
+import data.lib.assertions
 import data.lib.sbom
 
 test_all_sboms if {
 	expected := ["hurricane", "tornado", "spandex", "latex"]
-	lib.assert_equal(sbom.all_sboms, expected) with sbom.cyclonedx_sboms as ["hurricane", "tornado"]
+	assertions.assert_equal(sbom.all_sboms, expected) with sbom.cyclonedx_sboms as ["hurricane", "tornado"]
 		with sbom.spdx_sboms as ["spandex", "latex"]
 }
 
@@ -30,7 +31,7 @@ test_cyclonedx_sboms if {
 					{
 						"name": "IMAGE_DIGEST",
 						"type": "string",
-						"value": "sha256:284e302900000000000000000000000000000000000000000000000284e3029",
+						"value": "sha256:284e3029",
 					},
 					{
 						"name": "IMAGE_URL",
@@ -40,14 +41,14 @@ test_cyclonedx_sboms if {
 					{
 						"name": "SBOM_BLOB_URL",
 						"type": "string",
-						"value": "registry.io/repository/image@sha256:f0cacc1a00000000000000000000000000000000000000000000000f0cacc1a0",
+						"value": "registry.io/repository/image@sha256:f0cacc1a",
 					},
 				]}]},
 			},
 		}},
 	]
 	expected := ["sbom from attestation", {"sbom": "from oci blob", "bomFormat": "CycloneDX"}]
-	lib.assert_equal(sbom.cyclonedx_sboms, expected) with input.attestations as attestations
+	assertions.assert_equal(sbom.cyclonedx_sboms, expected) with input.attestations as attestations
 		with input.image as _cyclonedx_image
 		with ec.oci.blob as mock_ec_oci_cyclonedx_blob
 		with ec.oci.descriptor as {"mediaType": "application/vnd.oci.image.manifest.v1+json"}
@@ -72,7 +73,7 @@ test_spdx_sboms if {
 					{
 						"name": "IMAGE_DIGEST",
 						"type": "string",
-						"value": "sha256:284e302900000000000000000000000000000000000000000000000284e3029",
+						"value": "sha256:284e3029",
 					},
 					{
 						"name": "IMAGE_URL",
@@ -82,14 +83,14 @@ test_spdx_sboms if {
 					{
 						"name": "SBOM_BLOB_URL",
 						"type": "string",
-						"value": "registry.io/repository/image@sha256:f0cacc1a00000000000000000000000000000000000000000000000f0cacc1a0",
+						"value": "registry.io/repository/image@sha256:f0cacc1a",
 					},
 				]}]},
 			},
 		}},
 	]
 	expected := ["sbom from attestation", {"sbom": "from oci blob", "SPDXID": "SPDXRef-DOCUMENT"}]
-	lib.assert_equal(sbom.spdx_sboms, expected) with input.attestations as attestations
+	assertions.assert_equal(sbom.spdx_sboms, expected) with input.attestations as attestations
 		with input.image as _spdx_image
 		with ec.oci.blob as mock_ec_oci_spdx_blob
 		with ec.oci.descriptor as {"mediaType": "application/vnd.oci.image.manifest.v1+json"}
@@ -103,7 +104,7 @@ test_ignore_unrelated_sboms if {
 				{
 					"name": "IMAGE_DIGEST",
 					"type": "string",
-					"value": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+					"value": "sha256:0000000",
 				},
 				{
 					"name": "IMAGE_URL",
@@ -113,7 +114,7 @@ test_ignore_unrelated_sboms if {
 				{
 					"name": "SBOM_BLOB_URL",
 					"type": "string",
-					"value": "registry.io/repository/image@sha256:f0cacc1a00000000000000000000000000000000000000000000000f0cacc1a0",
+					"value": "registry.io/repository/image@sha256:f0cacc1a",
 				},
 			]}]},
 		}}},
@@ -123,7 +124,7 @@ test_ignore_unrelated_sboms if {
 				{
 					"name": "IMAGE_DIGEST",
 					"type": "string",
-					"value": "sha256:1111111000000000000000000000000000000000000000000000000001111111",
+					"value": "sha256:1111111",
 				},
 				{
 					"name": "IMAGE_URL",
@@ -133,15 +134,14 @@ test_ignore_unrelated_sboms if {
 				{
 					"name": "SBOM_BLOB_URL",
 					"type": "string",
-					"value": "registry.io/repository/image@sha256:f0cacc1b00000000000000000000000000000000000000000000000f0cacc1b0",
+					"value": "registry.io/repository/image@sha256:f0cacc1b",
 				},
 			]}]},
 		}}},
 	]
 
-	lib.assert_equal(sbom.all_sboms, []) with input.attestations as attestations
-		# regal ignore:line-length
-with 		input.image as {"ref": "registry.io/repository/image@sha256:284e302900000000000000000000000000000000000000000000000284e3029"}
+	assertions.assert_equal(sbom.all_sboms, []) with input.attestations as attestations
+		with input.image as {"ref": "registry.io/repository/image@sha256:284e3029"}
 		with ec.oci.blob as ""
 		with ec.oci.descriptor as {"mediaType": "application/vnd.oci.image.manifest.v1+json"}
 }
@@ -152,7 +152,7 @@ test_image_ref_from_purl if {
 
 	# regal ignore:line-length
 	image_ref := "registry.access.redhat.com/ubi9/ubi-minimal@sha256:92b1d5747a93608b6adb64dfd54515c3c5a360802db4706765ff3d8470df6290"
-	lib.assert_equal(sbom.image_ref_from_purl(purl), image_ref)
+	assertions.assert_equal(sbom.image_ref_from_purl(purl), image_ref)
 }
 
 mock_ec_oci_cyclonedx_blob := `{"sbom": "from oci blob", "bomFormat": "CycloneDX"}`
@@ -160,11 +160,11 @@ mock_ec_oci_cyclonedx_blob := `{"sbom": "from oci blob", "bomFormat": "CycloneDX
 mock_ec_oci_spdx_blob := `{"sbom": "from oci blob", "SPDXID": "SPDXRef-DOCUMENT"}`
 
 _cyclonedx_image := {
-	"ref": "registry.io/repository/image@sha256:284e302900000000000000000000000000000000000000000000000284e3029",
+	"ref": "registry.io/repository/image@sha256:284e3029",
 	"config": {"Labels": {"vendor": "Red Hat, Inc."}},
 }
 
 _spdx_image := {
-	"ref": "registry.io/repository/image@sha256:284e302900000000000000000000000000000000000000000000000284e3029",
+	"ref": "registry.io/repository/image@sha256:284e3029",
 	"config": {"Labels": {"vendor": "Red Hat, Inc."}},
 }

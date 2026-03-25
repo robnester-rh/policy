@@ -3,12 +3,13 @@ package sbom_test
 import rego.v1
 
 import data.lib
+import data.lib.assertions
 import data.sbom
 
 test_not_found if {
 	expected := {{"code": "sbom.found", "msg": "No SBOM attestations found"}}
-	lib.assert_equal_results(expected, sbom.deny) with input.attestations as []
-		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
+	assertions.assert_equal_results(expected, sbom.deny) with input.attestations as []
+		with input.image.ref as "registry.local/spam@sha256:123"
 }
 
 test_not_found_image_index if {
@@ -20,8 +21,7 @@ test_not_found_image_index if {
 				{
 					"name": "IMAGES",
 					"type": "string",
-					# regal ignore:line-length
-					"value": "registry.local/spam@sha256:abc0000000000000000000000000000000000000000000000000000000000abc, registry.local/bacon@sha256:bcd0000000000000000000000000000000000000000000000000000000000bcd",
+					"value": "registry.local/spam@sha256:abc, registry.local/bacon@sha256:bcd",
 				},
 				{
 					"name": "IMAGE_URL",
@@ -31,14 +31,14 @@ test_not_found_image_index if {
 				{
 					"name": "IMAGE_DIGEST",
 					"type": "string",
-					"value": "sha256:fff0000000000000000000000000000000000000000000000000000000000fff",
+					"value": "sha256:fff",
 				},
 			]}]},
 		},
 	}}
 
-	lib.assert_empty(sbom.deny) with input.attestations as [att]
-		with input.image.ref as "registry.local/ham@sha256:fff0000000000000000000000000000000000000000000000000000000000fff"
+	assertions.assert_empty(sbom.deny) with input.attestations as [att]
+		with input.image.ref as "registry.local/ham@sha256:fff"
 }
 
 test_rule_data_validation if {
@@ -245,13 +245,13 @@ test_rule_data_validation if {
 		},
 	}
 
-	lib.assert_equal_results(sbom.deny, expected) with input.attestations as _sbom_attestation
+	assertions.assert_equal_results(sbom.deny, expected) with input.attestations as _sbom_attestation
 		with data.rule_data as d
 
 	# rule data keys are optional
-	lib.assert_empty(sbom.deny) with input.attestations as _sbom_attestation
+	assertions.assert_empty(sbom.deny) with input.attestations as _sbom_attestation
 		with data.rule_data as {}
-	lib.assert_empty(sbom.deny) with input.attestations as _sbom_attestation
+	assertions.assert_empty(sbom.deny) with input.attestations as _sbom_attestation
 		with data.rule_data as {
 			lib.sbom.rule_data_packages_key: [],
 			lib.sbom.rule_data_attributes_key: [],
@@ -268,7 +268,7 @@ _spdx_sbom_attestation := {"statement": {
 		"documentNamespace": "https://example.dev/spdxdocs/example-310683af-e9a0-4f66-a6a4-119352915b51",
 		"dataLicense": "CC0-1.0",
 		"SPDXID": "SPDXRef-DOCUMENT",
-		"name": "registry.local/bacon@sha256:1230000000000000000000000000000000000000000000000000000000000123",
+		"name": "registry.local/bacon@sha256:123",
 		"creationInfo": {
 			"created": "2006-08-14T02:34:56-06:00",
 			"creators": ["Tool: example SPDX document only"],

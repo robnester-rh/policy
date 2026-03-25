@@ -3,6 +3,7 @@ package trusted_task_test
 import rego.v1
 
 import data.lib
+import data.lib.assertions
 import data.trusted_task
 
 test_success if {
@@ -17,7 +18,7 @@ test_success if {
 		},
 	}}
 
-	lib.assert_empty(trusted_task.warn | trusted_task.deny, expected) with data.trusted_tasks as trusted_tasks_data
+	assertions.assert_empty(trusted_task.warn | trusted_task.deny, expected) with data.trusted_tasks as trusted_tasks_data
 		with input.attestations as [att_no_ta, attestation_ta]
 }
 
@@ -48,7 +49,7 @@ test_pinned_warning if {
 		},
 	}
 
-	lib.assert_equal_results(trusted_task.warn, expected) with input.attestations as [att]
+	assertions.assert_equal_results(trusted_task.warn, expected) with input.attestations as [att]
 		with data.trusted_tasks as trusted_tasks_data
 }
 
@@ -70,7 +71,7 @@ test_tagged_warning if {
 		"msg": "Pipeline task \"untagged-trusty-p\" uses an untagged task reference, oci://registry.local/trusty@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700", "term": "trusty",
 	}}
 
-	lib.assert_equal_results(trusted_task.warn, expected) with input.attestations as [att]
+	assertions.assert_equal_results(trusted_task.warn, expected) with input.attestations as [att]
 		with data.trusted_tasks as trusted_tasks_data
 }
 
@@ -103,7 +104,7 @@ test_outdated_warning if {
 		},
 	}
 
-	lib.assert_equal_results(trusted_task.warn, expected) with input.attestations as [att]
+	assertions.assert_equal_results(trusted_task.warn, expected) with input.attestations as [att]
 		with data.trusted_tasks as trusted_tasks_data
 }
 
@@ -159,7 +160,7 @@ test_trusted_violation if {
 		},
 	}
 
-	lib.assert_equal_results(trusted_task.deny, expected) with input.attestations as [att]
+	assertions.assert_equal_results(trusted_task.deny, expected) with input.attestations as [att]
 		with data.trusted_tasks as trusted_tasks_data
 }
 
@@ -185,9 +186,10 @@ test_trusted_artifact_tampering if {
 		},
 	}
 
-	lib.assert_equal_results(trusted_task.deny, expected) with data.trusted_tasks as trusted_tasks_data
+	assertions.assert_equal_results(trusted_task.deny, expected) with data.trusted_tasks as trusted_tasks_data
 		with input.attestations as [evil_attestation]
 		with ec.oci.image_manifests as _mock_image_manifests
+		with ec.oci.image_manifest as _mock_image_manifest
 }
 
 test_trusted_artifact_outdated if {
@@ -212,9 +214,10 @@ test_trusted_artifact_outdated if {
 		},
 	}
 
-	lib.assert_equal_results(trusted_task.deny, expected) with data.trusted_tasks as trusted_tasks_data
+	assertions.assert_equal_results(trusted_task.deny, expected) with data.trusted_tasks as trusted_tasks_data
 		with input.attestations as [attestation_with_outdated_task]
 		with ec.oci.image_manifests as _mock_image_manifests
+		with ec.oci.image_manifest as _mock_image_manifest
 }
 
 # Test trusted artifacts with deny rules - covers _format_trust_error_rules_ta function
@@ -284,10 +287,11 @@ test_trusted_artifact_denied_by_rules if {
 		},
 	}
 
-	lib.assert_equal_results(trusted_task.deny, expected) with data.trusted_tasks as trusted_tasks_data
+	assertions.assert_equal_results(trusted_task.deny, expected) with data.trusted_tasks as trusted_tasks_data
 		with data.rule_data.trusted_task_rules as task_rules
 		with input.attestations as [attestation_ta]
 		with ec.oci.image_manifests as _mock_image_manifests
+		with ec.oci.image_manifest as _mock_image_manifest
 }
 
 # Test that future deny rules produce a warning
@@ -317,9 +321,10 @@ test_future_deny_rule_warning if {
 		"term": "trusty",
 	}}
 
-	lib.assert_equal_results(trusted_task.warn, expected) with data.rule_data.trusted_task_rules as task_rules
+	assertions.assert_equal_results(trusted_task.warn, expected) with data.rule_data.trusted_task_rules as task_rules
 		with input.attestations as [att]
 		with ec.oci.image_manifests as _mock_image_manifests
+		with ec.oci.image_manifest as _mock_image_manifest
 }
 
 # Test that deny rules without effective_on do not produce a future deny warning
@@ -345,14 +350,16 @@ test_future_deny_rule_no_warning_when_already_effective if {
 	results := trusted_task.warn with data.rule_data.trusted_task_rules as task_rules
 		with input.attestations as [att]
 		with ec.oci.image_manifests as _mock_image_manifests
+		with ec.oci.image_manifest as _mock_image_manifest
 
 	count([r | some r in results; r.code == "trusted_task.future_deny_rule"]) == 0
 }
 
 test_trusted_artifact_test_tasks if {
-	lib.assert_empty(trusted_task.deny) with data.trusted_tasks as trusted_tasks_data
+	assertions.assert_empty(trusted_task.deny) with data.trusted_tasks as trusted_tasks_data
 		with input.attestations as [attestation_ta]
 		with ec.oci.image_manifests as _mock_image_manifests
+		with ec.oci.image_manifest as _mock_image_manifest
 }
 
 test_tampered_trusted_artifact_inputs if {
@@ -362,7 +369,7 @@ test_tampered_trusted_artifact_inputs if {
 		"value": "oci:registry.io/repository/image@sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 	}])
 
-	lib.assert_equal_results(trusted_task.deny, {{
+	assertions.assert_equal_results(trusted_task.deny, {{
 		"code": "trusted_task.valid_trusted_artifact_inputs",
 		# regal ignore:line-length
 		"msg": `Code tampering detected, input "oci:registry.io/repository/image@sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" for task "task_b" was not produced by the pipeline as attested.`,
@@ -370,6 +377,7 @@ test_tampered_trusted_artifact_inputs if {
 	}}) with data.trusted_tasks as trusted_tasks_data
 		with input.attestations as [evil_attestation]
 		with ec.oci.image_manifests as _mock_image_manifests
+		with ec.oci.image_manifest as _mock_image_manifest
 }
 
 test_artifact_chain if {
@@ -381,7 +389,7 @@ test_artifact_chain if {
 		"task_test_a": {"task_b"},
 	}
 
-	lib.assert_equal(trusted_task._artifact_chain[attestation_ta], expected) with input.attestations as [attestation_ta]
+	assertions.assert_equal(trusted_task._artifact_chain[attestation_ta], expected) with input.attestations as [attestation_ta]
 }
 
 test_trusted_artifact_inputs_from_parameters if {
@@ -393,7 +401,7 @@ test_trusted_artifact_inputs_from_parameters if {
 		"UNEXPECTED_ARTIFACT": "oci:registry.io/repository/image@sha256:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 	}}}
 
-	lib.assert_equal(trusted_task._trusted_artifact_inputs(task), {artifact_a})
+	assertions.assert_equal(trusted_task._trusted_artifact_inputs(task), {artifact_a})
 }
 
 test_trusted_artifact_outputs_from_results if {
@@ -425,7 +433,7 @@ test_trusted_artifact_outputs_from_results if {
 		},
 	]}
 
-	lib.assert_equal(
+	assertions.assert_equal(
 		trusted_task._trusted_artifact_outputs(task),
 		{artifact_a},
 	)
@@ -438,27 +446,29 @@ test_trusted_parameters if {
 		"value": "registry.io/repository/image@sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 	}])
 
-	lib.assert_equal_results(trusted_task.deny, {{
+	assertions.assert_equal_results(trusted_task.deny, {{
 		"code": "trusted_task.trusted_parameters",
 		# regal ignore:line-length
 		"msg": `The "image" parameter of the "task_image_index" PipelineTask includes an untrusted digest: sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff`,
 	}}) with data.trusted_tasks as trusted_tasks_data
 		with input.attestations as [evil_attestation]
 		with ec.oci.image_manifests as _mock_image_manifests
+		with ec.oci.image_manifest as _mock_image_manifest
 
 	# regal ignore:line-length
 	fake_component := {"containerImage": "registry.io/repository/image@sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}
 
 	# If that same digest was found in the snapshot then we assume that it's not actually evil and therefore permit it
-	lib.assert_empty(trusted_task.deny) with data.trusted_tasks as trusted_tasks_data
+	assertions.assert_empty(trusted_task.deny) with data.trusted_tasks as trusted_tasks_data
 		with input.attestations as [evil_attestation]
 		with input.snapshot.components as [fake_component]
 		with ec.oci.image_manifests as _mock_image_manifests
+		with ec.oci.image_manifest as _mock_image_manifest
 }
 
 test_data_missing if {
 	expected := {{"code": "trusted_task.data", "msg": "Missing required trusted_tasks data"}}
-	lib.assert_equal_results(trusted_task.deny, expected) with data.trusted_tasks as []
+	assertions.assert_equal_results(trusted_task.deny, expected) with data.trusted_tasks as []
 }
 
 test_data_errors if {
@@ -476,7 +486,7 @@ test_data_errors if {
 			"severity": "failure",
 		},
 	}
-	lib.assert_equal_results(trusted_task.deny, expected) with data.trusted_tasks as bad_data
+	assertions.assert_equal_results(trusted_task.deny, expected) with data.trusted_tasks as bad_data
 }
 
 ################################
@@ -506,9 +516,10 @@ test_trusted_build_digests_from_run_script_result if {
 		"results": [_mock_run_script_result],
 	})
 	expected := {"sha256:1111111111111111111111111111111111111111111111111111111111111111"}
-	lib.assert_equal(trusted_task._trusted_build_digests, expected) with input.attestations as [attestation]
+	assertions.assert_equal(trusted_task._trusted_build_digests, expected) with input.attestations as [attestation]
 		with data.trusted_tasks as trusted_tasks_data
 		with ec.oci.image_manifests as _mock_image_manifests
+		with ec.oci.image_manifest as _mock_image_manifest
 }
 
 test_trusted_build_digests_from_run_script_untrusted if {
@@ -519,9 +530,10 @@ test_trusted_build_digests_from_run_script_untrusted if {
 		"ref": {"name": "run-script-oci-ta", "bundle": "registry.local/unknown:1.0@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		"results": [_mock_run_script_result],
 	})
-	lib.assert_empty(trusted_task._trusted_build_digests) with input.attestations as [attestation]
+	assertions.assert_empty(trusted_task._trusted_build_digests) with input.attestations as [attestation]
 		with data.trusted_tasks as trusted_tasks_data
 		with ec.oci.image_manifests as _mock_image_manifests
+		with ec.oci.image_manifest as _mock_image_manifest
 }
 
 test_trusted_build_digests_from_run_script_no_result if {
@@ -533,9 +545,10 @@ test_trusted_build_digests_from_run_script_no_result if {
 		"ref": {"name": "run-script-oci-ta", "bundle": "registry.local/trusty:1.0@sha256:d19e5700000000000000000000000000000000000000000000000000d19e5700"},
 		"results": [results],
 	})
-	lib.assert_equal(trusted_task._trusted_build_digests, set()) with input.attestations as [attestation]
+	assertions.assert_equal(trusted_task._trusted_build_digests, set()) with input.attestations as [attestation]
 		with data.trusted_tasks as trusted_tasks_data
 		with ec.oci.image_manifests as _mock_image_manifests
+		with ec.oci.image_manifest as _mock_image_manifest
 }
 
 test_trusted_build_digests_from_build_task_results if {
@@ -551,9 +564,10 @@ test_trusted_build_digests_from_build_task_results if {
 		],
 	})
 	expected := {"sha256:2222222222222222222222222222222222222222222222222222222222222222"}
-	lib.assert_equal(trusted_task._trusted_build_digests, expected) with input.attestations as [attestation]
+	assertions.assert_equal(trusted_task._trusted_build_digests, expected) with input.attestations as [attestation]
 		with data.trusted_tasks as trusted_tasks_data
 		with ec.oci.image_manifests as _mock_image_manifests
+		with ec.oci.image_manifest as _mock_image_manifest
 }
 
 test_trusted_build_digests_from_snapshot_components if {
@@ -568,7 +582,7 @@ test_trusted_build_digests_from_snapshot_components if {
 		"sha256:3333333333333333333333333333333333333333333333333333333333333333",
 		"sha256:4444444444444444444444444444444444444444444444444444444444444444",
 	}
-	lib.assert_equal(trusted_task._trusted_build_digests, expected) with input.snapshot.components as components
+	assertions.assert_equal(trusted_task._trusted_build_digests, expected) with input.snapshot.components as components
 }
 
 #########################################
@@ -874,7 +888,7 @@ test_on_trusted_tasks_no_rules_trusted if {
 	)])
 
 	# Should NOT produce any deny results (task is trusted via legacy)
-	lib.assert_empty(trusted_task.deny) with input.attestations as [att]
+	assertions.assert_empty(trusted_task.deny) with input.attestations as [att]
 		with data.trusted_tasks as rules_trusted_tasks_data
 		with data.rule_data.trusted_task_rules as trusted_task_rules_data
 }
@@ -907,7 +921,7 @@ test_on_trusted_tasks_expired_untrusted if {
 	}}
 
 	# Should produce deny result (task expired in trusted_tasks, no upgrade path available)
-	lib.assert_equal_results(trusted_task.deny, expected) with input.attestations as [att]
+	assertions.assert_equal_results(trusted_task.deny, expected) with input.attestations as [att]
 		with data.trusted_tasks as rules_trusted_tasks_data
 		with data.rule_data.trusted_task_rules as trusted_task_rules_data
 		with data.config.policy.when_ns as time.parse_rfc3339_ns("2025-01-10T00:00:00Z")
@@ -935,7 +949,7 @@ test_not_on_trusted_tasks_no_rules_untrusted if {
 	}}
 
 	# When both trusted_tasks and trusted_task_rules are empty, should produce data error
-	lib.assert_equal_results(trusted_task.deny, expected) with input.attestations as [att]
+	assertions.assert_equal_results(trusted_task.deny, expected) with input.attestations as [att]
 		with data.trusted_tasks as rules_trusted_tasks_data
 		with data.rule_data.trusted_task_rules as trusted_task_rules_data
 }
@@ -964,10 +978,11 @@ test_allow_by_location if {
 
 	# Should NOT produce any deny results (task allowed by rules)
 	# With trusted_task_rules provided, uses deny rule (trusted_rules)
-	lib.assert_empty(trusted_task.deny) with input.attestations as [att]
+	assertions.assert_empty(trusted_task.deny) with input.attestations as [att]
 		with data.trusted_tasks as {}
 		with data.rule_data.trusted_task_rules as trusted_task_rules_data
 		with ec.oci.image_manifests as _mock_image_manifests
+		with ec.oci.image_manifest as _mock_image_manifest
 }
 
 # B2 — Outside pattern → not trusted
@@ -995,10 +1010,11 @@ test_outside_pattern_not_trusted if {
 	}}
 
 	# Should produce deny result (task outside allow pattern)
-	lib.assert_equal_results(trusted_task.deny, expected) with input.attestations as [att]
+	assertions.assert_equal_results(trusted_task.deny, expected) with input.attestations as [att]
 		with data.trusted_tasks as {}
 		with data.rule_data.trusted_task_rules as trusted_task_rules_data
 		with ec.oci.image_manifests as _mock_image_manifests
+		with ec.oci.image_manifest as _mock_image_manifest
 }
 
 #####################################################
@@ -1036,11 +1052,12 @@ test_deny_takes_precedence_over_allow if {
 	}}
 
 	# Should produce deny result (deny rule takes precedence over allow)
-	lib.assert_equal_results(trusted_task.deny, expected) with input.attestations as [att]
+	assertions.assert_equal_results(trusted_task.deny, expected) with input.attestations as [att]
 		with data.trusted_tasks as {}
 		with data.rule_data.trusted_task_rules as task_rules
 		with data.config.policy.when_ns as time.parse_rfc3339_ns("2025-01-10T00:00:00Z")
 		with ec.oci.image_manifests as _mock_image_manifests
+		with ec.oci.image_manifest as _mock_image_manifest
 }
 
 #####################################################
@@ -1073,11 +1090,12 @@ test_allow_rule_not_yet_effective if {
 	}}
 
 	# Before effective date - should produce deny (rule not yet effective)
-	lib.assert_equal_results(trusted_task.deny, expected) with input.attestations as [att]
+	assertions.assert_equal_results(trusted_task.deny, expected) with input.attestations as [att]
 		with data.trusted_tasks as {}
 		with data.rule_data.trusted_task_rules as trusted_task_rules_data
 		with data.config.policy.when_ns as time.parse_rfc3339_ns("2025-01-15T00:00:00Z")
 		with ec.oci.image_manifests as _mock_image_manifests
+		with ec.oci.image_manifest as _mock_image_manifest
 }
 
 # D1 — Allow rule becomes effective → trusted
@@ -1100,11 +1118,12 @@ test_allow_rule_effective_trusted if {
 
 	# After effective date - should NOT produce deny (rule is now effective)
 	# With trusted_task_rules provided, uses deny rule (trusted_rules)
-	lib.assert_empty(trusted_task.deny) with input.attestations as [att]
+	assertions.assert_empty(trusted_task.deny) with input.attestations as [att]
 		with data.trusted_tasks as {}
 		with data.rule_data.trusted_task_rules as trusted_task_rules_data
 		with data.config.policy.when_ns as time.parse_rfc3339_ns("2025-02-10T00:00:00Z")
 		with ec.oci.image_manifests as _mock_image_manifests
+		with ec.oci.image_manifest as _mock_image_manifest
 }
 
 # Time-based deny rule - not yet effective
@@ -1130,11 +1149,12 @@ test_deny_rule_not_yet_effective if {
 
 	# Before deny effective date - should NOT produce deny result (deny rule not yet effective)
 	# With trusted_task_rules provided, uses deny rule (trusted_rules)
-	lib.assert_empty(trusted_task.deny) with input.attestations as [att]
+	assertions.assert_empty(trusted_task.deny) with input.attestations as [att]
 		with data.trusted_tasks as {}
 		with data.rule_data.trusted_task_rules as trusted_task_rules_data
 		with data.config.policy.when_ns as time.parse_rfc3339_ns("2025-02-15T00:00:00Z")
 		with ec.oci.image_manifests as _mock_image_manifests
+		with ec.oci.image_manifest as _mock_image_manifest
 }
 
 # Time-based deny rule - becomes effective
@@ -1166,11 +1186,12 @@ test_deny_rule_becomes_effective if {
 	}}
 
 	# After deny effective date - should produce deny result
-	lib.assert_equal_results(trusted_task.deny, expected) with input.attestations as [att]
+	assertions.assert_equal_results(trusted_task.deny, expected) with input.attestations as [att]
 		with data.trusted_tasks as {}
 		with data.rule_data.trusted_task_rules as trusted_task_rules_data
 		with data.config.policy.when_ns as time.parse_rfc3339_ns("2025-03-15T00:00:00Z")
 		with ec.oci.image_manifests as _mock_image_manifests
+		with ec.oci.image_manifest as _mock_image_manifest
 }
 
 #####################################################
@@ -1202,10 +1223,11 @@ test_multiple_allow_rules if {
 
 	# Task matches both allow rules - should be trusted
 	# With trusted_task_rules provided, uses deny rule (trusted_rules)
-	lib.assert_empty(trusted_task.deny) with input.attestations as [att]
+	assertions.assert_empty(trusted_task.deny) with input.attestations as [att]
 		with data.trusted_tasks as {}
 		with data.rule_data.trusted_task_rules as trusted_task_rules_data
 		with ec.oci.image_manifests as _mock_image_manifests
+		with ec.oci.image_manifest as _mock_image_manifest
 }
 
 #####################################################
@@ -1242,11 +1264,12 @@ test_deny_with_message if {
 	}}
 
 	# Should produce deny result with message
-	lib.assert_equal_results(trusted_task.deny, expected) with input.attestations as [att]
+	assertions.assert_equal_results(trusted_task.deny, expected) with input.attestations as [att]
 		with data.trusted_tasks as {}
 		with data.rule_data.trusted_task_rules as task_rules
 		with data.config.policy.when_ns as time.parse_rfc3339_ns("2025-11-01T00:00:00Z")
 		with ec.oci.image_manifests as _mock_image_manifests
+		with ec.oci.image_manifest as _mock_image_manifest
 }
 
 #####################################################
@@ -1279,11 +1302,12 @@ test_rules_allow_trusted_tasks_expiry_ignored if {
 
 	# Should NOT produce deny (allow rule matches, trusted_tasks expiry is ignored)
 	# With trusted_task_rules provided, uses deny rule (trusted_rules)
-	lib.assert_empty(trusted_task.deny) with input.attestations as [att]
+	assertions.assert_empty(trusted_task.deny) with input.attestations as [att]
 		with data.trusted_tasks as rules_trusted_tasks_data
 		with data.rule_data.trusted_task_rules as trusted_task_rules_data
 		with data.config.policy.when_ns as time.parse_rfc3339_ns("2025-02-01T00:00:00Z")
 		with ec.oci.image_manifests as _mock_image_manifests
+		with ec.oci.image_manifest as _mock_image_manifest
 }
 
 #####################################################
@@ -1311,10 +1335,11 @@ test_unknown_fields_ignored if {
 	# Should NOT produce any deny results (unknown field is ignored)
 	# Unknown fields should be ignored per the JSON schema's additionalProperties: true
 	# With trusted_task_rules provided, uses deny rule (trusted_rules)
-	lib.assert_empty(trusted_task.deny) with input.attestations as [att]
+	assertions.assert_empty(trusted_task.deny) with input.attestations as [att]
 		with data.trusted_tasks as {}
 		with data.rule_data.trusted_task_rules as trusted_task_rules_data
 		with ec.oci.image_manifests as _mock_image_manifests
+		with ec.oci.image_manifest as _mock_image_manifest
 }
 
 #####################################################
@@ -1353,10 +1378,11 @@ test_mixed_trusted_and_untrusted_tasks if {
 	}}
 
 	# Should produce deny for the untrusted task only
-	lib.assert_equal_results(trusted_task.deny, expected) with input.attestations as [att]
+	assertions.assert_equal_results(trusted_task.deny, expected) with input.attestations as [att]
 		with data.trusted_tasks as {}
 		with data.rule_data.trusted_task_rules as trusted_task_rules_data
 		with ec.oci.image_manifests as _mock_image_manifests
+		with ec.oci.image_manifest as _mock_image_manifest
 }
 
 #####################################################
@@ -1386,8 +1412,16 @@ _rules_make_task(pipeline_task_name, bundle, task_name) := {
 # Mock function for ec.oci.image_manifests
 _mock_image_manifests(refs) := {ref: {} | some ref in refs}
 
+# Mock function for ec.oci.image_manifest (singular)
+_mock_image_manifest(_) := {}
+
 test_mock_image_manifests if {
 	result := _mock_image_manifests({"ref1", "ref2"})
 	expected := {"ref1": {}, "ref2": {}}
-	lib.assert_equal(expected, result)
+	assertions.assert_equal(expected, result)
+}
+
+test_mock_image_manifest if {
+	result := _mock_image_manifest("any-ref")
+	assertions.assert_equal({}, result)
 }
