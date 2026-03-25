@@ -9,7 +9,9 @@ import data.sbom
 test_not_found if {
 	expected := {{"code": "sbom.found", "msg": "No SBOM attestations found"}}
 	assertions.assert_equal_results(expected, sbom.deny) with input.attestations as []
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
 }
 
 test_not_found_image_index if {
@@ -31,14 +33,16 @@ test_not_found_image_index if {
 				{
 					"name": "IMAGE_DIGEST",
 					"type": "string",
-					"value": "sha256:fff",
+					"value": "sha256:fff0000000000000000000000000000000000000000000000000000000000fff",
 				},
 			]}]},
 		},
 	}}
 
 	assertions.assert_empty(sbom.deny) with input.attestations as [att]
-		with input.image.ref as "registry.local/ham@sha256:fff"
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
+		with input.image.ref as "registry.local/ham@sha256:fff0000000000000000000000000000000000000000000000000000000000fff"
 }
 
 test_rule_data_validation if {
@@ -249,9 +253,13 @@ test_rule_data_validation if {
 		with data.rule_data as d
 
 	# rule data keys are optional
-	assertions.assert_empty(sbom.deny) with input.attestations as _sbom_attestation
+	assertions.assert_empty(sbom.deny) with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
+		with input.attestations as _sbom_attestation
 		with data.rule_data as {}
-	assertions.assert_empty(sbom.deny) with input.attestations as _sbom_attestation
+	assertions.assert_empty(sbom.deny) with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
+		with input.attestations as _sbom_attestation
 		with data.rule_data as {
 			lib.sbom.rule_data_packages_key: [],
 			lib.sbom.rule_data_attributes_key: [],

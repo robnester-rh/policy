@@ -8,13 +8,17 @@ import data.sbom_cyclonedx
 
 test_all_good_from_attestation if {
 	assertions.assert_empty(sbom_cyclonedx.deny) with input.attestations as [_sbom_1_5_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
 }
 
 test_all_good_from_image if {
 	files := {"root/buildinfo/content_manifests/sbom-cyclonedx.json": _sbom_1_5_attestation.statement.predicate}
 	assertions.assert_empty(sbom_cyclonedx.deny) with input.image.files as files
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
 }
 
 test_not_valid if {
@@ -28,6 +32,8 @@ test_not_valid if {
 		"value": "spam",
 	}])
 	assertions.assert_equal_results(expected, sbom_cyclonedx.deny) with input.attestations as [att]
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
 }
 
 test_unsupported_version if {
@@ -41,11 +47,15 @@ test_unsupported_version if {
 		"value": "1.3",
 	}])
 	assertions.assert_equal_results(expected, sbom_cyclonedx.deny) with input.attestations as [att]
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
 }
 
 test_valid_cdx_1_4 if {
 	assertions.assert_empty(sbom_cyclonedx.deny) with input.attestations as [_sbom_1_4_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
 }
 
 test_invalid_cdx_1_4 if {
@@ -59,11 +69,15 @@ test_invalid_cdx_1_4 if {
 		"value": "spam",
 	}])
 	assertions.assert_equal_results(expected, sbom_cyclonedx.deny) with input.attestations as [att]
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
 }
 
 test_valid_cdx_1_5 if {
 	assertions.assert_empty(sbom_cyclonedx.deny) with input.attestations as [_sbom_1_5_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
 }
 
 test_invalid_cdx_1_5 if {
@@ -77,11 +91,15 @@ test_invalid_cdx_1_5 if {
 		"value": "spam",
 	}])
 	assertions.assert_equal_results(expected, sbom_cyclonedx.deny) with input.attestations as [att]
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
 }
 
 test_valid_cdx_1_6 if {
 	assertions.assert_empty(sbom_cyclonedx.deny) with input.attestations as [_sbom_1_6_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
 }
 
 test_invalid_cdx_1_6 if {
@@ -95,14 +113,20 @@ test_invalid_cdx_1_6 if {
 		"value": "spam",
 	}])
 	assertions.assert_equal_results(expected, sbom_cyclonedx.deny) with input.attestations as [att]
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
 }
 
 test_attributes_not_allowed_all_good if {
 	assertions.assert_empty(sbom_cyclonedx.deny) with input.attestations as [_sbom_1_5_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
 
 	assertions.assert_empty(sbom_cyclonedx.deny) with input.attestations as [_sbom_1_5_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
 		with data.rule_data as {sbom.rule_data_attributes_key: [{"name": "attrX", "value": "valueX"}]}
 }
 
@@ -116,7 +140,9 @@ test_attributes_not_allowed_pair if {
 	}}
 
 	assertions.assert_equal_results(expected, sbom_cyclonedx.deny) with input.attestations as [_sbom_1_5_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
 		with data.rule_data as {sbom.rule_data_attributes_key: [{"name": "attr1"}]}
 }
 
@@ -130,7 +156,9 @@ test_attributes_not_allowed_value if {
 	}}
 
 	assertions.assert_equal_results(expected, sbom_cyclonedx.deny) with input.attestations as [_sbom_1_5_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
 		with data.rule_data as {sbom.rule_data_attributes_key: [{"name": "attr2", "value": "value2"}]}
 }
 
@@ -155,7 +183,9 @@ test_attributes_not_allowed_effective_on if {
 	}
 
 	raw_results := sbom_cyclonedx.deny with input.attestations as [_sbom_1_5_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
 		with data.rule_data as {sbom.rule_data_attributes_key: [
 			{"name": "attr1", "effective_on": "2025-01-01T00:00:00Z"},
 			{"name": "attr2", "value": "value2"},
@@ -178,14 +208,18 @@ test_attributes_not_allowed_value_no_purl if {
 	}}
 
 	assertions.assert_equal_results(expected, sbom_cyclonedx.deny) with input.attestations as [_sbom_1_5_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
 		with data.rule_data as {sbom.rule_data_attributes_key: [{"name": "syft:distro:id", "value": "rhel"}]}
 }
 
 test_external_references_allowed_regex_with_no_rules_is_allowed if {
 	expected := {}
 	assertions.assert_equal_results(expected, sbom_cyclonedx.deny) with input.attestations as [_sbom_1_5_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
 		with data.rule_data as {sbom.rule_data_allowed_external_references_key: []}
 }
 
@@ -199,7 +233,9 @@ test_external_references_allowed_regex if {
 	}}
 
 	assertions.assert_equal_results(expected, sbom_cyclonedx.deny) with input.attestations as [_sbom_1_5_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
 		with data.rule_data as {sbom.rule_data_allowed_external_references_key: [{
 			"type": "distribution",
 			"url": ".*allowed.net.*",
@@ -215,7 +251,9 @@ test_external_references_allowed_no_purl if {
 	}}
 
 	assertions.assert_equal_results(expected, sbom_cyclonedx.deny) with input.attestations as [_sbom_1_5_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
 		with data.rule_data as {sbom.rule_data_allowed_external_references_key: [{
 			"type": "website",
 			"url": ".*example.com.*",
@@ -232,7 +270,9 @@ test_external_references_disallowed_regex if {
 	}}
 
 	assertions.assert_equal_results(expected, sbom_cyclonedx.deny) with input.attestations as [_sbom_1_5_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
 		with data.rule_data as {sbom.rule_data_disallowed_external_references_key: [{
 			"type": "distribution",
 			"url": ".*example.com.*",
@@ -248,7 +288,9 @@ test_external_references_disallowed_no_purl if {
 	}}
 
 	assertions.assert_equal_results(expected, sbom_cyclonedx.deny) with input.attestations as [_sbom_1_5_attestation]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
 		with data.rule_data as {sbom.rule_data_disallowed_external_references_key: [{
 			"type": "website",
 			"url": ".*redhat.com.*",
@@ -306,6 +348,8 @@ test_allowed_package_sources if {
 	])
 
 	assertions.assert_equal_results(expected, sbom_cyclonedx.deny) with input.attestations as [att]
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
 		with data.rule_data as {sbom.rule_data_allowed_package_sources_key: [
 			{
 				"type": "maven",
@@ -344,6 +388,8 @@ test_allowed_package_sources_no_rule_defined if {
 
 	# rule data is defined only for purl of type generic
 	assertions.assert_equal_results(expected, sbom_cyclonedx.deny) with input.attestations as [att]
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
 		with data.rule_data as {sbom.rule_data_allowed_package_sources_key: [{
 			"type": "generic",
 			"patterns": [".*example.com.*"],
@@ -357,7 +403,9 @@ test_attributes_not_allowed_no_properties if {
 	}])
 
 	assertions.assert_empty(sbom_cyclonedx.deny) with input.attestations as [att]
-		with input.image.ref as "registry.local/spam@sha256:123"
+		with input.image.ref as "registry.local/spam@sha256:1230000000000000000000000000000000000000000000000000000000000123"
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
 		with data.rule_data as {sbom.rule_data_attributes_key: [{"name": "attr", "value": "value"}]}
 }
 
@@ -471,10 +519,10 @@ assert_allowed(purl, disallowed_packages) if {
 		"value": purl,
 	}])
 
-	# regal ignore:with-outside-test-context
-	assertions.assert_empty(sbom_cyclonedx.deny) with input.attestations as [att]
-		# regal ignore:with-outside-test-context
-with 		data.rule_data.disallowed_packages as disallowed_packages
+	assertions.assert_empty(sbom_cyclonedx.deny) with input.attestations as [att] # regal ignore:with-outside-test-context
+		with ec.oci.image_referrers as [] # regal ignore:with-outside-test-context
+		with ec.oci.image_tag_refs as [] # regal ignore:with-outside-test-context
+		with data.rule_data.disallowed_packages as disallowed_packages # regal ignore:with-outside-test-context
 }
 
 assert_not_allowed(purl, disallowed_packages) if {
@@ -490,8 +538,9 @@ assert_not_allowed(purl, disallowed_packages) if {
 
 	# regal ignore:with-outside-test-context
 	assertions.assert_equal_results(sbom_cyclonedx.deny, expected) with input.attestations as [att]
-		# regal ignore:with-outside-test-context
-with 		data.rule_data.disallowed_packages as disallowed_packages
+		with ec.oci.image_referrers as [] # regal ignore:with-outside-test-context
+		with ec.oci.image_tag_refs as [] # regal ignore:with-outside-test-context
+		with data.rule_data.disallowed_packages as disallowed_packages # regal ignore:with-outside-test-context
 }
 
 _sbom_1_5_attestation := {"statement": {
