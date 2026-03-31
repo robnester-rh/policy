@@ -57,6 +57,7 @@
 **** xref:packages/release_labels.adoc#labels__rule_data_provided[Rule data provided]
 *** xref:packages/release_olm.adoc[OLM]
 **** xref:packages/release_olm.adoc#olm__csv_semver_format[ClusterServiceVersion semver format]
+**** xref:packages/release_olm.adoc#olm__fips_required_post_cutoff[FIPS compliance required for post-cutoff bundles]
 **** xref:packages/release_olm.adoc#olm__feature_annotations_format[Feature annotations have expected value]
 **** xref:packages/release_olm.adoc#olm__allowed_registries[Images referenced by OLM bundle are from allowed registries]
 **** xref:packages/release_olm.adoc#olm__malformed_created_at[Malformed createdAt annotation]

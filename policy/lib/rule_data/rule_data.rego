@@ -91,6 +91,14 @@ defaults := {
 	# Bundles created before this date (via createdAt annotation) are exempt from
 	# FIPS annotation requirements. Format: RFC3339 timestamp.
 	"fips_exempt_created_before": "2025-01-31T00:00:00Z",
+	# Used in release/olm.rego - Subscriptions that qualify for FIPS date-based exemption.
+	# Only bundles with these subscriptions in operators.openshift.io/valid-subscription
+	# are eligible for the FIPS exemption based on createdAt date.
+	"fips_exempt_subscriptions": [
+		"OpenShift Kubernetes Engine",
+		"OpenShift Platform Plus",
+		"OpenShift Container Platform",
+	],
 	# Used in release/olm.rego
 	"allowed_olm_image_registry_prefixes": [
 		"registry.access.redhat.com/",

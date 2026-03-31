@@ -242,10 +242,11 @@ test_feature_annotations_format_custom_rule_data if {
 
 # Test: Bundle created before FIPS cutoff date is exempt from FIPS check
 test_fips_exempt_for_legacy_bundle if {
-	# Remove FIPS annotation but add createdAt before the cutoff date
+	# Remove FIPS annotation but add createdAt before the cutoff date and qualifying subscription
 	legacy_manifest := json.patch(manifest, [
 		{"op": "remove", "path": "/metadata/annotations/features.operators.openshift.io~1fips-compliant"},
 		{"op": "add", "path": "/metadata/annotations/createdAt", "value": "2025-01-15T00:00:00Z"},
+		{"op": "replace", "path": "/metadata/annotations/operators.openshift.io~1valid-subscription", "value": `["OpenShift Container Platform"]`},
 	])
 
 	# Should NOT have FIPS annotation violation (exempt due to creation date before cutoff)
@@ -259,9 +260,11 @@ test_fips_exempt_for_legacy_bundle if {
 # Test: FIPS exemption works with default cutoff date from rule_data.rego
 test_fips_exempt_uses_default_cutoff if {
 	# Remove FIPS annotation but add createdAt before the default cutoff (2025-01-31T00:00:00Z)
+	# and add qualifying subscription
 	legacy_manifest := json.patch(manifest, [
 		{"op": "remove", "path": "/metadata/annotations/features.operators.openshift.io~1fips-compliant"},
 		{"op": "add", "path": "/metadata/annotations/createdAt", "value": "2025-01-15T00:00:00Z"},
+		{"op": "replace", "path": "/metadata/annotations/operators.openshift.io~1valid-subscription", "value": `["OpenShift Container Platform"]`},
 	])
 
 	# Should be exempt using the default cutoff date from rule_data.rego
@@ -316,11 +319,12 @@ test_fips_not_exempt_without_created_at if {
 
 # Test: Only FIPS annotation is exempt for legacy bundles; other annotations still checked
 test_fips_exempt_other_annotations_still_checked if {
-	# Remove both FIPS and another annotation, with old creation date
+	# Remove both FIPS and another annotation, with old creation date and qualifying subscription
 	multi_missing_manifest := json.patch(manifest, [
 		{"op": "remove", "path": "/metadata/annotations/features.operators.openshift.io~1fips-compliant"},
 		{"op": "remove", "path": "/metadata/annotations/features.operators.openshift.io~1disconnected"},
 		{"op": "add", "path": "/metadata/annotations/createdAt", "value": "2024-06-15T00:00:00Z"},
+		{"op": "replace", "path": "/metadata/annotations/operators.openshift.io~1valid-subscription", "value": `["OpenShift Container Platform"]`},
 	])
 
 	# FIPS should be exempt, but disconnected should still be checked
@@ -363,10 +367,11 @@ test_fips_not_exempt_on_cutoff_date if {
 
 # Test: Bundle created just before cutoff is exempt
 test_fips_exempt_just_before_cutoff if {
-	# Create bundle with createdAt just before the cutoff date
+	# Create bundle with createdAt just before the cutoff date and qualifying subscription
 	just_before_manifest := json.patch(manifest, [
 		{"op": "remove", "path": "/metadata/annotations/features.operators.openshift.io~1fips-compliant"},
 		{"op": "add", "path": "/metadata/annotations/createdAt", "value": "2025-01-30T23:59:59Z"},
+		{"op": "replace", "path": "/metadata/annotations/operators.openshift.io~1valid-subscription", "value": `["OpenShift Container Platform"]`},
 	])
 
 	# Should be exempt because it's before the cutoff
@@ -438,10 +443,11 @@ test_fips_warns_on_empty_created_at if {
 # Test: Timezone handling - bundle created before cutoff in different timezone is exempt
 test_fips_exempt_with_timezone_offset if {
 	# 2025-01-30T19:00:00-05:00 (EST) = 2025-01-31T00:00:00Z (UTC)
-	# So 2025-01-30T18:59:59-05:00 is just before the cutoff
+	# So 2025-01-30T18:59:59-05:00 is just before the cutoff, with qualifying subscription
 	timezone_manifest := json.patch(manifest, [
 		{"op": "remove", "path": "/metadata/annotations/features.operators.openshift.io~1fips-compliant"},
 		{"op": "add", "path": "/metadata/annotations/createdAt", "value": "2025-01-30T18:59:59-05:00"},
+		{"op": "replace", "path": "/metadata/annotations/operators.openshift.io~1valid-subscription", "value": `["OpenShift Container Platform"]`},
 	])
 
 	# Should be exempt because the actual instant is before the cutoff
@@ -489,6 +495,52 @@ test_fips_invalid_cutoff_config if {
 		with data.rule_data.allowed_olm_image_registry_prefixes as ["registry.io"]
 		with data.rule_data.allowed_olm_resource_kinds as ["ClusterServiceVersion"]
 		with data.rule_data.fips_exempt_created_before as "invalid-date"
+}
+
+# Test: Post-cutoff bundles with qualifying subscription must have fips-compliant=true
+test_fips_required_true_post_cutoff if {
+	# Bundle created after cutoff with qualifying subscription and fips-compliant=false
+	post_cutoff_manifest := json.patch(manifest, [
+		{"op": "replace", "path": "/metadata/annotations/features.operators.openshift.io~1fips-compliant", "value": "false"},
+		{"op": "add", "path": "/metadata/annotations/createdAt", "value": "2025-02-15T00:00:00Z"},
+		{"op": "replace", "path": "/metadata/annotations/operators.openshift.io~1valid-subscription", "value": `["OpenShift Container Platform"]`},
+	])
+
+	# Should fail because post-cutoff bundles with qualifying subscription must have fips-compliant=true
+	expected := {{
+		"code": "olm.fips_required_post_cutoff",
+		# regal ignore:line-length
+		"msg": "The fips-compliant annotation must be \"true\" for bundles with Red Hat subscriptions created on or after 2025-01-31T00:00:00Z. Current value: \"false\"",
+	}}
+
+	assertions.assert_equal_results(olm.deny, expected) with input.image.files as {"manifests/csv.yaml": post_cutoff_manifest}
+		with input.image.config.Labels as {olm.manifestv1: "manifests/"}
+		with data.rule_data.allowed_olm_image_registry_prefixes as ["registry.io"]
+		with data.rule_data.allowed_olm_resource_kinds as ["ClusterServiceVersion"]
+		with data.rule_data.fips_exempt_created_before as "2025-01-31T00:00:00Z"
+}
+
+# Test: Non-qualifying subscription bundles are not affected by the FIPS cutoff exemption
+test_fips_no_exemption_without_qualifying_subscription if {
+	# Bundle with non-qualifying subscription (spam) before cutoff should still need FIPS annotation
+	non_qualifying_manifest := json.patch(manifest, [
+		{"op": "remove", "path": "/metadata/annotations/features.operators.openshift.io~1fips-compliant"},
+		{"op": "add", "path": "/metadata/annotations/createdAt", "value": "2025-01-15T00:00:00Z"},
+	])
+
+	# Should NOT be exempt because subscription "spam" doesn't qualify for exemption
+	expected := {{
+		"code": "olm.feature_annotations_format",
+		# regal ignore:line-length
+		"msg": "The annotation \"features.operators.openshift.io/fips-compliant\" is either missing or has an unexpected value",
+		"term": "features.operators.openshift.io/fips-compliant",
+	}}
+
+	assertions.assert_equal_results(olm.deny, expected) with input.image.files as {"manifests/csv.yaml": non_qualifying_manifest}
+		with input.image.config.Labels as {olm.manifestv1: "manifests/"}
+		with data.rule_data.allowed_olm_image_registry_prefixes as ["registry.io"]
+		with data.rule_data.allowed_olm_resource_kinds as ["ClusterServiceVersion"]
+		with data.rule_data.fips_exempt_created_before as "2025-01-31T00:00:00Z"
 }
 
 test_required_olm_features_annotations_provided if {

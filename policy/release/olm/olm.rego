@@ -70,6 +70,11 @@ deny contains result if {
 #   required feature annotations must be present and set to either the string `"true"` or the string
 #   `"false"`. The list of feature annotations can be customize via the
 #   `required_olm_features_annotations` rule data.
+#   For the FIPS compliance annotation (features.operators.openshift.io/fips-compliant), bundles
+#   with qualifying Red Hat subscriptions (OpenShift Kubernetes Engine, OpenShift Platform Plus,
+#   or OpenShift Container Platform) created before the FIPS cutoff date are exempt from this check.
+#   The cutoff date and qualifying subscriptions can be configured via the `fips_exempt_created_before`
+#   and `fips_exempt_subscriptions` rule data.
 # custom:
 #   short_name: feature_annotations_format
 #   failure_msg: The annotation %q is either missing or has an unexpected value
@@ -83,7 +88,7 @@ deny contains result if {
 	some manifest in _csv_manifests
 	some annotation in rule_data.get("required_olm_features_annotations")
 
-	# Skip FIPS annotation check for legacy bundles
+	# Skip FIPS annotation check for legacy bundles with qualifying subscriptions
 	not _fips_exempt_legacy_bundle(manifest, annotation)
 
 	value := object.get(manifest.metadata.annotations, annotation, "")
@@ -387,6 +392,34 @@ deny contains result if {
 }
 
 # METADATA
+# title: FIPS compliance required for post-cutoff bundles
+# description: >-
+#   Operator bundles with Red Hat subscriptions (OpenShift Kubernetes Engine, OpenShift
+#   Platform Plus, or OpenShift Container Platform) created on or after the FIPS compliance
+#   cutoff date must have the fips-compliant annotation set to "true". Bundles created before
+#   the cutoff date may have the annotation set to either "true" or "false".
+# custom:
+#   short_name: fips_required_post_cutoff
+#   failure_msg: >-
+#     The fips-compliant annotation must be "true" for bundles with Red Hat subscriptions
+#     created on or after %s. Current value: %q
+#   solution: >-
+#     Update the ClusterServiceVersion manifest to set features.operators.openshift.io/fips-compliant
+#     to "true", or ensure your operator is FIPS compliant.
+#   collections:
+#   - redhat
+#
+deny contains result if {
+	some manifest in _csv_manifests
+	_has_fips_exempt_subscription(manifest)
+	not _is_before_fips_cutoff(manifest)
+	fips_value := object.get(manifest.metadata.annotations, "features.operators.openshift.io/fips-compliant", "")
+	fips_value == "false"
+	cutoff_date := rule_data.get("fips_exempt_created_before")
+	result := metadata.result_helper(rego.metadata.chain(), [cutoff_date, fips_value])
+}
+
+# METADATA
 # title: Malformed createdAt annotation
 # description: >-
 #   Check if the createdAt annotation in the ClusterServiceVersion manifest has a valid RFC3339
@@ -682,9 +715,30 @@ _image_ref(unmatched_image) := ref if {
 	ref := unmatched_image.repo
 }
 
-# FIPS exemption for legacy bundles created before the requirement date
+# FIPS exemption for legacy bundles created before the requirement date.
+# Only applies to bundles with qualifying Red Hat subscriptions.
 _fips_exempt_legacy_bundle(manifest, annotation) if {
 	annotation == "features.operators.openshift.io/fips-compliant"
+	_has_fips_exempt_subscription(manifest)
+	created_at := object.get(manifest.metadata.annotations, "createdAt", "")
+	created_at != ""
+	cutoff_date := rule_data.get("fips_exempt_created_before")
+	cutoff_date != ""
+	_date_before_cutoff(created_at, cutoff_date)
+}
+
+# Check if the bundle has a subscription that qualifies for FIPS exemption
+_has_fips_exempt_subscription(manifest) if {
+	subscription_json := manifest.metadata.annotations[_subscription_annotation]
+	json.is_valid(subscription_json)
+	subscriptions := json.unmarshal(subscription_json)
+	exempt_subscriptions := rule_data.get("fips_exempt_subscriptions")
+	some subscription in subscriptions
+	subscription in exempt_subscriptions
+}
+
+# Check if a bundle was created before the FIPS cutoff date
+_is_before_fips_cutoff(manifest) if {
 	created_at := object.get(manifest.metadata.annotations, "createdAt", "")
 	created_at != ""
 	cutoff_date := rule_data.get("fips_exempt_created_before")
