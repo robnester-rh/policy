@@ -2,6 +2,7 @@ package lib
 
 import rego.v1
 
+import data.lib.rule_data
 import data.lib.tekton
 
 slsa_provenance_predicate_type_v1 := "https://slsa.dev/provenance/v1"
@@ -10,18 +11,12 @@ slsa_provenance_predicate_type_v02 := "https://slsa.dev/provenance/v0.2"
 
 tekton_pipeline_run := "tekton.dev/v1/PipelineRun"
 
-pipelinerun_att_build_types := {
-	tekton_pipeline_run,
-	# Legacy build types
-	"tekton.dev/v1beta1/PipelineRun",
-	"https://tekton.dev/attestations/chains/pipelinerun@v2",
-}
-
 tekton_slsav1_pipeline_run := "https://tekton.dev/chains/v2/slsa-tekton"
 
-slsav1_pipelinerun_att_build_types := {
-	"https://tekton.dev/chains/v2/slsa",
-	tekton_slsav1_pipeline_run,
+# All allowed provenance buildTypes, sourced from rule_data. The defaults include
+# all known Tekton buildTypes for both SLSA v0.2 and v1.
+_allowed_provenance_build_types := {t |
+	some t in rule_data.get("allowed_provenance_build_types")
 }
 
 tekton_task_run := "tekton.dev/v1/TaskRun"
@@ -104,7 +99,7 @@ latest_v1_pipelinerun_attestation := [pipelinerun_slsa_provenance_v1[0]] if {
 
 pipelinerun_slsa_provenance02 := [att |
 	some att in input.attestations
-	att.statement.predicate.buildType in pipelinerun_att_build_types
+	att.statement.predicate.buildType in _allowed_provenance_build_types
 ]
 
 # TODO: Make this work with pipelinerun_attestations above so policy rules can be
@@ -113,15 +108,23 @@ pipelinerun_slsa_provenance_v1 := [att |
 	some att in input.attestations
 	att.statement.predicateType == slsa_provenance_predicate_type_v1
 
-	att.statement.predicate.buildDefinition.buildType in slsav1_pipelinerun_att_build_types
+	build_type := att.statement.predicate.buildDefinition.buildType
+	build_type in _allowed_provenance_build_types
 
-	# TODO: Workaround to distinguish between taskrun and pipelinerun attestations
-	spec_keys := object.keys(att.statement.predicate.buildDefinition.externalParameters.runSpec)
-
-	pipeline_keys := {"pipelineRef", "pipelineSpec"}
-
-	count(pipeline_keys - spec_keys) != count(pipeline_keys)
+	# Exclude attestations that are identifiably TaskRun attestations (have runSpec
+	# with task keys but no pipeline keys). Everything else passes through: PipelineRun
+	# attestations (runSpec with pipelineRef/pipelineSpec), non-Tekton attestations
+	# (no runSpec at all), and malformed attestations (caught by downstream rules).
+	_is_pipelinerun_v1(att)
 ]
+
+default _is_pipelinerun_v1(_) := true
+
+_is_pipelinerun_v1(att) := false if {
+	spec_keys := object.keys(att.statement.predicate.buildDefinition.externalParameters.runSpec)
+	pipeline_keys := {"pipelineRef", "pipelineSpec"}
+	count(pipeline_keys - spec_keys) == count(pipeline_keys)
+}
 
 # These ones we don't care about any more
 taskrun_attestations := [att |

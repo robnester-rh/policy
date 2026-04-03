@@ -234,7 +234,15 @@ test_pipelinerun_slsa_provenance_v1 if {
 			"value": {"taskRef": {}},
 		}]),
 	]
-	expected := [provenance_with_pr_spec, provenance_with_pr_ref]
+
+	# Attestations with no runSpec (e.g. empty externalParameters) are included
+	# because the runSpec guard only applies when runSpec exists.
+	provenance_no_run_spec := json.patch(provenance_with_pr_spec, [{
+		"op": "add",
+		"path": "/statement/predicate/buildDefinition/externalParameters",
+		"value": {},
+	}])
+	expected := [provenance_with_pr_spec, provenance_with_pr_ref, provenance_no_run_spec]
 	assertions.assert_equal(expected, lib.pipelinerun_slsa_provenance_v1) with input.attestations as attestations
 }
 
@@ -581,4 +589,58 @@ test_pipelinerun_attestations_v1_single_no_timestamp if {
 	}}
 	expected := [v1_att]
 	assertions.assert_equal(expected, lib.pipelinerun_attestations) with input.attestations as [v1_att]
+}
+
+test_custom_v02_build_type if {
+	# A non-Tekton v0.2 buildType should be recognized when added via rule_data
+	custom_type := "https://pnc.example.com/v1/PipelineRun"
+	att := {"statement": {
+		"predicateType": "https://slsa.dev/provenance/v0.2",
+		"predicate": {
+			"buildType": custom_type,
+			"metadata": {"buildFinishedOn": "2025-01-15T10:30:00Z"},
+		},
+	}}
+
+	# Without rule_data, the custom buildType is not recognized
+	assertions.assert_equal([], lib.pipelinerun_slsa_provenance02) with input.attestations as [att]
+
+	# With rule_data including the custom buildType (along with defaults), it is recognized
+	assertions.assert_equal([att], lib.pipelinerun_slsa_provenance02) with input.attestations as [att]
+		with data.rule_data__configuration__ as {"allowed_provenance_build_types": [custom_type]}
+}
+
+test_custom_v1_build_type if {
+	# A non-Tekton v1 buildType should be recognized when added via rule_data
+	# and should NOT require the runSpec/pipelineRef/pipelineSpec guard
+	custom_type := "https://pnc.example.com/v1/slsa"
+	att := {"statement": {
+		"predicateType": "https://slsa.dev/provenance/v1",
+		"predicate": {"buildDefinition": {
+			"buildType": custom_type,
+			"externalParameters": {"some_param": "some_value"},
+		}},
+	}}
+
+	# Without rule_data, the custom buildType is not recognized
+	assertions.assert_equal([], lib.pipelinerun_slsa_provenance_v1) with input.attestations as [att]
+
+	# With rule_data including the custom buildType, it is recognized and does not
+	# need the runSpec guard
+	assertions.assert_equal([att], lib.pipelinerun_slsa_provenance_v1) with input.attestations as [att]
+		with data.rule_data__configuration__ as {"allowed_provenance_build_types": [custom_type]}
+}
+
+test_custom_v1_build_type_tekton_still_guarded if {
+	# Tekton v1 buildTypes should still require the runSpec guard
+	tekton_att_with_task_ref := {"statement": {
+		"predicateType": "https://slsa.dev/provenance/v1",
+		"predicate": {"buildDefinition": {
+			"buildType": "https://tekton.dev/chains/v2/slsa",
+			"externalParameters": {"runSpec": {"taskRef": {}}},
+		}},
+	}}
+
+	# Tekton buildType with taskRef should still be filtered out
+	assertions.assert_equal([], lib.pipelinerun_slsa_provenance_v1) with input.attestations as [tekton_att_with_task_ref]
 }

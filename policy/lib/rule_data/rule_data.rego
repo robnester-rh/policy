@@ -147,6 +147,16 @@ defaults := {
 	# Allowed proxy URL regex patterns per PURL type
 	# e.g., {"maven": ["^https://maven-proxy\\.example\\.com/.*"]}
 	"allowed_proxy_url_patterns": {},
+	#
+	# Used in release/lib/attestations.rego
+	# Allowed provenance buildTypes for PipelineRun attestations (both SLSA v0.2 and v1)
+	"allowed_provenance_build_types": [
+		"tekton.dev/v1/PipelineRun",
+		"tekton.dev/v1beta1/PipelineRun",
+		"https://tekton.dev/attestations/chains/pipelinerun@v2",
+		"https://tekton.dev/chains/v2/slsa",
+		"https://tekton.dev/chains/v2/slsa-tekton",
+	],
 }
 
 # Returns the "first found" of the following:
