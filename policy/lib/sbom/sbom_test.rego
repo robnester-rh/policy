@@ -235,6 +235,7 @@ test_cyclonedx_sboms_from_tag_refs if {
 		with input.image as _cyclonedx_image
 		with ec.oci.image_referrers as []
 		with ec.oci.image_tag_refs as mock_tag_refs
+		with ec.oci.image_manifest as _mock_sbom_manifest
 		with ec.oci.blob as mock_ec_oci_cyclonedx_blob
 }
 
@@ -246,6 +247,7 @@ test_spdx_sboms_from_tag_refs if {
 		with input.image as _spdx_image
 		with ec.oci.image_referrers as []
 		with ec.oci.image_tag_refs as mock_tag_refs
+		with ec.oci.image_manifest as _mock_sbom_manifest
 		with ec.oci.blob as mock_ec_oci_spdx_blob
 }
 
@@ -277,3 +279,9 @@ test_no_sboms_from_non_sbom_tag_refs if {
 		with ec.oci.image_referrers as []
 		with ec.oci.image_tag_refs as mock_tag_refs
 }
+
+_mock_sbom_manifest := {"layers": [{
+	"mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+	"digest": "sha256:f0cacc1a000000000000000000000000000000000000000000000000f0cacc1a",
+	"size": 100,
+}]}
