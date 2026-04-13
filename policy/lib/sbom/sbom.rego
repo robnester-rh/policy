@@ -5,6 +5,7 @@ import data.lib.rule_data
 
 import data.lib.image
 import data.lib.json as j
+import data.lib.oci
 import data.lib.tekton
 import rego.v1
 
@@ -91,10 +92,12 @@ _sboms_from_referrers contains sbom if {
 }
 
 # Discover SBOMs via legacy cosign tag-based conventions (.sbom suffix).
+# Tag refs point to OCI images, so we fetch the manifest and extract the
+# blob from its first layer using blob_from_image.
 _sboms_from_tag_refs contains sbom if {
 	some ref in ec.oci.image_tag_refs(input.image.ref)
 	endswith(ref, ".sbom")
-	blob := ec.oci.blob(ref)
+	blob := oci.blob_from_image(ref)
 	sbom := json.unmarshal(blob)
 }
 
