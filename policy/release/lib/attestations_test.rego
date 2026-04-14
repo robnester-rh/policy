@@ -438,6 +438,39 @@ _attestation_v1_with_metadata(build_finished_on, tasks) := {"statement": {
 	},
 }}
 
+# Helper to create SLSA v1.0 attestation with spec-compliant finishedOn
+_attestation_v1_with_finished_on(finished_on, tasks) := {"statement": {
+	"predicateType": "https://slsa.dev/provenance/v1",
+	"predicate": {
+		"buildDefinition": {
+			"buildType": lib.tekton_slsav1_pipeline_run,
+			"externalParameters": {"runSpec": {"pipelineSpec": {}}},
+			"resolvedDependencies": array.concat(tekton_test.resolved_dependencies(tasks), _mock_materials),
+		},
+		"runDetails": {"metadata": {
+			"finishedOn": finished_on,
+			"startedOn": "2025-01-01T00:00:00Z",
+		}},
+	},
+}}
+
+test_pipelinerun_attestations_single_v1_finished_on if {
+	# Single v1.0 attestation using spec-compliant finishedOn - should be returned
+	att := _attestation_v1_with_finished_on("2025-01-20T15:45:00Z", [_build_task])
+	expected := [att]
+	assertions.assert_equal(expected, lib.pipelinerun_attestations) with input.attestations as [att]
+}
+
+test_pipelinerun_attestations_multiple_v1_finished_on if {
+	# Multiple v1.0 attestations using spec-compliant finishedOn - should return the latest
+	att1 := _attestation_v1_with_finished_on("2025-01-15T10:30:00Z", [_build_task])
+	att2 := _attestation_v1_with_finished_on("2025-01-20T15:45:00Z", [_build_task])
+	att3 := _attestation_v1_with_finished_on("2025-01-18T12:00:00Z", [_build_task])
+	attestations := [att1, att2, att3]
+	expected := [att2]
+	assertions.assert_equal(expected, lib.pipelinerun_attestations) with input.attestations as attestations
+}
+
 test_pipelinerun_attestations_single_v02 if {
 	# Test single v0.2 attestation
 	att := _attestation_v02_with_metadata("2025-01-15T10:30:00Z", [_build_task])

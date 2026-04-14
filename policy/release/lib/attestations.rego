@@ -46,8 +46,11 @@ _build_finished_on(att) := timestamp if {
 	# Try SLSA v0.2 path first
 	timestamp := att.statement.predicate.metadata.buildFinishedOn
 } else := timestamp if {
-	# Fallback to SLSA v1.0 path if v0.2 doesn't exist
+	# Fallback to SLSA v1.0 path (Tekton Chains non-standard field)
 	timestamp := att.statement.predicate.runDetails.metadata.buildFinishedOn
+} else := timestamp if {
+	# Fallback to SLSA v1.0 spec-compliant path
+	timestamp := att.statement.predicate.runDetails.metadata.finishedOn
 }
 
 # Returns the latest PipelineRun attestation per type (SLSA v0.2 and v1.0)
