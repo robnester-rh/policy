@@ -159,11 +159,11 @@ contributing to the definition of policy rules.
 * [github.com/konflux-ci][konflux-ci]
 
 [asdf]: https://asdf-vm.com/
-[rego]: https://www.openpolicyagent.org/docs/latest/policy-language/
+[rego]: https://www.openpolicyagent.org/docs/policy-language
 [conftest]: https://www.conftest.dev/
-[opa]: https://www.openpolicyagent.org/docs/latest/
+[opa]: https://www.openpolicyagent.org/docs
 [entr]: https://github.com/eradman/entr
-[testing]: https://www.openpolicyagent.org/docs/latest/policy-testing/
+[testing]: https://www.openpolicyagent.org/docs/policy-testing
 [docs]: https://conforma.dev/
 [policydocs]: https://conforma.dev/docs/policy/release_policy.html
 [taskdef]: https://github.com/conforma/cli/blob/main/tasks/verify-enterprise-contract/0.1/verify-enterprise-contract.yaml
