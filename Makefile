@@ -147,7 +147,7 @@ fmt-amend: fmt ## Apply default formatting to all rego files then amend the curr
 	git commit --amend --no-edit
 
 .PHONY: opa-check
-opa-check: ## Check Rego files with strict mode (https://www.openpolicyagent.org/docs/latest/strict/)
+opa-check: ## Check Rego files with strict mode (https://www.openpolicyagent.org/docs/policy-language#strict-mode)
 	@$(OPA) check $(TEST_FILES) --strict
 
 .PHONY: conventions-check
