@@ -62,7 +62,6 @@ deny contains result if {
 	result := metadata.result_helper(rego.metadata.chain(), [tekton.task_name(task)])
 }
 
-
 _not_hermetic_tasks contains task if {
 	some task in _required_hermetic_tasks
 	not _task_is_hermetic(task)
