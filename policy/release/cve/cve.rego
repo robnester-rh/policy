@@ -185,14 +185,14 @@ deny contains result if {
 # METADATA
 # title: CVE scan results found
 # description: >-
-#   Confirm that clair-scan task results are present in the SLSA Provenance
+#   Confirm that CVE scan task results (Clair or TPA) are present in the SLSA Provenance
 #   attestation of the build pipeline.
 # custom:
 #   short_name: cve_results_found
-#   failure_msg: Clair CVE scan results were not found
+#   failure_msg: CVE scan results were not found
 #   solution: >-
 #     Make sure there is a successful task in the build pipeline that runs a
-#     Clair scan.
+#     CVE scan (Clair or TPA).
 #   collections:
 #   - minimal
 #   - redhat
@@ -277,7 +277,7 @@ _clair_report := report if {
 	report_manifest := ec.oci.image_manifest(report_ref)
 
 	some layer in report_manifest.layers
-	layer.mediaType == _report_oci_mime_type
+	layer.mediaType in _report_oci_mime_types
 	report_blob := object.union(input_image, {"digest": layer.digest})
 	report_blob_ref := image.str(report_blob)
 
@@ -288,7 +288,10 @@ _name(vuln) := object.get(vuln, "name", "UNKNOWN")
 
 _reports_result_name := "REPORTS"
 
-_report_oci_mime_type := "application/vnd.redhat.clair-report+json"
+_report_oci_mime_types := {
+	"application/vnd.redhat.clair-report+json",
+	"application/vnd.redhat.tpa-report+json",
+}
 
 _with_effective_on(result, effective_on) := object.union(
 	result,
