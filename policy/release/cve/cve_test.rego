@@ -302,7 +302,7 @@ test_full_report_fetch_issue if {
 
 	expected := {{
 		"code": "cve.cve_results_found",
-		"msg": "Clair CVE scan results were not found",
+		"msg": "CVE scan results were not found",
 	}}
 
 	assertions.assert_equal_results(cve.deny, expected) with input.image.ref as ref
@@ -469,11 +469,11 @@ _clair_report := {"vulnerabilities": object.union(vulnerabilities, unpatched_vul
 
 _manifests := {
 	"registry.io/repository/image@sha256:report_digest": {"layers": [{
-		"mediaType": cve._report_oci_mime_type,
+		"mediaType": "application/vnd.redhat.clair-report+json",
 		"digest": "sha256:report_blob_digest",
 	}]},
 	"registry.io/repository/image@sha256:no_vulnerabilities_report_digest": {"layers": [{
-		"mediaType": cve._report_oci_mime_type,
+		"mediaType": "application/vnd.redhat.clair-report+json",
 		"digest": "sha256:no_vulnerabilities_report_blob_digest",
 	}]},
 }
@@ -511,3 +511,57 @@ _attestations_with_reports(reports) := attestations if {
 	att2 := tekton_test.slsav1_attestation([task_with_bundle])
 	attestations := [att1, att2]
 }
+
+test_success_with_tpa_report if {
+	assertions.assert_empty(cve.deny | cve.warn) with input.attestations as _no_vuln_attestations_tpa
+		with input.image.ref as "registry.io/repository/image@sha256:image_digest"
+		with ec.oci.image_manifest as _mock_image_manifest_tpa
+		with ec.oci.blob as _mock_blob
+}
+
+test_success_with_both_clair_and_tpa_reports if {
+	assertions.assert_empty(cve.deny | cve.warn) with input.attestations as _no_vuln_attestations
+		with input.image.ref as "registry.io/repository/image@sha256:image_digest"
+		with ec.oci.image_manifest as _mock_image_manifest_both
+		with ec.oci.blob as _mock_blob
+}
+
+_no_vuln_attestations_tpa := _attestations_with_reports({"sha256:image_digest": "sha256:no_vulnerabilities_tpa_report_digest"})
+
+_manifests_tpa := {
+	"registry.io/repository/image@sha256:report_digest": {"layers": [{
+		"mediaType": "application/vnd.redhat.tpa-report+json",
+		"digest": "sha256:report_blob_digest",
+	}]},
+	"registry.io/repository/image@sha256:no_vulnerabilities_tpa_report_digest": {"layers": [{
+		"mediaType": "application/vnd.redhat.tpa-report+json",
+		"digest": "sha256:no_vulnerabilities_report_blob_digest",
+	}]},
+}
+
+_mock_image_manifest_tpa(ref) := _manifests_tpa[ref]
+
+_manifests_both := {
+	"registry.io/repository/image@sha256:report_digest": {"layers": [
+		{
+			"mediaType": "application/vnd.redhat.clair-report+json",
+			"digest": "sha256:report_blob_digest",
+		},
+		{
+			"mediaType": "application/vnd.redhat.tpa-report+json",
+			"digest": "sha256:report_blob_digest",
+		},
+	]},
+	"registry.io/repository/image@sha256:no_vulnerabilities_report_digest": {"layers": [
+		{
+			"mediaType": "application/vnd.redhat.clair-report+json",
+			"digest": "sha256:no_vulnerabilities_report_blob_digest",
+		},
+		{
+			"mediaType": "application/vnd.redhat.tpa-report+json",
+			"digest": "sha256:no_vulnerabilities_report_blob_digest",
+		},
+	]},
+}
+
+_mock_image_manifest_both(ref) := _manifests_both[ref]
