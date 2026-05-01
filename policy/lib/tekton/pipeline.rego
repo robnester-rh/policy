@@ -2,7 +2,6 @@ package lib.tekton
 
 import rego.v1
 
-import data.lib.sets
 import data.lib.time as ectime
 
 pipeline_label := "pipelines.openshift.io/runtime"
