@@ -5,7 +5,7 @@ import rego.v1
 import data.lib.assertions
 import data.lib.tekton
 
-test_pipeline_label_selector_build_task_slsa_v1_0 if {
+test_pipeline_label_selectors_build_task_slsa_v1_0 if {
 	task_base := slsav1_task("build-container")
 	task_w_labels = with_labels(task_base, {tekton.task_label: "generic"})
 	task_full = with_results(
@@ -22,10 +22,10 @@ test_pipeline_label_selector_build_task_slsa_v1_0 if {
 		{},
 	)
 
-	assertions.assert_equal(tekton.pipeline_label_selector(attestation), "generic")
+	assertions.assert_equal(tekton.pipeline_label_selectors(attestation), {"generic"})
 }
 
-test_pipeline_label_selector_build_task_slsa_v0_2 if {
+test_pipeline_label_selectors_build_task_slsa_v0_2 if {
 	task := {
 		"ref": {"name": "build-container", "kind": "Task"},
 		"results": [
@@ -44,10 +44,10 @@ test_pipeline_label_selector_build_task_slsa_v0_2 if {
 		},
 	}}
 
-	assertions.assert_equal(tekton.pipeline_label_selector(attestation), "generic")
+	assertions.assert_equal(tekton.pipeline_label_selectors(attestation), {"generic"})
 }
 
-test_pipeline_label_selector_pipeline_run_slsa_v1_0 if {
+test_pipeline_label_selectors_pipeline_run_slsa_v1_0 if {
 	attestation := json.patch(
 		slsav1_attestation([]),
 		[{
@@ -57,10 +57,10 @@ test_pipeline_label_selector_pipeline_run_slsa_v1_0 if {
 		}],
 	)
 
-	assertions.assert_equal(tekton.pipeline_label_selector(attestation), "generic")
+	assertions.assert_equal(tekton.pipeline_label_selectors(attestation), {"generic"})
 }
 
-test_pipeline_label_selector_pipeline_run_slsa_v0_2 if {
+test_pipeline_label_selectors_pipeline_run_slsa_v0_2 if {
 	task := {
 		"ref": {"name": "build-container", "kind": "Task"},
 		"results": [
@@ -78,15 +78,15 @@ test_pipeline_label_selector_pipeline_run_slsa_v0_2 if {
 		},
 	}}
 
-	assertions.assert_equal(tekton.pipeline_label_selector(attestation), "generic")
+	assertions.assert_equal(tekton.pipeline_label_selectors(attestation), {"generic"})
 }
 
-test_pipeline_label_selector_pipeline_definition if {
+test_pipeline_label_selectors_pipeline_definition if {
 	pipeline := {"metadata": {"labels": {tekton.pipeline_label: "generic"}}}
-	assertions.assert_equal(tekton.pipeline_label_selector(pipeline), "generic")
+	assertions.assert_equal(tekton.pipeline_label_selectors(pipeline), {"generic"})
 }
 
-test_fbc_pipeline_label_selector if {
+test_fbc_pipeline_label_selectors if {
 	image := {"config": {"Labels": {"operators.operatorframework.io.index.configs.v1": "/configs"}}}
-	assertions.assert_equal(tekton.pipeline_label_selector({}), "fbc") with input.image as image
+	assertions.assert_equal(tekton.pipeline_label_selectors({}), {"fbc"}) with input.image as image
 }
