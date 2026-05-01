@@ -58,7 +58,7 @@ _resolve(entries, "most_current") := ectime.most_current(entries)
 
 # pipeline_label_selectors returns the set of required task list names
 # that should be used. When a pipeline has multiple build task types,
-# all types are returned and their required tasks are unioned downstream.
+# all types are returned and their required tasks are concatenated downstream.
 pipeline_label_selectors(pipeline) := value if {
 	not is_fbc # FBC builds share the docker build task; its label is unreliable for FBC
 
