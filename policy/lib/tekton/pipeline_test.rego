@@ -161,8 +161,8 @@ test_required_task_list_multi_type_union if {
 
 	result := tekton.latest_required_pipeline_tasks(attestation) with data["pipeline-required-tasks"] as pipeline_required_tasks
 
-	# Concatenation of tasks from both types (duplicates preserved)
-	assertions.assert_equal(sort(result.tasks), ["buildah", "clair-scan", "clair-scan", "git-clone", "tkn-build"])
+	# Union of tasks from both types (deduplicated)
+	assertions.assert_equal(result.tasks, {"buildah", "clair-scan", "git-clone", "tkn-build"})
 
 	# max(effective_on) across types
 	assertions.assert_equal(result.effective_on, "2024-06-01T00:00:00Z")
@@ -204,7 +204,7 @@ test_required_task_list_missing_type_skipped if {
 	result := tekton.latest_required_pipeline_tasks(attestation) with data["pipeline-required-tasks"] as pipeline_required_tasks
 
 	# Only docker tasks returned, tkn-bundle silently skipped
-	assertions.assert_equal(sort(result.tasks), ["buildah", "git-clone"])
+	assertions.assert_equal(result.tasks, {"buildah", "git-clone"})
 	assertions.assert_equal(result.effective_on, "2024-01-01T00:00:00Z")
 }
 
@@ -282,7 +282,7 @@ test_current_required_pipeline_tasks_multi_type if {
 	result := tekton.current_required_pipeline_tasks(attestation) with data["pipeline-required-tasks"] as pipeline_required_tasks
 
 	# most_current excludes the future entry (2099), so tkn-bundle resolves to 2024-06-01
-	assertions.assert_equal(sort(result.tasks), ["buildah", "git-clone", "tkn-build"])
+	assertions.assert_equal(result.tasks, {"buildah", "git-clone", "tkn-build"})
 	assertions.assert_equal(result.effective_on, "2024-06-01T00:00:00Z")
 }
 
@@ -354,7 +354,7 @@ test_latest_required_pipeline_tasks_single_type if {
 
 	result := tekton.latest_required_pipeline_tasks(attestation) with data["pipeline-required-tasks"] as pipeline_required_tasks
 
-	assertions.assert_equal(sort(result.tasks), ["buildah", "clair-scan", "git-clone"])
+	assertions.assert_equal(result.tasks, {"buildah", "clair-scan", "git-clone"})
 	assertions.assert_equal(result.effective_on, "2024-01-01T00:00:00Z")
 }
 
@@ -411,7 +411,7 @@ test_latest_required_pipeline_tasks_multi_time_entries if {
 	result := tekton.latest_required_pipeline_tasks(attestation) with data["pipeline-required-tasks"] as pipeline_required_tasks
 
 	# newest picks the latest entry per type: docker=2024-06-01, tkn-bundle=2024-09-01
-	assertions.assert_equal(sort(result.tasks), ["buildah", "clair-scan", "tkn-build", "tkn-lint"])
+	assertions.assert_equal(result.tasks, {"buildah", "clair-scan", "tkn-build", "tkn-lint"})
 
 	# max(effective_on) across resolved types
 	assertions.assert_equal(result.effective_on, "2024-09-01T00:00:00Z")
