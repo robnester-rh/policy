@@ -26,7 +26,8 @@ required_task_list(pipeline) := pipeline_data if {
 }
 
 # _merged_required_task_list resolves time-based entries independently per
-# build type, then unions the task lists. Uses max(effective_on) across types.
+# build type, then concatenates the task lists. Uses max(effective_on) across
+# types so that no type's tasks are enforced before their designated date.
 # This is conservative but imprecise when types have different dates — see
 # EC-1798 for per-task effective_on tracking.
 _merged_required_task_list(pipeline, mode) := {"effective_on": max_effective_on, "tasks": all_tasks} if {
@@ -59,13 +60,13 @@ _resolve(entries, "most_current") := ectime.most_current(entries)
 # that should be used. When a pipeline has multiple build task types,
 # all types are returned and their required tasks are unioned downstream.
 pipeline_label_selectors(pipeline) := value if {
-	not is_fbc
+	not is_fbc # FBC builds share the docker build task; its label is unreliable for FBC
 
 	# Labels of the build Task from the SLSA Provenance v1.0 of a PipelineRun
 	value := {l | some build_task in build_tasks(pipeline); l := build_task.metadata.labels[task_label]}
 	count(value) > 0
 } else := value if {
-	not is_fbc
+	not is_fbc # FBC builds share the docker build task; its label is unreliable for FBC
 
 	# Labels of the build Task from the SLSA Provenance v0.2 of a PipelineRun
 	value := {l | some build_task in build_tasks(pipeline); l := build_task.invocation.environment.labels[task_label]}

@@ -161,7 +161,7 @@ test_required_task_list_multi_type_union if {
 
 	result := tekton.latest_required_pipeline_tasks(attestation) with data["pipeline-required-tasks"] as pipeline_required_tasks
 
-	# Union of tasks from both types
+	# Concatenation of tasks from both types (duplicates preserved)
 	assertions.assert_equal(sort(result.tasks), ["buildah", "clair-scan", "clair-scan", "git-clone", "tkn-build"])
 
 	# max(effective_on) across types
@@ -233,4 +233,186 @@ test_required_task_list_all_types_missing if {
 
 	# required_task_list should be undefined (no matching selectors)
 	not tekton.required_task_list(attestation) with data["pipeline-required-tasks"] as pipeline_required_tasks
+}
+
+test_current_required_pipeline_tasks_multi_type if {
+	docker_task_base := slsav1_task("build-container")
+	docker_task_w_labels := with_labels(docker_task_base, {tekton.task_label: "docker"})
+	docker_task := with_results(
+		docker_task_w_labels,
+		[
+			{"name": "IMAGE_URL", "value": "localhost:5000/repo:latest"},
+			{"name": "IMAGE_DIGEST", "value": "sha256:abc0000000000000000000000000000000000000000000000000000000000abc"},
+		],
+	)
+
+	bundle_task_base := slsav1_task("build-tekton-bundle")
+	bundle_task_w_labels := with_labels(bundle_task_base, {tekton.task_label: "tkn-bundle"})
+	bundle_task := with_results(
+		bundle_task_w_labels,
+		[
+			{"name": "IMAGE_URL", "value": "localhost:5000/bundle:latest"},
+			{"name": "IMAGE_DIGEST", "value": "sha256:def0000000000000000000000000000000000000000000000000000000000def"},
+		],
+	)
+
+	attestation := slsav1_attestation_full(
+		[docker_task, bundle_task],
+		{},
+		{},
+	)
+
+	pipeline_required_tasks := {
+		"docker": [{
+			"effective_on": "2024-01-01T00:00:00Z",
+			"tasks": ["buildah", "git-clone"],
+		}],
+		"tkn-bundle": [
+			{
+				"effective_on": "2024-06-01T00:00:00Z",
+				"tasks": ["tkn-build"],
+			},
+			{
+				"effective_on": "2099-01-01T00:00:00Z",
+				"tasks": ["tkn-build", "future-task"],
+			},
+		],
+	}
+
+	result := tekton.current_required_pipeline_tasks(attestation) with data["pipeline-required-tasks"] as pipeline_required_tasks
+
+	# most_current excludes the future entry (2099), so tkn-bundle resolves to 2024-06-01
+	assertions.assert_equal(sort(result.tasks), ["buildah", "git-clone", "tkn-build"])
+	assertions.assert_equal(result.effective_on, "2024-06-01T00:00:00Z")
+}
+
+test_required_task_list_multi_type_concatenation if {
+	docker_task_base := slsav1_task("build-container")
+	docker_task_w_labels := with_labels(docker_task_base, {tekton.task_label: "docker"})
+	docker_task := with_results(
+		docker_task_w_labels,
+		[
+			{"name": "IMAGE_URL", "value": "localhost:5000/repo:latest"},
+			{"name": "IMAGE_DIGEST", "value": "sha256:abc0000000000000000000000000000000000000000000000000000000000abc"},
+		],
+	)
+
+	bundle_task_base := slsav1_task("build-tekton-bundle")
+	bundle_task_w_labels := with_labels(bundle_task_base, {tekton.task_label: "tkn-bundle"})
+	bundle_task := with_results(
+		bundle_task_w_labels,
+		[
+			{"name": "IMAGE_URL", "value": "localhost:5000/bundle:latest"},
+			{"name": "IMAGE_DIGEST", "value": "sha256:def0000000000000000000000000000000000000000000000000000000000def"},
+		],
+	)
+
+	attestation := slsav1_attestation_full(
+		[docker_task, bundle_task],
+		{},
+		{},
+	)
+
+	pipeline_required_tasks := {
+		"docker": [{
+			"effective_on": "2024-01-01T00:00:00Z",
+			"tasks": ["buildah"],
+		}],
+		"tkn-bundle": [{
+			"effective_on": "2024-06-01T00:00:00Z",
+			"tasks": ["tkn-build"],
+		}],
+	}
+
+	result := tekton.required_task_list(attestation) with data["pipeline-required-tasks"] as pipeline_required_tasks
+
+	# Concatenated raw entries from both types
+	count(result) == 2
+}
+
+test_latest_required_pipeline_tasks_single_type if {
+	task_base := slsav1_task("build-container")
+	task_w_labels := with_labels(task_base, {tekton.task_label: "docker"})
+	task_full := with_results(
+		task_w_labels,
+		[
+			{"name": "IMAGE_URL", "value": "localhost:5000/repo:latest"},
+			{"name": "IMAGE_DIGEST", "value": "sha256:abc0000000000000000000000000000000000000000000000000000000000abc"},
+		],
+	)
+
+	attestation := slsav1_attestation_full(
+		[task_full],
+		{},
+		{},
+	)
+
+	pipeline_required_tasks := {"docker": [{
+		"effective_on": "2024-01-01T00:00:00Z",
+		"tasks": ["buildah", "clair-scan", "git-clone"],
+	}]}
+
+	result := tekton.latest_required_pipeline_tasks(attestation) with data["pipeline-required-tasks"] as pipeline_required_tasks
+
+	assertions.assert_equal(sort(result.tasks), ["buildah", "clair-scan", "git-clone"])
+	assertions.assert_equal(result.effective_on, "2024-01-01T00:00:00Z")
+}
+
+test_latest_required_pipeline_tasks_multi_time_entries if {
+	docker_task_base := slsav1_task("build-container")
+	docker_task_w_labels := with_labels(docker_task_base, {tekton.task_label: "docker"})
+	docker_task := with_results(
+		docker_task_w_labels,
+		[
+			{"name": "IMAGE_URL", "value": "localhost:5000/repo:latest"},
+			{"name": "IMAGE_DIGEST", "value": "sha256:abc0000000000000000000000000000000000000000000000000000000000abc"},
+		],
+	)
+
+	bundle_task_base := slsav1_task("build-tekton-bundle")
+	bundle_task_w_labels := with_labels(bundle_task_base, {tekton.task_label: "tkn-bundle"})
+	bundle_task := with_results(
+		bundle_task_w_labels,
+		[
+			{"name": "IMAGE_URL", "value": "localhost:5000/bundle:latest"},
+			{"name": "IMAGE_DIGEST", "value": "sha256:def0000000000000000000000000000000000000000000000000000000000def"},
+		],
+	)
+
+	attestation := slsav1_attestation_full(
+		[docker_task, bundle_task],
+		{},
+		{},
+	)
+
+	pipeline_required_tasks := {
+		"docker": [
+			{
+				"effective_on": "2024-01-01T00:00:00Z",
+				"tasks": ["buildah"],
+			},
+			{
+				"effective_on": "2024-06-01T00:00:00Z",
+				"tasks": ["buildah", "clair-scan"],
+			},
+		],
+		"tkn-bundle": [
+			{
+				"effective_on": "2024-03-01T00:00:00Z",
+				"tasks": ["tkn-build"],
+			},
+			{
+				"effective_on": "2024-09-01T00:00:00Z",
+				"tasks": ["tkn-build", "tkn-lint"],
+			},
+		],
+	}
+
+	result := tekton.latest_required_pipeline_tasks(attestation) with data["pipeline-required-tasks"] as pipeline_required_tasks
+
+	# newest picks the latest entry per type: docker=2024-06-01, tkn-bundle=2024-09-01
+	assertions.assert_equal(sort(result.tasks), ["buildah", "clair-scan", "tkn-build", "tkn-lint"])
+
+	# max(effective_on) across resolved types
+	assertions.assert_equal(result.effective_on, "2024-09-01T00:00:00Z")
 }
