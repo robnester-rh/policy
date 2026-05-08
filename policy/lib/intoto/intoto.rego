@@ -20,6 +20,12 @@ import rego.v1
 
 _artifact_type := "application/vnd.in-toto+json"
 
+# Spec-defined in-toto statement versions this library can parse.
+# Intentionally separate from the policy-enforced known_attestation_types
+# in attestation_type.rego — discovery should be permissive so the
+# enforcement layer can report violations rather than silently dropping.
+_known_types := {"https://in-toto.io/Statement/v0.1", "https://in-toto.io/Statement/v1"}
+
 # statements returns the set of unsigned in-toto statements attached to the
 # image as OCI referrers. Trust is established via Chains provenance (EC-1774),
 # not via signatures on the statements themselves.
@@ -30,7 +36,7 @@ statements contains statement if {
 	statement := json.unmarshal(blob)
 
 	# regal ignore:leaked-internal-reference
-	statement._type == "https://in-toto.io/Statement/v1"
+	statement._type in _known_types
 }
 
 # Filter statements by predicate type.

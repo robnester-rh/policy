@@ -35,6 +35,19 @@ test_statements_from_referrer if {
 	statement.predicate.result == "PASSED"
 }
 
+test_statements_from_referrer_v01 if {
+	result := intoto.statements with input.image.ref as "registry.io/repo/image@sha256:abc123"
+		with ec.oci.image_referrers as [_referrer(
+			"sha256:aaa0000000000000000000000000000000000000000000000000000000000aaa",
+			"application/vnd.in-toto+json",
+		)]
+		with ec.oci.blob as _mock_blob_v01
+
+	count(result) == 1
+	some statement in result
+	statement.predicateType == "https://in-toto.io/attestation/test-result/v0.1"
+}
+
 test_statements_filters_unrelated_referrers if {
 	mock_referrers := [
 		_referrer(
@@ -109,6 +122,13 @@ _referrer(digest, artifact_type) := {
 
 _mock_blob_test_result(_) := json.marshal({
 	"_type": "https://in-toto.io/Statement/v1",
+	"predicateType": "https://in-toto.io/attestation/test-result/v0.1",
+	"subject": [{"name": "registry.io/repo/image", "digest": {"sha256": "abc123"}}],
+	"predicate": {"result": "PASSED", "resourceUri": "registry.io/repo/image@sha256:abc123"},
+})
+
+_mock_blob_v01(_) := json.marshal({
+	"_type": "https://in-toto.io/Statement/v0.1",
 	"predicateType": "https://in-toto.io/attestation/test-result/v0.1",
 	"subject": [{"name": "registry.io/repo/image", "digest": {"sha256": "abc123"}}],
 	"predicate": {"result": "PASSED", "resourceUri": "registry.io/repo/image@sha256:abc123"},
