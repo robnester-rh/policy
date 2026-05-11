@@ -158,3 +158,30 @@ test_verified_statement_happy_path if {
 	statement.predicateType == "https://in-toto.io/attestation/test-result/v0.1"
 	statement.predicate.result == "PASSED"
 }
+
+test_no_provenance_referrers if {
+	result := intoto.verified_statements with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers_no_provenance
+		with ec.oci.blob as _mock_blob
+
+	count(result) == 0
+}
+
+test_invalid_signature if {
+	result := intoto.verified_statements with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers_with_provenance
+		with ec.sigstore.verify_attestation as _mock_verify_failure
+		with ec.oci.blob as _mock_blob
+
+	count(result) == 0
+}
+
+test_empty_attestations_after_verify if {
+	result := intoto.verified_statements with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers_with_provenance
+		with ec.sigstore.verify_attestation as _mock_verify_empty_attestations
+		with ec.oci.blob as _mock_blob
+
+	count(result) == 0
+}
+
