@@ -138,6 +138,54 @@ _mock_referrers_no_provenance(ref) := [] if {
 	ref == _statement_ref
 }
 
+_statement_digest_2 := "sha256:stmt000000000000000000000000000000000000000000000000000000000002"
+
+_statement_ref_2 := sprintf("registry.io/repo/image@%s", [_statement_digest_2])
+
+_statement_referrer_2 := _referrer(_statement_digest_2, "application/vnd.in-toto+json")
+
+_mock_referrers_multi(ref) := [_statement_referrer, _statement_referrer_2] if {
+	ref == _image_ref
+}
+
+_mock_referrers_multi(ref) := [_provenance_referrer] if {
+	ref == _statement_ref
+}
+
+_mock_referrers_multi(ref) := [] if {
+	ref == _statement_ref_2
+}
+
+_mock_blob_multi(ref) := json.marshal({
+	"_type": "https://in-toto.io/Statement/v1",
+	"predicateType": "https://in-toto.io/attestation/test-result/v0.1",
+	"subject": [{"name": "registry.io/repo/image", "digest": {"sha256": "abc123"}}],
+	"predicate": {"result": "PASSED"},
+}) if {
+	contains(ref, "stmt000000000000000000000000000000000000000000000000000000000001")
+}
+
+_mock_blob_multi(ref) := json.marshal({
+	"_type": "https://in-toto.io/Statement/v1",
+	"predicateType": "https://in-toto.io/attestation/vulns/v0.2",
+	"subject": [{"name": "registry.io/repo/image", "digest": {"sha256": "abc123"}}],
+	"predicate": {"scanner": {"uri": "https://scanner.example.com"}},
+}) if {
+	contains(ref, "stmt000000000000000000000000000000000000000000000000000000000002")
+}
+
+_mock_referrers_both_verified(ref) := [_statement_referrer, _statement_referrer_2] if {
+	ref == _image_ref
+}
+
+_mock_referrers_both_verified(ref) := [_provenance_referrer] if {
+	ref == _statement_ref
+}
+
+_mock_referrers_both_verified(ref) := [_provenance_referrer] if {
+	ref == _statement_ref_2
+}
+
 _slsa_v1_task_no_bundle := {
 	"name": "pipelineTask",
 	"content": base64.encode(json.marshal({
@@ -145,9 +193,7 @@ _slsa_v1_task_no_bundle := {
 			"tekton.dev/task": "inline-task",
 			"tekton.dev/pipelineTask": "inline-task",
 		}},
-		"spec": {
-			"params": [],
-		},
+		"spec": {"params": []},
 		"status": {
 			"results": [{"name": "TEST_OUTPUT", "value": "{}"}],
 			"steps": [{"name": "step1"}],
@@ -255,4 +301,30 @@ test_bundleless_tasks if {
 		with data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
 
 	count(result) == 0
+}
+
+test_multiple_statements_mixed if {
+	result := intoto.verified_statements with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers_multi
+		with ec.sigstore.verify_attestation as _mock_verify_success
+		with ec.oci.blob as _mock_blob_multi
+		with ec.oci.image_manifests as _mock_manifests
+		with data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
+
+	count(result) == 1
+	some statement in result
+	statement.predicateType == "https://in-toto.io/attestation/test-result/v0.1"
+}
+
+test_verified_statements_by_predicate if {
+	result := intoto.verified_statements_by_predicate(intoto.predicate_test_result) with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers_both_verified
+		with ec.sigstore.verify_attestation as _mock_verify_success
+		with ec.oci.blob as _mock_blob_multi
+		with ec.oci.image_manifests as _mock_manifests
+		with data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
+
+	count(result) == 1
+	some statement in result
+	statement.predicateType == "https://in-toto.io/attestation/test-result/v0.1"
 }
