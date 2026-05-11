@@ -138,6 +138,29 @@ _mock_referrers_no_provenance(ref) := [] if {
 	ref == _statement_ref
 }
 
+_slsa_v1_task_no_bundle := {
+	"name": "pipelineTask",
+	"content": base64.encode(json.marshal({
+		"metadata": {"labels": {
+			"tekton.dev/task": "inline-task",
+			"tekton.dev/pipelineTask": "inline-task",
+		}},
+		"spec": {
+			"params": [],
+		},
+		"status": {
+			"results": [{"name": "TEST_OUTPUT", "value": "{}"}],
+			"steps": [{"name": "step1"}],
+		},
+	})),
+}
+
+_mock_verify_bundleless_tasks(_, _) := {
+	"success": true,
+	"errors": [],
+	"attestations": [_slsa_v1_provenance([_slsa_v1_task_no_bundle])],
+}
+
 test_no_referrers if {
 	result := intoto.verified_statements with input.image.ref as _image_ref
 		with ec.oci.image_referrers as []
@@ -185,3 +208,51 @@ test_empty_attestations_after_verify if {
 	count(result) == 0
 }
 
+test_untrusted_tasks if {
+	no_matching_rules := {"trusted_task_rules": {"allow": {"Other tasks": [{"pattern": "oci://quay.io/other-org/*"}]}}}
+	result := intoto.verified_statements with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers_with_provenance
+		with ec.sigstore.verify_attestation as _mock_verify_success
+		with ec.oci.blob as _mock_blob
+		with ec.oci.image_manifests as _mock_manifests
+		with data.trusted_task_rules as no_matching_rules.trusted_task_rules
+
+	count(result) == 0
+}
+
+test_denied_tasks if {
+	deny_rules := {"trusted_task_rules": {
+		"allow": {"Allow all": [{"pattern": "oci://quay.io/konflux-ci/tekton-catalog/*"}]},
+		"deny": {"Block verify": [{"pattern": "oci://quay.io/konflux-ci/tekton-catalog/task-verify*"}]},
+	}}
+	result := intoto.verified_statements with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers_with_provenance
+		with ec.sigstore.verify_attestation as _mock_verify_success
+		with ec.oci.blob as _mock_blob
+		with ec.oci.image_manifests as _mock_manifests
+		with data.trusted_task_rules as deny_rules.trusted_task_rules
+
+	count(result) == 0
+}
+
+test_empty_tasks_vacuous_truth_guard if {
+	result := intoto.verified_statements with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers_with_provenance
+		with ec.sigstore.verify_attestation as _mock_verify_empty_tasks
+		with ec.oci.blob as _mock_blob
+		with ec.oci.image_manifests as _mock_manifests
+		with data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
+
+	count(result) == 0
+}
+
+test_bundleless_tasks if {
+	result := intoto.verified_statements with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers_with_provenance
+		with ec.sigstore.verify_attestation as _mock_verify_bundleless_tasks
+		with ec.oci.blob as _mock_blob
+		with ec.oci.image_manifests as _mock_manifests
+		with data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
+
+	count(result) == 0
+}
