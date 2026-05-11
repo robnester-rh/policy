@@ -36,12 +36,54 @@ package lib.intoto
 
 import rego.v1
 
-# import data.lib.sigstore  -- added in EC-1774 Task 3 when verified_statements is implemented
-# import data.lib.tekton     -- added in EC-1774 Task 3 when verified_statements is implemented
+import data.lib.sigstore
+import data.lib.tekton
 
 _intoto_referrers contains referrer if {
 	some referrer in ec.oci.image_referrers(input.image.ref)
 	referrer.artifactType == _artifact_type
 }
 
-verified_statements := set()
+verified_statements contains statement if {
+	some referrer in _intoto_referrers
+	_has_trusted_provenance(referrer)
+	blob := ec.oci.blob(referrer.ref)
+	statement := json.unmarshal(blob)
+
+	# regal ignore:leaked-internal-reference
+	statement._type in _known_types
+}
+
+verified_statements_by_predicate(predicate_type) := {statement |
+	some statement in verified_statements
+	statement.predicateType == predicate_type
+}
+
+_has_trusted_provenance(referrer) if {
+	some provenance_referrer in ec.oci.image_referrers(referrer.ref)
+	_verify_provenance(provenance_referrer)
+}
+
+# Wrapping ec.sigstore.verify_attestation in a helper avoids an OPA v1.12.1
+# type-checker panic (unreachable in ast.unifies) triggered when the return
+# value is assigned and then accessed with dot notation in the same rule body.
+_verify_provenance(provenance_referrer) if {
+	verification := ec.sigstore.verify_attestation(provenance_referrer.ref, sigstore.opts)
+	object.get(verification, "success", false) == true
+	atts := object.get(verification, "attestations", [])
+	count(atts) > 0
+	some att in atts
+	_all_tasks_trusted(att)
+}
+
+_all_tasks_trusted(att) if {
+	all_tasks := tekton.tasks(att)
+	count(all_tasks) > 0
+	bundle_refs := {tekton.task_ref(task).bundle |
+		some task in all_tasks
+		tekton.task_ref(task).bundle != ""
+	}
+	manifests := ec.oci.image_manifests(bundle_refs)
+	untrusted := tekton.untrusted_task_refs(all_tasks, manifests)
+	count(untrusted) == 0
+}

@@ -86,12 +86,10 @@ _slsa_v1_task := {
 _slsa_v1_provenance(tasks) := {
 	"statement": {
 		"predicateType": "https://slsa.dev/provenance/v1",
-		"predicate": {
-			"buildDefinition": {
-				"buildType": "https://tekton.dev/chains/v2/slsa-tekton",
-				"resolvedDependencies": tasks,
-			},
-		},
+		"predicate": {"buildDefinition": {
+			"buildType": "https://tekton.dev/chains/v2/slsa-tekton",
+			"resolvedDependencies": tasks,
+		}},
 	},
 	"signatures": [{"keyid": "", "certificate": ""}],
 }
@@ -145,4 +143,18 @@ test_no_referrers if {
 		with ec.oci.image_referrers as []
 
 	count(result) == 0
+}
+
+test_verified_statement_happy_path if {
+	result := intoto.verified_statements with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers_with_provenance
+		with ec.sigstore.verify_attestation as _mock_verify_success
+		with ec.oci.blob as _mock_blob
+		with ec.oci.image_manifests as _mock_manifests
+		with data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
+
+	count(result) == 1
+	some statement in result
+	statement.predicateType == "https://in-toto.io/attestation/test-result/v0.1"
+	statement.predicate.result == "PASSED"
 }
