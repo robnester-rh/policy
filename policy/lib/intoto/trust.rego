@@ -18,19 +18,22 @@
 #
 # This file deliberately couples lib.intoto with lib.sigstore, lib.tekton,
 # and ec.oci/ec.sigstore built-ins to verify that in-toto statements were
-# produced by trusted pipelines. If the intoto package grows beyond 3-4
-# files, consider extracting trust verification into a dedicated package.
+# produced by trusted pipelines. If the intoto package grows significantly
+# beyond its current scope, consider extracting trust verification into
+# a dedicated package (e.g. lib.verification).
 #
 # Cross-file dependency: this file references _artifact_type and
 # _known_types defined in intoto.rego (same package).
 #
 # Trust model: "one valid provenance chain suffices." A statement is
-# verified if ANY second-level referrer provides valid Chains-generated
-# SLSA provenance with all tasks trusted. Not all referrers must verify.
+# verified if ANY provenance referrer attached to the statement referrer
+# provides valid Sigstore-attested SLSA provenance (as produced by Tekton
+# Chains) with all tasks trusted. Not all referrers must verify.
 #
 # Fail-closed behavior: if blob fetching, JSON parsing, or _type
-# validation fails for a referrer, that statement is silently excluded
-# from verified_statements. Consumer deny rules surface the absence.
+# validation fails for a referrer, that statement is excluded from
+# verified_statements (no error is emitted at this layer). Consumer deny
+# rules surface the absence as a policy violation.
 
 package lib.intoto
 
@@ -67,6 +70,12 @@ _has_trusted_provenance(referrer) if {
 # Wrapping ec.sigstore.verify_attestation in a helper avoids an OPA v1.12.1
 # type-checker panic (unreachable in ast.unifies) triggered when the return
 # value is assigned and then accessed with dot notation in the same rule body.
+# No upstream OPA issue filed as of May 2026; test removal on OPA upgrade.
+# The object.get defaults below are NOT graceful degradation — they exist
+# solely for the type-checker workaround. Expected schema from EC CLI:
+# {success: bool, errors: [string], attestations: [{statement: any, signatures: [...]}]}
+# If "success" or "attestations" is absent, the defaults cause fail-closed
+# behavior (false == true fails, count([]) > 0 fails).
 _verify_provenance(provenance_referrer) if {
 	verification := ec.sigstore.verify_attestation(provenance_referrer.ref, sigstore.opts)
 	object.get(verification, "success", false) == true

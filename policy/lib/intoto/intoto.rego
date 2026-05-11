@@ -27,8 +27,8 @@ _artifact_type := "application/vnd.in-toto+json"
 _known_types := {"https://in-toto.io/Statement/v0.1", "https://in-toto.io/Statement/v1"}
 
 # statements returns the set of unsigned in-toto statements attached to the
-# image as OCI referrers. Trust is established via Chains provenance (EC-1774),
-# not via signatures on the statements themselves.
+# image as OCI referrers. Trust is established via Chains provenance
+# verification; see verified_statements in trust.rego.
 statements contains statement if {
 	some referrer in ec.oci.image_referrers(input.image.ref)
 	referrer.artifactType == _artifact_type

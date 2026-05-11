@@ -30,14 +30,6 @@ _statement_ref := sprintf("registry.io/repo/image@%s", [_statement_digest])
 
 _bundle_ref := "quay.io/konflux-ci/tekton-catalog/task-verify@sha256:task00000000000000000000000000000000000000000000000000000000001"
 
-_referrer(digest, artifact_type) := {
-	"mediaType": "application/vnd.oci.image.manifest.v1+json",
-	"size": 100,
-	"digest": digest,
-	"artifactType": artifact_type,
-	"ref": sprintf("registry.io/repo/image@%s", [digest]),
-}
-
 _statement_referrer := _referrer(_statement_digest, "application/vnd.in-toto+json")
 
 _provenance_referrer := _referrer(_provenance_digest, "application/vnd.dsse.envelope.v1+json")
@@ -198,6 +190,30 @@ _mock_verify_bundleless_tasks(_, _) := {
 	"attestations": [_slsa_v1_provenance([_slsa_v1_task_no_bundle])],
 }
 
+_mock_verify_mixed_bundle_inline(_, _) := {
+	"success": true,
+	"errors": [],
+	"attestations": [_slsa_v1_provenance([_slsa_v1_task, _slsa_v1_task_no_bundle])],
+}
+
+_mock_verify_mixed_attestations(_, _) := {
+	"success": true,
+	"errors": [],
+	"attestations": [
+		_slsa_v1_provenance([_slsa_v1_task]),
+		_slsa_v1_provenance([_slsa_v1_task_no_bundle]),
+	],
+}
+
+_mock_blob_unknown_type(_) := json.marshal({
+	"_type": "https://example.com/custom/v1",
+	"predicateType": "https://in-toto.io/attestation/test-result/v0.1",
+	"subject": [{"name": "registry.io/repo/image", "digest": {"sha256": "abc123"}}],
+	"predicate": {"result": "PASSED"},
+})
+
+_mock_blob_malformed(_) := "not valid json {{"
+
 test_no_referrers if {
 	result := intoto.verified_statements with input.image.ref as _image_ref
 		with ec.oci.image_referrers as []
@@ -318,4 +334,48 @@ test_verified_statements_by_predicate if {
 	count(result) == 1
 	some statement in result
 	statement.predicateType == "https://in-toto.io/attestation/test-result/v0.1"
+}
+
+test_mixed_bundle_and_inline_tasks if {
+	result := intoto.verified_statements with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers_with_provenance
+		with ec.sigstore.verify_attestation as _mock_verify_mixed_bundle_inline
+		with ec.oci.blob as _mock_blob
+		with ec.oci.image_manifests as _mock_manifests
+		with data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
+
+	count(result) == 0
+}
+
+test_existential_attestation_matching if {
+	result := intoto.verified_statements with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers_with_provenance
+		with ec.sigstore.verify_attestation as _mock_verify_mixed_attestations
+		with ec.oci.blob as _mock_blob
+		with ec.oci.image_manifests as _mock_manifests
+		with data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
+
+	count(result) == 1
+}
+
+test_unrecognized_statement_type if {
+	result := intoto.verified_statements with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers_with_provenance
+		with ec.sigstore.verify_attestation as _mock_verify_success
+		with ec.oci.blob as _mock_blob_unknown_type
+		with ec.oci.image_manifests as _mock_manifests
+		with data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
+
+	count(result) == 0
+}
+
+test_malformed_blob if {
+	result := intoto.verified_statements with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers_with_provenance
+		with ec.sigstore.verify_attestation as _mock_verify_success
+		with ec.oci.blob as _mock_blob_malformed
+		with ec.oci.image_manifests as _mock_manifests
+		with data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
+
+	count(result) == 0
 }
