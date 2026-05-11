@@ -28,8 +28,6 @@ _provenance_digest := "sha256:prov0000000000000000000000000000000000000000000000
 
 _statement_ref := sprintf("registry.io/repo/image@%s", [_statement_digest])
 
-_provenance_ref := sprintf("registry.io/repo/image@%s", [_provenance_digest])
-
 _bundle_ref := "quay.io/konflux-ci/tekton-catalog/task-verify@sha256:task00000000000000000000000000000000000000000000000000000000001"
 
 _referrer(digest, artifact_type) := {
@@ -49,13 +47,6 @@ _mock_blob(_) := json.marshal({
 	"predicateType": "https://in-toto.io/attestation/test-result/v0.1",
 	"subject": [{"name": "registry.io/repo/image", "digest": {"sha256": "abc123"}}],
 	"predicate": {"result": "PASSED"},
-})
-
-_mock_blob_vuln(_) := json.marshal({
-	"_type": "https://in-toto.io/Statement/v1",
-	"predicateType": "https://in-toto.io/attestation/vulns/v0.2",
-	"subject": [{"name": "registry.io/repo/image", "digest": {"sha256": "abc123"}}],
-	"predicate": {"scanner": {"uri": "https://scanner.example.com"}},
 })
 
 _slsa_v1_task := {
