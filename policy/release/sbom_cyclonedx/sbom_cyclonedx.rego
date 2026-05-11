@@ -336,7 +336,7 @@ deny contains result if {
 #   - redhat
 #   - redhat_rpms
 #   - policy_data
-#   effective_on: 2026-06-01T00:00:00Z
+#   effective_on: 2026-05-13T00:00:00Z
 #
 deny contains result if {
 	proxy_enabled := {t | some t in rule_data.get("proxy_enabled_purl_types")}

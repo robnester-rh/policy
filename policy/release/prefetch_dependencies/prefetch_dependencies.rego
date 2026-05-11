@@ -57,7 +57,7 @@ deny contains result if {
 #   - redhat
 #   depends_on:
 #   - attestation_type.known_attestation_type
-#   effective_on: 2026-06-01T00:00:00Z
+#   effective_on: 2026-05-13T00:00:00Z
 #
 deny contains result if {
 	some attestation in lib.pipelinerun_attestations

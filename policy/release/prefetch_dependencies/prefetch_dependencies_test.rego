@@ -50,7 +50,7 @@ test_oci_ta_mode_not_permissive_pass if {
 test_proxy_disabled_violation if {
 	expected := {{
 		"code": "prefetch_dependencies.package_registry_proxy_enabled",
-		"effective_on": "2026-06-01T00:00:00Z",
+		"effective_on": "2026-05-13T00:00:00Z",
 		"msg": "Task 'prefetch-dependencies' does not have the enable-package-registry-proxy parameter set to true",
 	}}
 	assertions.assert_equal_results(expected, prefetch_dependencies.deny) with input as _attestation("prefetch-dependencies", "strict", "false")
@@ -65,7 +65,7 @@ test_proxy_enabled_pass if {
 test_missing_proxy_param_violation if {
 	expected := {{
 		"code": "prefetch_dependencies.package_registry_proxy_enabled",
-		"effective_on": "2026-06-01T00:00:00Z",
+		"effective_on": "2026-05-13T00:00:00Z",
 		"msg": "Task 'prefetch-dependencies' does not have the enable-package-registry-proxy parameter set to true",
 	}}
 	assertions.assert_equal_results(expected, prefetch_dependencies.deny) with input as _attestation_without_proxy("prefetch-dependencies")
@@ -80,7 +80,7 @@ test_proxy_unrelated_task_pass if {
 test_oci_ta_proxy_disabled_violation if {
 	expected := {{
 		"code": "prefetch_dependencies.package_registry_proxy_enabled",
-		"effective_on": "2026-06-01T00:00:00Z",
+		"effective_on": "2026-05-13T00:00:00Z",
 		"msg": "Task 'prefetch-dependencies-oci-ta' does not have the enable-package-registry-proxy parameter set to true",
 	}}
 	assertions.assert_equal_results(expected, prefetch_dependencies.deny) with input as _attestation("prefetch-dependencies-oci-ta", "strict", "false")
