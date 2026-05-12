@@ -131,7 +131,7 @@ For packages found by Hermeto with a PURL type listed in proxy_enabled_purl_type
 * FAILURE message: `Package %s is missing proxy metadata (sourceInfo is empty or missing)`
 * Code: `sbom_spdx.proxy_metadata_required`
 * Effective from: `2026-05-13T00:00:00Z`
-* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/sbom_spdx/sbom_spdx.rego#L307[Source, window="_blank"]
+* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/sbom_spdx/sbom_spdx.rego#L306[Source, window="_blank"]
 
 [#sbom_spdx__valid]
 === link:#sbom_spdx__valid[Valid]
