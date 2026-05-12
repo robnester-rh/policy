@@ -94,8 +94,8 @@ For components found by Hermeto with a PURL type listed in proxy_enabled_purl_ty
 * Rule type: [rule-type-indicator failure]#FAILURE#
 * FAILURE message: `Package %s is missing proxy metadata (no externalReference of type "distribution")`
 * Code: `sbom_cyclonedx.proxy_metadata_required`
-* Effective from: `2026-06-01T00:00:00Z`
-* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/sbom_cyclonedx/sbom_cyclonedx.rego#L321[Source, window="_blank"]
+* Effective from: `2026-05-13T00:00:00Z`
+* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/sbom_cyclonedx/sbom_cyclonedx.rego#L320[Source, window="_blank"]
 
 [#sbom_cyclonedx__cdx_supported_version]
 === link:#sbom_cyclonedx__cdx_supported_version[Supported Version]

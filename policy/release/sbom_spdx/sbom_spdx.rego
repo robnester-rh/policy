@@ -269,7 +269,6 @@ deny contains result if {
 #     allowed_proxy_url_patterns rule data for the given PURL type.
 #   collections:
 #   - redhat
-#   - redhat_rpms
 #   - policy_data
 #   effective_on: 2026-06-01T00:00:00Z
 #
@@ -319,9 +318,8 @@ deny contains result if {
 #     Hermeto from a package registry.
 #   collections:
 #   - redhat
-#   - redhat_rpms
 #   - policy_data
-#   effective_on: 2026-06-01T00:00:00Z
+#   effective_on: 2026-05-13T00:00:00Z
 #
 deny contains result if {
 	proxy_enabled := {t | some t in rule_data.get("proxy_enabled_purl_types")}
