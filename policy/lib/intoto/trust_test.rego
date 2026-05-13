@@ -66,15 +66,24 @@ _slsa_v1_task := {
 	})),
 }
 
-_slsa_v1_provenance(tasks) := {
+_slsa_v1_provenance(tasks) := _slsa_v1_provenance_for(tasks, _statement_digest)
+
+_slsa_v1_provenance_for(tasks, subject_digest) := {
 	"statement": {
 		"predicateType": "https://slsa.dev/provenance/v1",
+		"subject": [{"name": "statement", "digest": _parse_digest(subject_digest)}],
 		"predicate": {"buildDefinition": {
 			"buildType": "https://tekton.dev/chains/v2/slsa-tekton",
 			"resolvedDependencies": tasks,
 		}},
 	},
 	"signatures": [{"keyid": "", "certificate": ""}],
+}
+
+_parse_digest(digest_str) := {algorithm: value} if {
+	parts := split(digest_str, ":")
+	algorithm := parts[0]
+	value := parts[1]
 }
 
 _mock_verify_success(_, _) := {
@@ -125,7 +134,11 @@ _statement_digest_2 := "sha256:stmt000000000000000000000000000000000000000000000
 
 _statement_ref_2 := sprintf("registry.io/repo/image@%s", [_statement_digest_2])
 
+_provenance_digest_2 := "sha256:prov000000000000000000000000000000000000000000000000000000000002"
+
 _statement_referrer_2 := _referrer(_statement_digest_2, "application/vnd.in-toto+json")
+
+_provenance_referrer_2 := _referrer(_provenance_digest_2, "application/vnd.dsse.envelope.v1+json")
 
 _mock_referrers_multi(ref) := [_statement_referrer, _statement_referrer_2] if {
 	ref == _image_ref
@@ -165,8 +178,24 @@ _mock_referrers_both_verified(ref) := [_provenance_referrer] if {
 	ref == _statement_ref
 }
 
-_mock_referrers_both_verified(ref) := [_provenance_referrer] if {
+_mock_referrers_both_verified(ref) := [_provenance_referrer_2] if {
 	ref == _statement_ref_2
+}
+
+_mock_verify_per_statement(ref, _) := {
+	"success": true,
+	"errors": [],
+	"attestations": [_slsa_v1_provenance_for([_slsa_v1_task], _statement_digest)],
+} if {
+	contains(ref, "prov000000000000000000000000000000000000000000000000000000000001")
+}
+
+_mock_verify_per_statement(ref, _) := {
+	"success": true,
+	"errors": [],
+	"attestations": [_slsa_v1_provenance_for([_slsa_v1_task], _statement_digest_2)],
+} if {
+	contains(ref, "prov000000000000000000000000000000000000000000000000000000000002")
 }
 
 _slsa_v1_task_no_bundle := {
@@ -213,6 +242,14 @@ _mock_blob_unknown_type(_) := json.marshal({
 })
 
 _mock_blob_malformed(_) := "not valid json {{"
+
+_wrong_digest := "sha256:wrong00000000000000000000000000000000000000000000000000000000001"
+
+_mock_verify_wrong_subject(_, _) := {
+	"success": true,
+	"errors": [],
+	"attestations": [_slsa_v1_provenance_for([_slsa_v1_task], _wrong_digest)],
+}
 
 test_no_referrers if {
 	result := intoto.verified_statements with input.image.ref as _image_ref
@@ -326,7 +363,7 @@ test_multiple_statements_mixed if {
 test_verified_statements_by_predicate if {
 	result := intoto.verified_statements_by_predicate(intoto.predicate_test_result) with input.image.ref as _image_ref
 		with ec.oci.image_referrers as _mock_referrers_both_verified
-		with ec.sigstore.verify_attestation as _mock_verify_success
+		with ec.sigstore.verify_attestation as _mock_verify_per_statement
 		with ec.oci.blob as _mock_blob_multi
 		with ec.oci.image_manifests as _mock_manifests
 		with data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
@@ -374,6 +411,17 @@ test_malformed_blob if {
 		with ec.oci.image_referrers as _mock_referrers_with_provenance
 		with ec.sigstore.verify_attestation as _mock_verify_success
 		with ec.oci.blob as _mock_blob_malformed
+		with ec.oci.image_manifests as _mock_manifests
+		with data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
+
+	count(result) == 0
+}
+
+test_provenance_subject_digest_mismatch if {
+	result := intoto.verified_statements with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers_with_provenance
+		with ec.sigstore.verify_attestation as _mock_verify_wrong_subject
+		with ec.oci.blob as _mock_blob
 		with ec.oci.image_manifests as _mock_manifests
 		with data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
 

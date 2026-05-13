@@ -64,7 +64,7 @@ verified_statements_by_predicate(predicate_type) := {statement |
 
 _has_trusted_provenance(referrer) if {
 	some provenance_referrer in ec.oci.image_referrers(referrer.ref)
-	_verify_provenance(provenance_referrer)
+	_verify_provenance(provenance_referrer, referrer.digest)
 }
 
 # Wrapping ec.sigstore.verify_attestation in a helper avoids an OPA v1.12.1
@@ -76,13 +76,24 @@ _has_trusted_provenance(referrer) if {
 # {success: bool, errors: [string], attestations: [{statement: any, signatures: [...]}]}
 # If "success" or "attestations" is absent, the defaults cause fail-closed
 # behavior (false == true fails, count([]) > 0 fails).
-_verify_provenance(provenance_referrer) if {
+_verify_provenance(provenance_referrer, expected_subject_digest) if {
 	verification := ec.sigstore.verify_attestation(provenance_referrer.ref, sigstore.opts)
 	object.get(verification, "success", false) == true
 	atts := object.get(verification, "attestations", [])
 	count(atts) > 0
 	some att in atts
+	_attests_to_subject(att, expected_subject_digest)
 	_all_tasks_trusted(att)
+}
+
+_attests_to_subject(att, expected_digest) if {
+	some subject in att.statement.subject
+	_subject_digest(subject) == expected_digest
+}
+
+_subject_digest(subject) := digest if {
+	some algorithm, value in subject.digest
+	digest := concat(":", [algorithm, value])
 }
 
 _all_tasks_trusted(att) if {
