@@ -146,6 +146,132 @@ _mock_blob_missing_result(_) := _make_statement({
 	"passedTests": ["test-a"],
 })
 
+# --- Multi-attestation infrastructure ---
+
+_statement_digest_2 := "sha256:stmt000000000000000000000000000000000000000000000000000000000002"
+
+_statement_ref_2 := sprintf("registry.io/repo/image@%s", [_statement_digest_2])
+
+_provenance_digest_2 := "sha256:prov000000000000000000000000000000000000000000000000000000000002"
+
+_statement_referrer_2 := _referrer(_statement_digest_2, "application/vnd.in-toto+json")
+
+_provenance_referrer_2 := _referrer(_provenance_digest_2, "application/vnd.dsse.envelope.v1+json")
+
+_slsa_v1_provenance_2 := {
+	"statement": {
+		"predicateType": "https://slsa.dev/provenance/v1",
+		"subject": [{"name": "statement", "digest": _parse_digest(_statement_digest_2)}],
+		"predicate": {"buildDefinition": {
+			"buildType": "https://tekton.dev/chains/v2/slsa-tekton",
+			"resolvedDependencies": [_slsa_v1_task],
+		}},
+	},
+	"signatures": [{"keyid": "", "certificate": ""}],
+}
+
+_mock_referrers_two(ref) := [_statement_referrer, _statement_referrer_2] if {
+	ref == _image_ref
+}
+
+_mock_referrers_two(ref) := [_provenance_referrer] if {
+	ref == _statement_ref
+}
+
+_mock_referrers_two(ref) := [_provenance_referrer_2] if {
+	ref == _statement_ref_2
+}
+
+_mock_verify_two(ref, _) := {
+	"success": true,
+	"errors": [],
+	"attestations": [_slsa_v1_provenance],
+} if {
+	contains(ref, "prov000000000000000000000000000000000000000000000000000000000001")
+}
+
+_mock_verify_two(ref, _) := {
+	"success": true,
+	"errors": [],
+	"attestations": [_slsa_v1_provenance_2],
+} if {
+	contains(ref, "prov000000000000000000000000000000000000000000000000000000000002")
+}
+
+# Test Case 5: mixed PASSED + FAILED
+_mock_blob_mixed(ref) := _make_statement({
+	"result": "PASSED",
+	"configuration": [{"name": "sanity-check"}],
+}) if {
+	contains(ref, "stmt000000000000000000000000000000000000000000000000000000000001")
+}
+
+_mock_blob_mixed(ref) := _make_statement({
+	"result": "FAILED",
+	"configuration": [{"name": "clair-scan"}],
+	"failedTests": ["CVE-2024-9999"],
+}) if {
+	contains(ref, "stmt000000000000000000000000000000000000000000000000000000000002")
+}
+
+# Test Case 11: WARNED + FAILED coexistence
+_mock_blob_warned_and_failed(ref) := _make_statement({
+	"result": "WARNED",
+	"configuration": [{"name": "deprecation-check"}],
+	"warnedTests": ["old-api"],
+}) if {
+	contains(ref, "stmt000000000000000000000000000000000000000000000000000000000001")
+}
+
+_mock_blob_warned_and_failed(ref) := _make_statement({
+	"result": "FAILED",
+	"configuration": [{"name": "clair-scan"}],
+	"failedTests": ["CVE-2024-1111"],
+}) if {
+	contains(ref, "stmt000000000000000000000000000000000000000000000000000000000002")
+}
+
+# Test Case 12: multiple FAILEDs
+_mock_blob_multi_failed(ref) := _make_statement({
+	"result": "FAILED",
+	"configuration": [{"name": "clair-scan"}],
+	"failedTests": ["CVE-2024-1111"],
+}) if {
+	contains(ref, "stmt000000000000000000000000000000000000000000000000000000000001")
+}
+
+_mock_blob_multi_failed(ref) := _make_statement({
+	"result": "FAILED",
+	"configuration": [{"name": "sanity-check"}],
+	"failedTests": ["format-error"],
+}) if {
+	contains(ref, "stmt000000000000000000000000000000000000000000000000000000000002")
+}
+
+# Test Case 9: custom configuration name
+_mock_blob_custom_config(_) := _make_statement({
+	"result": "FAILED",
+	"configuration": [{"name": "my-custom-test", "downloadLocation": "https://example.com"}],
+	"failedTests": ["sub-test-1"],
+})
+
+# Test Case 10: empty configuration (fallback to "unknown test")
+_mock_blob_no_config(_) := _make_statement({
+	"result": "FAILED",
+	"failedTests": ["sub-test-1"],
+})
+
+# Test Case 13: non-string result value
+_mock_blob_non_string_result(_) := json.marshal({
+	"_type": "https://in-toto.io/Statement/v1",
+	"predicateType": "https://in-toto.io/attestation/test-result/v0.1",
+	"subject": [{"name": "registry.io/repo/image", "digest": {"sha256": "abc123"}}],
+	"predicate": {
+		"result": 42,
+		"configuration": [{"name": "bad-producer"}],
+	},
+})
+
 # --- Test Case 1: All attestations PASSED ---
 
 test_all_passed_no_violations if {
@@ -244,4 +370,120 @@ test_missing_result_field if {
 		with ec.oci.blob as _mock_blob_missing_result
 		with ec.oci.image_manifests as _mock_manifests
 		with data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
+}
+
+# --- Test Case 5: Mixed PASSED and FAILED ---
+
+test_mixed_passed_and_failed if {
+	assertions.assert_equal_results(test_attestation.deny, {{
+		"code": "test_attestation.no_failed_tests",
+		"msg": "Test attestation \"clair-scan\" reports a failed result. Failed tests: CVE-2024-9999",
+		"term": "clair-scan",
+	}}) with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers_two
+		with ec.sigstore.verify_attestation as _mock_verify_two
+		with ec.oci.blob as _mock_blob_mixed
+		with ec.oci.image_manifests as _mock_manifests
+		with data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
+
+	assertions.assert_empty(test_attestation.warn) with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers_two
+		with ec.sigstore.verify_attestation as _mock_verify_two
+		with ec.oci.blob as _mock_blob_mixed
+		with ec.oci.image_manifests as _mock_manifests
+		with data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
+}
+
+# --- Test Case 8: No test attestations at all ---
+
+test_no_attestations_noop if {
+	assertions.assert_empty(test_attestation.deny) with input.image.ref as _image_ref
+		with ec.oci.image_referrers as []
+
+	assertions.assert_empty(test_attestation.warn) with input.image.ref as _image_ref
+		with ec.oci.image_referrers as []
+}
+
+# --- Test Case 9: _test_name extracts configuration name ---
+
+test_test_name_from_configuration if {
+	results := test_attestation.deny with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers
+		with ec.sigstore.verify_attestation as _mock_verify_success
+		with ec.oci.blob as _mock_blob_custom_config
+		with ec.oci.image_manifests as _mock_manifests
+		with data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
+
+	some r in results
+	contains(r.msg, "\"my-custom-test\"")
+}
+
+# --- Test Case 10: Empty configuration falls back to "unknown test" ---
+
+test_test_name_fallback if {
+	results := test_attestation.deny with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers
+		with ec.sigstore.verify_attestation as _mock_verify_success
+		with ec.oci.blob as _mock_blob_no_config
+		with ec.oci.image_manifests as _mock_manifests
+		with data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
+
+	some r in results
+	contains(r.msg, "\"unknown test\"")
+}
+
+# --- Test Case 11: WARNED + FAILED coexistence ---
+
+test_warned_and_failed_coexist if {
+	assertions.assert_equal_results(test_attestation.deny, {{
+		"code": "test_attestation.no_failed_tests",
+		"msg": "Test attestation \"clair-scan\" reports a failed result. Failed tests: CVE-2024-1111",
+		"term": "clair-scan",
+	}}) with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers_two
+		with ec.sigstore.verify_attestation as _mock_verify_two
+		with ec.oci.blob as _mock_blob_warned_and_failed
+		with ec.oci.image_manifests as _mock_manifests
+		with data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
+
+	assertions.assert_equal_results(test_attestation.warn, {{
+		"code": "test_attestation.no_test_warnings",
+		"msg": "Test attestation \"deprecation-check\" reports warnings. Warned tests: old-api",
+		"term": "deprecation-check",
+	}}) with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers_two
+		with ec.sigstore.verify_attestation as _mock_verify_two
+		with ec.oci.blob as _mock_blob_warned_and_failed
+		with ec.oci.image_manifests as _mock_manifests
+		with data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
+}
+
+# --- Test Case 12: Multiple FAILEDs across attestations ---
+
+test_multiple_failures if {
+	results := test_attestation.deny with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers_two
+		with ec.sigstore.verify_attestation as _mock_verify_two
+		with ec.oci.blob as _mock_blob_multi_failed
+		with ec.oci.image_manifests as _mock_manifests
+		with data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
+
+	deny_codes := {r.code | some r in results}
+	assertions.assert_equal(deny_codes, {"test_attestation.no_failed_tests"})
+
+	deny_terms := {r.term | some r in results}
+	assertions.assert_equal(deny_terms, {"clair-scan", "sanity-check"})
+}
+
+# --- Test Case 13: Non-string result value ---
+
+test_non_string_result if {
+	results := test_attestation.deny with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers
+		with ec.sigstore.verify_attestation as _mock_verify_success
+		with ec.oci.blob as _mock_blob_non_string_result
+		with ec.oci.image_manifests as _mock_manifests
+		with data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
+
+	count(results) > 0
 }
