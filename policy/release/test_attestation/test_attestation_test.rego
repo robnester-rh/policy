@@ -485,5 +485,8 @@ test_non_string_result if {
 		with ec.oci.image_manifests as _mock_manifests
 		with data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
 
-	count(results) > 0
+	count(results) == 1
+	some r in results
+	r.code == "test_attestation.test_result_known"
+	contains(r.msg, "unsupported result value")
 }
