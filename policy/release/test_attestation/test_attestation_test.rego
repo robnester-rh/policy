@@ -295,7 +295,7 @@ test_all_passed_no_violations if {
 test_failed_with_details if {
 	assertions.assert_equal_results(test_attestation.deny, {{
 		"code": "test_attestation.no_failed_tests",
-		"msg": "Test attestation \"clair-scan\" reports a failed result. Failed tests: CVE-2024-1234, CVE-2024-5678",
+		"msg": "Test attestation \"clair-scan\" has a failed result, failed tests CVE-2024-1234, CVE-2024-5678",
 		"term": "clair-scan",
 	}}) with input.image.ref as _image_ref
 		with ec.oci.image_referrers as _mock_referrers
@@ -310,7 +310,7 @@ test_failed_with_details if {
 test_failed_no_details if {
 	assertions.assert_equal_results(test_attestation.deny, {{
 		"code": "test_attestation.no_failed_tests",
-		"msg": "Test attestation \"sanity-check\" reports a failed result. Failed tests: (none listed)",
+		"msg": "Test attestation \"sanity-check\" has a failed result, failed tests (none listed)",
 		"term": "sanity-check",
 	}}) with input.image.ref as _image_ref
 		with ec.oci.image_referrers as _mock_referrers
@@ -332,7 +332,7 @@ test_warned_with_details if {
 
 	assertions.assert_equal_results(test_attestation.warn, {{
 		"code": "test_attestation.no_test_warnings",
-		"msg": "Test attestation \"deprecation-check\" reports warnings. Warned tests: deprecated-api-v1",
+		"msg": "Test attestation \"deprecation-check\" has warnings, warned tests deprecated-api-v1",
 		"term": "deprecation-check",
 	}}) with input.image.ref as _image_ref
 		with ec.oci.image_referrers as _mock_referrers
@@ -377,7 +377,7 @@ test_missing_result_field if {
 test_mixed_passed_and_failed if {
 	assertions.assert_equal_results(test_attestation.deny, {{
 		"code": "test_attestation.no_failed_tests",
-		"msg": "Test attestation \"clair-scan\" reports a failed result. Failed tests: CVE-2024-9999",
+		"msg": "Test attestation \"clair-scan\" has a failed result, failed tests CVE-2024-9999",
 		"term": "clair-scan",
 	}}) with input.image.ref as _image_ref
 		with ec.oci.image_referrers as _mock_referrers_two
@@ -437,7 +437,7 @@ test_test_name_fallback if {
 test_warned_and_failed_coexist if {
 	assertions.assert_equal_results(test_attestation.deny, {{
 		"code": "test_attestation.no_failed_tests",
-		"msg": "Test attestation \"clair-scan\" reports a failed result. Failed tests: CVE-2024-1111",
+		"msg": "Test attestation \"clair-scan\" has a failed result, failed tests CVE-2024-1111",
 		"term": "clair-scan",
 	}}) with input.image.ref as _image_ref
 		with ec.oci.image_referrers as _mock_referrers_two
@@ -448,7 +448,7 @@ test_warned_and_failed_coexist if {
 
 	assertions.assert_equal_results(test_attestation.warn, {{
 		"code": "test_attestation.no_test_warnings",
-		"msg": "Test attestation \"deprecation-check\" reports warnings. Warned tests: old-api",
+		"msg": "Test attestation \"deprecation-check\" has warnings, warned tests old-api",
 		"term": "deprecation-check",
 	}}) with input.image.ref as _image_ref
 		with ec.oci.image_referrers as _mock_referrers_two

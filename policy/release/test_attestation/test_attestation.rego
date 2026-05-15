@@ -54,11 +54,10 @@ _test_list(predicate, key) := result if {
 #   when available.
 # custom:
 #   short_name: no_failed_tests
-#   failure_msg: >-
-#     Test attestation %q reports a failed result. Failed tests: %s
+#   failure_msg: Test attestation %q has a failed result, failed tests %s
 #   solution: >-
-#     Ensure all test attestations have a passing result. Review the failed
-#     tests listed in the attestation predicate.
+#     Ensure all test attestations have a passing result. Review the
+#     failed tests listed in the attestation predicate.
 #   collections:
 #   - redhat
 #   depends_on:
@@ -83,8 +82,7 @@ deny contains result if {
 #   when available.
 # custom:
 #   short_name: no_test_warnings
-#   failure_msg: >-
-#     Test attestation %q reports warnings. Warned tests: %s
+#   failure_msg: Test attestation %q has warnings, warned tests %s
 #   solution: >-
 #     Review the warned tests listed in the attestation predicate.
 #   collections:
@@ -111,8 +109,7 @@ warn contains result if {
 #   test-result predicate specification.
 # custom:
 #   short_name: test_result_known
-#   failure_msg: >-
-#     Test attestation %q has an unsupported result value %q
+#   failure_msg: Test attestation %q has an unsupported result value %q
 #   solution: >-
 #     The test result attestation contains an unrecognized result value.
 #     Valid values are PASSED, WARNED, and FAILED.
@@ -139,8 +136,7 @@ deny contains result if {
 #   Verify that the result field is present.
 # custom:
 #   short_name: test_data_found
-#   failure_msg: >-
-#     Test attestation %q is missing the required result field
+#   failure_msg: Test attestation %q is missing the required result field
 #   solution: >-
 #     The test result attestation predicate must include a "result" field
 #     with a value of PASSED, WARNED, or FAILED.
