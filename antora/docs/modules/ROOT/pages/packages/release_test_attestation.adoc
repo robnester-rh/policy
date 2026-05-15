@@ -18,7 +18,7 @@ Produce a violation if any test result attestation has a result of "FAILED". Fai
 * Rule type: [rule-type-indicator failure]#FAILURE#
 * FAILURE message: `Test attestation %q has a failed result, failed tests %s`
 * Code: `test_attestation.no_failed_tests`
-* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L49[Source, window="_blank"]
+* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L51[Source, window="_blank"]
 
 [#test_attestation__no_test_warnings]
 === link:#test_attestation__no_test_warnings[No test attestation warnings]
@@ -30,7 +30,7 @@ Produce a warning if any test result attestation has a result of "WARNED". Warne
 * Rule type: [rule-type-indicator warning]#WARNING#
 * WARNING message: `Test attestation %q has warnings, warned tests %s`
 * Code: `test_attestation.no_test_warnings`
-* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L131[Source, window="_blank"]
+* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L133[Source, window="_blank"]
 
 [#test_attestation__test_result_known]
 === link:#test_attestation__test_result_known[No unsupported test attestation result values]
@@ -42,7 +42,7 @@ Ensure the result field of each test result attestation is a recognized value. V
 * Rule type: [rule-type-indicator failure]#FAILURE#
 * FAILURE message: `Test attestation %q has an unsupported result value %q`
 * Code: `test_attestation.test_result_known`
-* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L77[Source, window="_blank"]
+* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L79[Source, window="_blank"]
 
 [#test_attestation__test_data_found]
 === link:#test_attestation__test_data_found[Test attestation data includes result]
@@ -54,4 +54,4 @@ Each test result attestation must include a result field in its predicate. Verif
 * Rule type: [rule-type-indicator failure]#FAILURE#
 * FAILURE message: `Test attestation %q is missing the required result field`
 * Code: `test_attestation.test_data_found`
-* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L105[Source, window="_blank"]
+* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L107[Source, window="_blank"]
