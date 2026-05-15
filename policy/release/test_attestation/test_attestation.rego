@@ -34,7 +34,8 @@ import data.lib.metadata
 _test_attestations := intoto.verified_statements_by_predicate(intoto.predicate_test_result)
 
 _test_name(statement) := name if {
-	config := object.get(statement.predicate, "configuration", [])
+	predicate := object.get(statement, "predicate", {})
+	config := object.get(predicate, "configuration", [])
 	count(config) > 0
 	name := config[0].name
 } else := "unknown test"

@@ -503,3 +503,25 @@ test_non_string_result if {
 	r.code == "test_attestation.test_result_known"
 	contains(r.msg, "unsupported result value")
 }
+
+# --- Test Case 14: Missing predicate field ---
+
+_mock_blob_missing_predicate(_) := json.marshal({
+	"_type": "https://in-toto.io/Statement/v1",
+	"predicateType": "https://in-toto.io/attestation/test-result/v0.1",
+	"subject": [{"name": "registry.io/repo/image", "digest": {"sha256": "abc123"}}],
+})
+
+test_missing_predicate if {
+	results := test_attestation.deny with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers
+		with ec.sigstore.verify_attestation as _mock_verify_success
+		with ec.oci.blob as _mock_blob_missing_predicate
+		with ec.oci.image_manifests as _mock_manifests
+		with data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
+
+	count(results) == 1
+	some r in results
+	r.code == "test_attestation.test_data_found"
+	contains(r.msg, "unknown test")
+}
