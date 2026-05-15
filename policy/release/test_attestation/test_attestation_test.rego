@@ -525,3 +525,24 @@ test_missing_predicate if {
 	r.code == "test_attestation.test_data_found"
 	contains(r.msg, "unknown test")
 }
+
+# --- Test Case 15: Non-string elements in failedTests array ---
+
+_mock_blob_non_string_tests(_) := _make_statement({
+	"result": "FAILED",
+	"configuration": [{"name": "bad-array-test"}],
+	"failedTests": ["CVE-2024-1234", 42, true],
+})
+
+test_non_string_test_list_elements if {
+	assertions.assert_equal_results(test_attestation.deny, {{
+		"code": "test_attestation.no_failed_tests",
+		"msg": "Test attestation \"bad-array-test\" has a failed result, failed tests CVE-2024-1234",
+		"term": "bad-array-test",
+	}}) with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers
+		with ec.sigstore.verify_attestation as _mock_verify_success
+		with ec.oci.blob as _mock_blob_non_string_tests
+		with ec.oci.image_manifests as _mock_manifests
+		with data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
+}

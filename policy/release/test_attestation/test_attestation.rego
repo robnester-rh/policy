@@ -43,8 +43,9 @@ _test_name(statement) := name if {
 _test_list(predicate, key) := result if {
 	value := object.get(predicate, key, [])
 	is_array(value)
-	count(value) > 0
-	result := concat(", ", value)
+	items := [x | some x in value; is_string(x)]
+	count(items) > 0
+	result := concat(", ", items)
 } else := "(none listed)"
 
 # METADATA
