@@ -468,6 +468,8 @@ test_multiple_failures if {
 		with ec.oci.image_manifests as _mock_manifests
 		with data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
 
+	count(results) == 2
+
 	deny_codes := {r.code | some r in results}
 	assertions.assert_equal(deny_codes, {"test_attestation.no_failed_tests"})
 
@@ -477,6 +479,13 @@ test_multiple_failures if {
 	every r in results {
 		contains(r.msg, "has a failed result")
 	}
+
+	assertions.assert_empty(test_attestation.warn) with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers_two
+		with ec.sigstore.verify_attestation as _mock_verify_two
+		with ec.oci.blob as _mock_blob_multi_failed
+		with ec.oci.image_manifests as _mock_manifests
+		with data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
 }
 
 # --- Test Case 13: Non-string result value ---
