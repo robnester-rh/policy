@@ -75,33 +75,6 @@ deny contains result if {
 }
 
 # METADATA
-# title: No test attestation warnings
-# description: >-
-#   Produce a warning if any test result attestation has a result of "WARNED".
-#   Warned test names from the attestation predicate are included in the message
-#   when available.
-# custom:
-#   short_name: no_test_warnings
-#   failure_msg: Test attestation %q has warnings, warned tests %s
-#   solution: >-
-#     Review the warned tests listed in the attestation predicate.
-#   collections:
-#   - redhat
-#   depends_on:
-#   - attestation_type.known_attestation_type
-#
-warn contains result if {
-	some statement in _test_attestations
-	statement.predicate.result == "WARNED"
-	warned := _test_list(statement.predicate, "warnedTests")
-	result := metadata.result_helper_with_term(
-		rego.metadata.chain(),
-		[_test_name(statement), warned],
-		_test_name(statement),
-	)
-}
-
-# METADATA
 # title: No unsupported test attestation result values
 # description: >-
 #   Ensure the result field of each test result attestation is a recognized
@@ -151,6 +124,33 @@ deny contains result if {
 	result := metadata.result_helper_with_term(
 		rego.metadata.chain(),
 		[_test_name(statement)],
+		_test_name(statement),
+	)
+}
+
+# METADATA
+# title: No test attestation warnings
+# description: >-
+#   Produce a warning if any test result attestation has a result of "WARNED".
+#   Warned test names from the attestation predicate are included in the message
+#   when available.
+# custom:
+#   short_name: no_test_warnings
+#   failure_msg: Test attestation %q has warnings, warned tests %s
+#   solution: >-
+#     Review the warned tests listed in the attestation predicate.
+#   collections:
+#   - redhat
+#   depends_on:
+#   - attestation_type.known_attestation_type
+#
+warn contains result if {
+	some statement in _test_attestations
+	statement.predicate.result == "WARNED"
+	warned := _test_list(statement.predicate, "warnedTests")
+	result := metadata.result_helper_with_term(
+		rego.metadata.chain(),
+		[_test_name(statement), warned],
 		_test_name(statement),
 	)
 }
