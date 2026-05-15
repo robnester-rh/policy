@@ -460,7 +460,7 @@ test_warned_and_failed_coexist if {
 
 # --- Test Case 12: Multiple FAILEDs across attestations ---
 
-test_multiple_failures if {
+test_multiple_failures_deny if {
 	results := test_attestation.deny with input.image.ref as _image_ref
 		with ec.oci.image_referrers as _mock_referrers_two
 		with ec.sigstore.verify_attestation as _mock_verify_two
@@ -479,7 +479,9 @@ test_multiple_failures if {
 	every r in results {
 		contains(r.msg, "has a failed result")
 	}
+}
 
+test_multiple_failures_no_warn if {
 	assertions.assert_empty(test_attestation.warn) with input.image.ref as _image_ref
 		with ec.oci.image_referrers as _mock_referrers_two
 		with ec.sigstore.verify_attestation as _mock_verify_two
