@@ -473,6 +473,10 @@ test_multiple_failures if {
 
 	deny_terms := {r.term | some r in results}
 	assertions.assert_equal(deny_terms, {"clair-scan", "sanity-check"})
+
+	every r in results {
+		contains(r.msg, "has a failed result")
+	}
 }
 
 # --- Test Case 13: Non-string result value ---
