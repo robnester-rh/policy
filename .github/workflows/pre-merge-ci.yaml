@@ -30,6 +30,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   all-tests-and-checks:
@@ -73,5 +74,7 @@ jobs:
       - name: Upload test coverage report
         uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
         if: always()
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          use_oidc: true
+          flags: unit-tests
+          fail_ci_if_error: false
