@@ -34,12 +34,40 @@ import data.lib.intoto
 import data.lib.json as j
 import data.lib.metadata
 import data.lib.rule_data
+import data.lib.time as lib_time
 
 _all_test_attestations := intoto.verified_statements_by_predicate(intoto.predicate_test_result)
 
-_test_attestations := lib.latest_test_attestations(_all_test_attestations)
+# Identity and timestamp diagnostics use the signature-verified view so an
+# untrusted task cannot hide malformed test-result metadata.
+_all_associated_test_attestations contains statement if {
+	some associated in intoto.associated_statement_provenances_by_predicate(intoto.predicate_test_result)
+	statement := associated.statement
+}
 
-_test_name(statement) := lib.attestation_test_name(statement)
+_test_identity_effective_on := time.parse_rfc3339_ns("2027-01-15T00:00:00Z")
+
+# Preserve the pre-existing "unknown test" result checks during the migration
+# window for the new identity requirement. Once that requirement is effective,
+# unidentified statements are reported only by test_identity_found.
+_legacy_unidentified_test_attestations contains statement if {
+	lib_time.effective_current_time_ns < _test_identity_effective_on
+	unidentified := {candidate |
+		some candidate in _all_test_attestations
+		not lib.attestation_test_name(candidate)
+		lib.attestation_test_instant(candidate)
+	}
+	latest_instant := max({lib.attestation_test_instant(candidate) | some candidate in unidentified})
+
+	some statement in unidentified
+	lib.attestation_test_instant(statement) == latest_instant
+}
+
+_test_attestations := lib.latest_test_attestations(_all_test_attestations) | _legacy_unidentified_test_attestations
+
+_test_name(statement) := name if {
+	name := lib.attestation_test_name(statement)
+} else := "unknown test"
 
 _count_detail(predicate, key) := result if {
 	n := object.get(predicate, key, 0)
@@ -141,8 +169,33 @@ warn contains result if {
 #   effective_on: 2027-01-15T00:00:00Z
 #
 deny contains result if {
-	some statement in _all_test_attestations
+	some statement in _all_associated_test_attestations
 	not lib.attestation_test_name(statement)
+	result := metadata.result_helper(rego.metadata.chain(), [])
+}
+
+# METADATA
+# title: Test attestation includes a valid timestamp
+# description: >-
+#   Ensure every signature-verified test-result attestation provides a valid
+#   RFC 3339 timestamp. The timestamp is required to select the latest retry
+#   deterministically.
+# custom:
+#   short_name: test_timestamp_found
+#   failure_msg: Test attestation is missing a valid RFC 3339 timestamp
+#   solution: >-
+#     Set predicate.timestamp to the RFC 3339 instant when the test result was
+#     produced.
+#   collections:
+#   - redhat
+#   - redhat_security
+#   depends_on:
+#   - attestation_type.known_attestation_type
+#   effective_on: 2027-01-15T00:00:00Z
+#
+deny contains result if {
+	some statement in _all_associated_test_attestations
+	not lib.attestation_test_instant(statement)
 	result := metadata.result_helper(rego.metadata.chain(), [])
 }
 

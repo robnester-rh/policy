@@ -274,7 +274,7 @@ test_required_test_task_from_untrusted_its_pipelinerun if {
 	}}
 	assertions.assert_equal_results(expected, matching_denies)
 	some result in matching_denies
-	result.effective_on == "2026-10-01T00:00:00Z"
+	result.effective_on == "2027-01-15T00:00:00Z"
 }
 
 test_required_test_task_from_untrusted_build_pipelinerun if {

@@ -19,7 +19,7 @@ Produce a violation if any test result attestation has an erred result. The resu
 * FAILURE message: `Test attestation %q has an erred result`
 * Code: `test_attestation.no_erred_test_attestations`
 * Effective from: `2026-01-15T00:00:00Z`
-* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L244[Source, window="_blank"]
+* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L297[Source, window="_blank"]
 
 [#test_attestation__no_failed_informative_test_attestations]
 === link:#test_attestation__no_failed_informative_test_attestations[No failed informative test attestations]
@@ -32,7 +32,7 @@ Produce a warning if any informative test attestation has a failed result. Infor
 * WARNING message: `Informative test attestation %q has a failed result, failures: %s`
 * Code: `test_attestation.no_failed_informative_test_attestations`
 * Effective from: `2026-01-15T00:00:00Z`
-* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L61[Source, window="_blank"]
+* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L89[Source, window="_blank"]
 
 [#test_attestation__no_failed_tests]
 === link:#test_attestation__no_failed_tests[No failed test attestations]
@@ -45,7 +45,7 @@ Produce a violation if any non-informative test result attestation has a failed 
 * FAILURE message: `Test attestation %q has a failed result, failures: %s`
 * Code: `test_attestation.no_failed_tests`
 * Effective from: `2026-01-15T00:00:00Z`
-* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L149[Source, window="_blank"]
+* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L202[Source, window="_blank"]
 
 [#test_attestation__no_skipped_test_attestations]
 === link:#test_attestation__no_skipped_test_attestations[No skipped test attestations]
@@ -58,7 +58,7 @@ Produce a violation if any test result attestation has a skipped result. A skipp
 * FAILURE message: `Test attestation %q has a skipped result`
 * Code: `test_attestation.no_skipped_test_attestations`
 * Effective from: `2026-01-15T00:00:00Z`
-* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L276[Source, window="_blank"]
+* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L329[Source, window="_blank"]
 
 [#test_attestation__no_test_warnings]
 === link:#test_attestation__no_test_warnings[No test attestation warnings]
@@ -71,7 +71,7 @@ Produce a warning if any test result attestation has a warned result. Warned tes
 * WARNING message: `Test attestation %q has warnings, warnings: %s`
 * Code: `test_attestation.no_test_warnings`
 * Effective from: `2026-01-15T00:00:00Z`
-* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L94[Source, window="_blank"]
+* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L122[Source, window="_blank"]
 
 [#test_attestation__test_result_known]
 === link:#test_attestation__test_result_known[No unsupported test attestation result values]
@@ -84,7 +84,7 @@ Ensure the result field of each test result attestation is a recognized value. V
 * FAILURE message: `Test attestation %q has an unsupported result value %q`
 * Code: `test_attestation.test_result_known`
 * Effective from: `2026-01-15T00:00:00Z`
-* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L183[Source, window="_blank"]
+* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L236[Source, window="_blank"]
 
 [#test_attestation__rule_data_provided]
 === link:#test_attestation__rule_data_provided[Rule data provided]
@@ -97,7 +97,7 @@ Confirm the expected rule data keys have been provided in the expected format. T
 * FAILURE message: `%s`
 * Code: `test_attestation.rule_data_provided`
 * Effective from: `2026-01-15T00:00:00Z`
-* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L344[Source, window="_blank"]
+* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L397[Source, window="_blank"]
 
 [#test_attestation__test_data_found]
 === link:#test_attestation__test_data_found[Test attestation data includes result]
@@ -110,7 +110,20 @@ Each test result attestation must include a result field in its predicate. Verif
 * FAILURE message: `Test attestation %q is missing the required result field`
 * Code: `test_attestation.test_data_found`
 * Effective from: `2026-01-15T00:00:00Z`
-* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L215[Source, window="_blank"]
+* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L268[Source, window="_blank"]
+
+[#test_attestation__test_timestamp_found]
+=== link:#test_attestation__test_timestamp_found[Test attestation includes a valid timestamp]
+
+Ensure every signature-verified test-result attestation provides a valid RFC 3339 timestamp. The timestamp is required to select the latest retry deterministically.
+
+*Solution*: Set predicate.timestamp to the RFC 3339 instant when the test result was produced.
+
+* Rule type: [rule-type-indicator failure]#FAILURE#
+* FAILURE message: `Test attestation is missing a valid RFC 3339 timestamp`
+* Code: `test_attestation.test_timestamp_found`
+* Effective from: `2027-01-15T00:00:00Z`
+* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L177[Source, window="_blank"]
 
 [#test_attestation__test_identity_found]
 === link:#test_attestation__test_identity_found[Test attestation includes an identity]
@@ -123,7 +136,7 @@ Ensure every test-result attestation provides a non-empty string in predicate.co
 * FAILURE message: `Test attestation is missing a valid configuration name`
 * Code: `test_attestation.test_identity_found`
 * Effective from: `2027-01-15T00:00:00Z`
-* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L124[Source, window="_blank"]
+* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L152[Source, window="_blank"]
 
 [#test_attestation__subject_mismatch]
 === link:#test_attestation__subject_mismatch[Test attestation subject matches image]
@@ -136,4 +149,4 @@ Verify that each test-result attestation's subject includes the digest of the im
 * FAILURE message: `Test attestation %q subject does not match image digest %q`
 * Code: `test_attestation.subject_mismatch`
 * Effective from: `2026-01-15T00:00:00Z`
-* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L310[Source, window="_blank"]
+* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L363[Source, window="_blank"]

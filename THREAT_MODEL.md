@@ -44,9 +44,10 @@ themselves. The CLI handles that before evaluation, and the rules assume
 statements. The `test` and `test_attestation` packages instead use
 `lib/intoto`'s `verified_statements` path to perform their own
 sigstore+trusted-task chain-of-trust checks on in-toto referrers. The `tasks`
-package also uses `lib/intoto` to discover signature-verified test-result
-provenance, group PipelineRuns by `configuration[0].name`, select the latest
-timestamp as an RFC 3339 instant, and then enforce task trust (see section 3.1).
+package also uses `lib/intoto` to discover all parseable test-result statements,
+group them by `configuration[0].name`, select the latest valid RFC 3339
+timestamp, intersect that selection with signature-verified provenance, and
+then enforce task trust (see section 3.1).
 Test-result statements without a valid configuration name are rejected and do
 not participate in retry selection.
 
@@ -111,9 +112,11 @@ path through `lib/intoto`. The `tasks` package uses the task-trusted view for
 required-task presence and the signature-verified
 `associated_statement_provenances` view for detailed trust-failure reporting.
 Thus presence still fails closed if the detailed trust rule is disabled. Retry
-selection happens before task trust so an older trusted run cannot mask an
-untrusted latest retry, and an older untrusted run does not invalidate a trusted
-latest retry. Other packages consume `input.attestations` directly.
+selection happens over all parseable discovered statements before signature
+association and task trust, so an older trusted run cannot mask a newer retry
+whose provenance is missing, invalid, or untrusted; that latest retry instead
+fails closed as missing or untrusted. Other packages consume `input.attestations`
+directly.
 
 See CLI threat model CA-3 for the CLI-side controls on signature skip flags.
 

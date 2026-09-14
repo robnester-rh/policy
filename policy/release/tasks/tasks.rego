@@ -269,7 +269,7 @@ deny contains result if {
 #   - redhat_security
 #   depends_on:
 #   - attestation_type.known_attestation_type
-#   effective_on: 2026-10-01T00:00:00Z
+#   effective_on: 2027-01-15T00:00:00Z
 #
 deny contains result if {
 	some error in _required_test_task_trust_errors

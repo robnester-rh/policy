@@ -42,7 +42,7 @@ Ensure that every required test task found in a build or latest applicable ITS P
 * Rule type: [rule-type-indicator failure]#FAILURE#
 * FAILURE message: `%s is required and present, but PipelineTask %q (Task %q) in its provenance is untrusted`
 * Code: `tasks.required_untrusted_test_task_found`
-* Effective from: `2026-10-01T00:00:00Z`
+* Effective from: `2027-01-15T00:00:00Z`
 * https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/tasks/tasks.rego#L255[Source, window="_blank"]
 
 [#tasks__required_test_tasks_found]
