@@ -76,6 +76,7 @@ _has_result(predicate, _, count_key) if {
 #   - redhat
 #   depends_on:
 #   - attestation_type.known_attestation_type
+#   effective_on: 2026-01-15T00:00:00Z
 #
 warn contains result if {
 	some statement in _test_attestations
@@ -106,6 +107,7 @@ warn contains result if {
 #   - redhat
 #   depends_on:
 #   - attestation_type.known_attestation_type
+#   effective_on: 2026-01-15T00:00:00Z
 #
 warn contains result if {
 	some statement in _test_attestations
@@ -136,7 +138,7 @@ warn contains result if {
 #   - redhat_security
 #   depends_on:
 #   - attestation_type.known_attestation_type
-#   effective_on: 2026-10-01T00:00:00Z
+#   effective_on: 2026-01-15T00:00:00Z
 #
 deny contains result if {
 	some statement in _all_test_attestations
@@ -163,6 +165,7 @@ deny contains result if {
 #   - redhat_security
 #   depends_on:
 #   - attestation_type.known_attestation_type
+#   effective_on: 2026-01-15T00:00:00Z
 #
 deny contains result if {
 	some statement in _test_attestations
@@ -195,6 +198,7 @@ deny contains result if {
 #   - redhat_security
 #   depends_on:
 #   - attestation_type.known_attestation_type
+#   effective_on: 2026-01-15T00:00:00Z
 #
 deny contains result if {
 	some statement in _test_attestations
@@ -224,6 +228,7 @@ deny contains result if {
 #   - redhat_security
 #   depends_on:
 #   - attestation_type.known_attestation_type
+#   effective_on: 2026-01-15T00:00:00Z
 #
 deny contains result if {
 	some statement in _test_attestations
@@ -253,6 +258,7 @@ deny contains result if {
 #   - redhat_security
 #   depends_on:
 #   - attestation_type.known_attestation_type
+#   effective_on: 2026-01-15T00:00:00Z
 #
 deny contains result if {
 	some statement in _test_attestations
@@ -286,6 +292,7 @@ deny contains result if {
 #   - redhat_security
 #   depends_on:
 #   - attestation_type.known_attestation_type
+#   effective_on: 2026-01-15T00:00:00Z
 #
 deny contains result if {
 	some statement in _test_attestations
@@ -318,6 +325,7 @@ deny contains result if {
 #   - redhat_security
 #   depends_on:
 #   - attestation_type.known_attestation_type
+#   effective_on: 2026-01-15T00:00:00Z
 #
 deny contains result if {
 	img := image.parse(input.image.ref)
@@ -348,6 +356,7 @@ deny contains result if {
 #   - redhat
 #   - redhat_security
 #   - policy_data
+#   effective_on: 2026-01-15T00:00:00Z
 #
 deny contains result if {
 	some e in _rule_data_errors

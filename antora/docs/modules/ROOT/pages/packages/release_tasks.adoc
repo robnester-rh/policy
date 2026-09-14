@@ -56,7 +56,7 @@ Ensure that every currently required test task is included in either the build P
 * FAILURE message: `%s is missing`
 * Code: `tasks.required_test_tasks_found`
 * Effective from: `2027-01-15T00:00:00Z`
-* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/tasks/tasks.rego#L213[Source, window="_blank"]
+* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/tasks/tasks.rego#L226[Source, window="_blank"]
 
 [#tasks__data_provided]
 === link:#tasks__data_provided[Data provided]
@@ -93,7 +93,7 @@ Produce a warning when a test task that will be required in the future was not i
 * WARNING message: `%s is missing and will be required on %s`
 * Code: `tasks.future_required_test_tasks_found`
 * Effective from: `2027-01-16T00:00:00Z`
-* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/tasks/tasks.rego#L96[Source, window="_blank"]
+* https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/tasks/tasks.rego#L108[Source, window="_blank"]
 
 [#tasks__pinned_task_refs]
 === link:#tasks__pinned_task_refs[Pinned Task references]
