@@ -138,6 +138,10 @@ _verified_statement_provenance(name, provenance) := {
 	"provenance": provenance,
 }
 
+_statements_from_associations(associations) := {associated.statement |
+	some associated in associations
+}
+
 _task_names(tasks) := {name |
 	some task in tasks
 	name := tekton.task_name(task)
@@ -171,6 +175,7 @@ test_its_pipelinerun_attestations_retain_all_matching_pipelines if {
 		{clair_att, sast_att},
 		lib.its_pipelinerun_attestations,
 	) with input.image.digest as "sha256:abc123"
+		with intoto.statements as _statements_from_associations(verified)
 		with intoto.associated_statement_provenances as verified
 		with intoto.verified_statement_provenances as verified
 
@@ -178,6 +183,7 @@ test_its_pipelinerun_attestations_retain_all_matching_pipelines if {
 		{"clair-scan", "sast-snyk-check"},
 		_task_names(lib.tasks_from_its_pipelineruns),
 	) with input.image.digest as "sha256:abc123"
+		with intoto.statements as _statements_from_associations(verified)
 		with intoto.associated_statement_provenances as verified
 		with intoto.verified_statement_provenances as verified
 
@@ -185,6 +191,7 @@ test_its_pipelinerun_attestations_retain_all_matching_pipelines if {
 		{"clair-scan", "sast-snyk-check"},
 		lib.its_pipelinerun_task_names,
 	) with input.image.digest as "sha256:abc123"
+		with intoto.statements as _statements_from_associations(verified)
 		with intoto.associated_statement_provenances as verified
 		with intoto.verified_statement_provenances as verified
 }
@@ -214,6 +221,7 @@ test_its_pipelinerun_attestations_keep_latest_retry_per_integration_test if {
 		{"test-1", "test-2", "test-3", "test-4", "retry-latest"},
 		_task_names(lib.tasks_from_associated_its_pipelineruns),
 	) with input.image.digest as "sha256:abc123"
+		with intoto.statements as _statements_from_associations(associated)
 		with intoto.associated_statement_provenances as associated
 }
 
@@ -234,9 +242,11 @@ test_its_pipelinerun_attestations_apply_trust_after_latest_retry_selection if {
 		{latest_provenance},
 		lib.associated_its_pipelinerun_attestations,
 	) with input.image.digest as "sha256:abc123"
+		with intoto.statements as _statements_from_associations(associated)
 		with intoto.associated_statement_provenances as associated
 
 	assertions.assert_empty(lib.its_pipelinerun_attestations) with input.image.digest as "sha256:abc123"
+		with intoto.statements as _statements_from_associations(associated)
 		with intoto.associated_statement_provenances as associated
 		with intoto.verified_statement_provenances as {old_run}
 }
@@ -259,7 +269,24 @@ test_its_pipelinerun_attestations_ignore_untrusted_older_retry if {
 		lib.its_pipelinerun_attestations,
 	) with input.image.digest as "sha256:abc123"
 		with intoto.associated_statement_provenances as associated
+		with intoto.statements as _statements_from_associations(associated)
 		with intoto.verified_statement_provenances as {latest_run}
+}
+
+test_latest_result_without_provenance_does_not_fall_back_to_older_retry if {
+	old_statement := _matching_test_statement_at("retried-integration", "2026-01-01T01:00:00Z")
+	latest_statement := _matching_test_statement_at("retried-integration", "2026-01-01T02:00:00Z")
+	old_provenance := tekton_test.slsav1_attestation([tekton_test.slsav1_task("clair-scan")])
+	old_association := {"statement": old_statement, "provenance": old_provenance}
+
+	assertions.assert_empty(lib.associated_its_pipelinerun_attestations) with input.image.digest as "sha256:abc123"
+		with intoto.statements as {old_statement, latest_statement}
+		with intoto.associated_statement_provenances as {old_association}
+
+	assertions.assert_empty(lib.its_pipelinerun_attestations) with input.image.digest as "sha256:abc123"
+		with intoto.statements as {old_statement, latest_statement}
+		with intoto.associated_statement_provenances as {old_association}
+		with intoto.verified_statement_provenances as {old_association}
 }
 
 test_associated_its_pipelinerun_attestations_exclude_missing_test_identity if {
@@ -268,6 +295,7 @@ test_associated_its_pipelinerun_attestations_exclude_missing_test_identity if {
 	associated := {{"statement": statement, "provenance": provenance}}
 
 	assertions.assert_empty(lib.associated_its_pipelinerun_attestations) with input.image.digest as "sha256:abc123"
+		with intoto.statements as {statement}
 		with intoto.associated_statement_provenances as associated
 }
 
@@ -279,12 +307,14 @@ test_associated_its_pipelinerun_attestations_retain_verified_untrusted_candidate
 		{clair_att},
 		lib.associated_its_pipelinerun_attestations,
 	) with input.image.digest as "sha256:abc123"
+		with intoto.statements as _statements_from_associations(associated)
 		with intoto.associated_statement_provenances as associated
 
 	assertions.assert_equal(
 		{"clair-scan"},
 		_task_names(lib.tasks_from_associated_its_pipelineruns),
 	) with input.image.digest as "sha256:abc123"
+		with intoto.statements as _statements_from_associations(associated)
 		with intoto.associated_statement_provenances as associated
 }
 
@@ -316,6 +346,7 @@ test_associated_its_pipelinerun_attestations_filter_unrelated_sources if {
 		{its_att},
 		lib.associated_its_pipelinerun_attestations,
 	) with input.image.digest as "sha256:abc123"
+		with intoto.statements as _statements_from_associations(associated)
 		with intoto.associated_statement_provenances as associated
 }
 
@@ -347,6 +378,7 @@ test_its_pipelinerun_attestations_filter_unrelated_sources if {
 		{its_att},
 		lib.its_pipelinerun_attestations,
 	) with input.image.digest as "sha256:abc123"
+		with intoto.statements as _statements_from_associations(verified)
 		with intoto.associated_statement_provenances as verified
 		with intoto.verified_statement_provenances as verified
 }
@@ -361,6 +393,7 @@ test_build_and_its_task_sources_remain_separate if {
 		_task_names(lib.tasks_from_pipelinerun),
 	) with input.attestations as [build_att]
 		with input.image.digest as "sha256:abc123"
+		with intoto.statements as _statements_from_associations(verified)
 		with intoto.associated_statement_provenances as verified
 		with intoto.verified_statement_provenances as verified
 
@@ -369,6 +402,7 @@ test_build_and_its_task_sources_remain_separate if {
 		_task_names(lib.tasks_from_its_pipelineruns),
 	) with input.attestations as [build_att]
 		with input.image.digest as "sha256:abc123"
+		with intoto.statements as _statements_from_associations(verified)
 		with intoto.associated_statement_provenances as verified
 		with intoto.verified_statement_provenances as verified
 }
@@ -399,6 +433,7 @@ test_discovered_task_names_unions_and_deduplicates_sources if {
 		lib.discovered_task_names,
 	) with input.attestations as [build_att]
 		with input.image.digest as "sha256:abc123"
+		with intoto.statements as _statements_from_associations(associated)
 		with intoto.associated_statement_provenances as associated
 		with intoto.verified_statement_provenances as associated
 }
@@ -409,6 +444,7 @@ test_discovered_task_names_excludes_untrusted_its_runs if {
 
 	assertions.assert_empty(lib.discovered_task_names) with input.attestations as []
 		with input.image.digest as "sha256:abc123"
+		with intoto.statements as _statements_from_associations(associated)
 		with intoto.associated_statement_provenances as associated
 		with intoto.verified_statement_provenances as set()
 }
@@ -416,6 +452,7 @@ test_discovered_task_names_excludes_untrusted_its_runs if {
 test_discovered_task_names_empty_without_sources if {
 	assertions.assert_empty(lib.discovered_task_names) with input.attestations as []
 		with input.image.digest as "sha256:abc123"
+		with intoto.statements as set()
 		with intoto.associated_statement_provenances as set()
 }
 

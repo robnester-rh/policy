@@ -24,7 +24,7 @@ Feature: Trusted tasks in Integration Test Service PipelineRuns
                 ]
             }
             """
-        And an effective time of "2026-10-02T00:00:00Z"
+        And an effective time of "2027-01-16T00:00:00Z"
 
     Scenario: A required test task is trusted when every task in its SLSA v1 provenance is trusted
         Given a sample policy input "its-fully-trusted"
@@ -65,3 +65,9 @@ Feature: Trusted tasks in Integration Test Service PipelineRuns
         When input is validated
         Then there should be a violation with "tasks.required_untrusted_test_task_found" code, "clair-scan" term, and a message containing "in its provenance is untrusted"
         And there should be violations with "tasks.required_test_tasks_found" code in the result
+
+    Scenario: A latest retry without provenance is not masked by an older trusted run
+        Given a sample policy input "its-latest-retry-missing-provenance"
+        When input is validated
+        Then there should be a violation with "tasks.required_test_tasks_found" code, "clair-scan" term, and a message containing "is missing"
+        And there should be no violations with "tasks.required_untrusted_test_task_found" code in the result

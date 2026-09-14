@@ -176,6 +176,10 @@ func newITSFixture() (*itsFixture, error) {
 			{testName: "clair-integration", timestamp: "2026-01-01T01:00:00Z", tasks: []map[string]any{slsaV1Task("clair-scan", trustedBundle)}, includeProvenance: true},
 			{testName: "clair-integration", timestamp: "2026-01-01T02:00:00Z", tasks: []map[string]any{slsaV1Task("clair-scan", deniedBundle)}, includeProvenance: true},
 		},
+		"its-latest-retry-missing-provenance": {
+			{testName: "clair-integration", timestamp: "2026-01-01T01:00:00Z", tasks: []map[string]any{slsaV1Task("clair-scan", trustedBundle)}, includeProvenance: true},
+			{testName: "clair-integration", timestamp: "2026-01-01T02:00:00Z"},
+		},
 	}
 
 	for caseName, runs := range cases {

@@ -167,13 +167,19 @@ _all_associated_its_pipelineruns contains associated if {
 	is_pipelinerun_attestation(associated.provenance)
 }
 
-# Keep only PipelineRun associations whose test-result statement was selected
-# by the shared latest-per-integration-test helper.
+# Select the latest raw test-result statement for each integration test before
+# requiring an associated provenance. This prevents an older trusted retry from
+# masking a newer result whose provenance is missing or cannot be verified.
+_latest_its_test_statements := latest_test_attestations({statement |
+	some statement in intoto.statements_by_predicate(intoto.predicate_test_result)
+	_statement_subject_matches_image(statement)
+})
+
+# Keep only PipelineRun associations whose statement was selected from all raw
+# test-result candidates.
 _latest_associated_its_pipelineruns contains associated if {
-	statements := {candidate.statement | some candidate in _all_associated_its_pipelineruns}
-	latest_statements := latest_test_attestations(statements)
 	some associated in _all_associated_its_pipelineruns
-	associated.statement in latest_statements
+	associated.statement in _latest_its_test_statements
 }
 
 # PipelineRun provenance produced by ITS for the latest test-result statement

@@ -122,7 +122,7 @@ Ensure every test-result attestation provides a non-empty string in predicate.co
 * Rule type: [rule-type-indicator failure]#FAILURE#
 * FAILURE message: `Test attestation is missing a valid configuration name`
 * Code: `test_attestation.test_identity_found`
-* Effective from: `2026-01-15T00:00:00Z`
+* Effective from: `2027-01-15T00:00:00Z`
 * https://github.com/conforma/policy/blob/{page-origin-refhash}/policy/release/test_attestation/test_attestation.rego#L124[Source, window="_blank"]
 
 [#test_attestation__subject_mismatch]

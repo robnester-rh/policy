@@ -138,7 +138,7 @@ warn contains result if {
 #   - redhat_security
 #   depends_on:
 #   - attestation_type.known_attestation_type
-#   effective_on: 2026-01-15T00:00:00Z
+#   effective_on: 2027-01-15T00:00:00Z
 #
 deny contains result if {
 	some statement in _all_test_attestations

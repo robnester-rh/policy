@@ -33,7 +33,7 @@ _known_types := {"https://in-toto.io/Statement/v0.1", "https://in-toto.io/Statem
 statements contains statement if {
 	some referrer in ec.oci.image_referrers(input.image.ref)
 	referrer.artifactType == _artifact_type
-	statement := oci.parsed_blob(referrer.ref)
+	statement := oci.parsed_blob_from_image(referrer.ref)
 
 	# regal ignore:leaked-internal-reference
 	statement._type in _known_types

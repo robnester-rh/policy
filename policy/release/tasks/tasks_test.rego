@@ -355,6 +355,7 @@ test_required_test_task_rejects_untrusted_associated_provenance if {
 
 	matching_denies := _results_with_code(tasks.deny, "tasks.required_untrusted_test_task_found") with data["required-test-tasks"] as _required_test_tasks
 		with input.image.digest as "sha256:abc123"
+		with intoto.statements as {association.statement | some association in associations}
 		with intoto.associated_statement_provenances as associations
 		with data.rule_data.trusted_task_rules as _trusted_test_task_rules
 		with data.rule_data.trusted_task_rules_enabled as true
