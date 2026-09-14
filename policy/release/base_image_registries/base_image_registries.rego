@@ -31,7 +31,7 @@ import data.lib.sigstore
 #   solution: >-
 #     Make sure the base image is permitted by one of the following methods (in order
 #     of preference): configure a signing identity under the `rh-release` key in the
-#     `signing_identities` xref:signing-identities.adoc#_signing_identities_structure[configuration]
+#     `signing_identities` xref:signing_identities.adoc#_signing_identities_structure[configuration]
 #     so the image signature can be verified, ensure the image digest matches a component
 #     in the snapshot, or add the image registry to the `allowed_registry_prefixes` data
 #     source (deprecated).
@@ -88,7 +88,7 @@ deny contains result if {
 #   failure_msg: "%s"
 #   solution: >-
 #     Make sure to configure either a signing identity under the `rh-release` key in
-#     the `signing_identities` xref:signing-identities.adoc#_signing_identities_structure[configuration]
+#     the `signing_identities` xref:signing_identities.adoc#_signing_identities_structure[configuration]
 #     or a list of trusted registry prefixes in `allowed_registry_prefixes`.
 #   collections:
 #   - minimal

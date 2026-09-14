@@ -66,7 +66,7 @@ deny contains result if {
 #   failure_msg: "%s"
 #   solution: >-
 #     Check that the SBOM was signed with the key or certificate configured
-#     in the "sbom" entry of the xref:signing-identities.adoc#_signing_identities_structure[signing_identities]
+#     in the "sbom" entry of the xref:signing_identities.adoc#_signing_identities_structure[signing_identities]
 #     rule data, or that the signing identity matches.
 #   collections:
 #   - redhat
