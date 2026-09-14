@@ -37,7 +37,7 @@ Confirm an SBOM attestation exists.
 
 Report when signature verification fails for SBOMs discovered via OCI referrers or image-tag refs. The SBOM is excluded (fail-closed), but the user should know why.
 
-*Solution*: Check that the SBOM was signed with the key or certificate configured in the "sbom" entry of the signing_identities rule data, or that the signing identity matches.
+*Solution*: Check that the SBOM was signed with the key or certificate configured in the "sbom" entry of the xref:signing-identities.adoc#_signing_identities_structure[signing_identities] rule data, or that the signing identity matches.
 
 * Rule type: [rule-type-indicator warning]#WARNING#
 * WARNING message: `%s`
