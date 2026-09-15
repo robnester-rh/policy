@@ -1,0 +1,184 @@
+= Signing identities
+
+The `signing_identities` rule data configures the identities that Conforma
+uses when verifying signed images and attestations. It is a map of named
+identities. Each policy rule chooses the name it consumes; for example, the
+base-image rules use `rh-release`, while the SBOM discovery rules use `sbom`.
+
+The data can be supplied directly under `ruleData` in an
+`EnterpriseContractPolicy` source. This becomes
+`data.rule_data__configuration__` and takes precedence over values from
+lower-priority data sources.
+
+A separate custom data source is exposed as `data.rule_data_custom`; do not
+nest `rule_data_custom` inside an ECP source's `ruleData` field.
+
+[#_signing_identities_structure]
+== Structure
+
+Each named identity is an object containing the options for one Sigstore
+verification method. Unknown fields are rejected.
+
+[%header,cols="1,1,3"]
+|===
+| Field | Type | Description
+
+| `public_key`
+| string
+| Enables key-based verification. The value can be an inline PEM-encoded
+  public key or a Kubernetes key reference such as
+  `k8s://namespace/secret`.
+
+| `certificate_identity`
+| string
+| Exact certificate identity for keyless verification.
+
+| `certificate_identity_regexp`
+| string
+| Regular expression matched against the certificate identity for keyless
+  verification.
+
+| `certificate_oidc_issuer`
+| string
+| Exact OIDC issuer expected in the signing certificate for keyless
+  verification.
+
+| `certificate_oidc_issuer_regexp`
+| string
+| Regular expression matched against the OIDC issuer for keyless
+  verification.
+
+| `rekor_url`
+| string
+| Rekor transparency-log URL. Required for keyless verification and one of
+  the available Rekor options for key-based verification.
+
+| `rekor_public_key`
+| string
+| Inline PEM-encoded Rekor public key for key-based verification when a
+  Rekor URL is not used.
+
+| `ignore_rekor`
+| boolean
+| Skips Rekor verification. The default is `false`. This is an alternative
+  to `rekor_url` and `rekor_public_key` for key-based verification.
+|===
+
+[#_verification_methods]
+== Verification methods
+
+Choose one verification method for each identity. A non-empty `public_key`
+selects key-based verification; otherwise a certificate identity selects
+keyless verification.
+
+=== Key-based verification
+
+Key-based identities require `public_key` and one of the following:
+
+* `rekor_url`
+* `rekor_public_key`
+* `ignore_rekor: true`
+
+For a Kubernetes key reference, the referenced Secret must contain the Cosign
+public-key material expected by the Conforma CLI.
+
+=== Keyless verification
+
+Keyless identities require:
+
+* `certificate_identity` or `certificate_identity_regexp`
+* `certificate_oidc_issuer` or `certificate_oidc_issuer_regexp`
+* `rekor_url`
+
+Use exact fields when one signer is expected. Use the regexp variants when a
+controlled set of identities or issuers is expected.
+
+[#_configuration_examples]
+== Configuration examples
+
+The following examples show the placement inside an
+`EnterpriseContractPolicy` source. The policy and data URLs are illustrative;
+keep the policy and data sources required by the policy you are evaluating.
+
+=== Public-key verification
+
+This example configures the `rh-release` identity used by the base-image
+rules. `ignore_rekor: true` is suitable when the release-signing workflow is
+intended to verify only the configured public key.
+
+[source,yaml]
+----
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: EnterpriseContractPolicy
+metadata:
+  name: release-policy
+spec:
+  sources:
+    - name: release
+      policy:
+        - git::https://github.com/conforma/policy.git//policy
+      ruleData:
+        signing_identities:
+          rh-release:
+            public_key: k8s://openshift-pipelines/release-signing-key
+            ignore_rekor: true
+----
+
+For an inline key, replace the `public_key` value with PEM content. To use
+Rekor instead of skipping it, replace `ignore_rekor` with `rekor_url`, or use
+an inline PEM `rekor_public_key`.
+
+=== Keyless verification
+
+This example accepts a signature issued to one exact workflow identity by one
+OIDC issuer and requires Rekor verification.
+
+[source,yaml]
+----
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: EnterpriseContractPolicy
+metadata:
+  name: keyless-policy
+spec:
+  sources:
+    - name: release
+      policy:
+        - git::https://github.com/conforma/policy.git//policy
+      ruleData:
+        signing_identities:
+          rh-release:
+            certificate_identity: https://github.com/example/project/.github/workflows/release.yml@refs/heads/main
+            certificate_oidc_issuer: https://token.actions.githubusercontent.com
+            rekor_url: https://rekor.sigstore.dev
+----
+
+The regexp fields can be used instead when the policy intentionally trusts a
+set of workflow identities or issuers.
+
+[#_migration]
+== Migrating from `allowed_registry_prefixes`
+
+`allowed_registry_prefixes` is deprecated for base-image verification. The
+base-image rule currently evaluates permission in this order:
+
+. registry-prefix match
+. snapshot component digest match
+. signature verification using the `rh-release` identity
+
+To migrate:
+
+. Add a valid `signing_identities.rh-release` entry while retaining the
+  existing registry prefixes as a rollback option.
+. Confirm that the public key or keyless identity and its Rekor settings are
+  valid.
+. Remove or narrow `allowed_registry_prefixes` when you are ready to require
+  signature verification. Keeping a matching prefix means that image is
+  accepted before the signature path is evaluated.
+. Remove the deprecated prefixes after all expected base images are covered by
+  signatures or an intentional snapshot-digest exception.
+
+If `allowed_registry_prefixes` is configured without a valid
+`signing_identities.rh-release` entry, the policy emits a migration warning.
+A missing or invalid identity can also make the rule-data validation fail, so
+validate the identity configuration before removing the compatibility
+prefixes.

@@ -1,4 +1,5 @@
 * xref:index.adoc[About Conforma]
+* xref:signing_identities.adoc[Signing identities]
 include::partial$release_policy_nav.adoc[]
 include::partial$pipeline_policy_nav.adoc[]
 include::partial$build_task_policy_nav.adoc[]
