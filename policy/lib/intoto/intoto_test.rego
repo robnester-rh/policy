@@ -27,6 +27,7 @@ test_statements_from_referrer if {
 			"sha256:aaa0000000000000000000000000000000000000000000000000000000000aaa",
 			"application/vnd.in-toto+json",
 		)]
+		with ec.oci.image_manifest as _mock_statement_image_manifest
 		with ec.oci.blob as _mock_blob_test_result
 		with ec.oci.parsed_blob as _mock_parsed_blob_test_result
 
@@ -42,6 +43,7 @@ test_statements_from_referrer_v01 if {
 			"sha256:aaa0000000000000000000000000000000000000000000000000000000000aaa",
 			"application/vnd.in-toto+json",
 		)]
+		with ec.oci.image_manifest as _mock_statement_image_manifest
 		with ec.oci.blob as _mock_blob_v01
 		with ec.oci.parsed_blob as _mock_parsed_blob_v01
 
@@ -64,6 +66,7 @@ test_statements_filters_unrelated_referrers if {
 
 	result := intoto.statements with input.image.ref as "registry.io/repo/image@sha256:abc123"
 		with ec.oci.image_referrers as mock_referrers
+		with ec.oci.image_manifest as _mock_statement_image_manifest
 		with ec.oci.blob as _mock_blob_test_result
 		with ec.oci.parsed_blob as _mock_parsed_blob_test_result
 
@@ -83,6 +86,7 @@ test_statements_skips_non_intoto_json if {
 			"sha256:aaa0000000000000000000000000000000000000000000000000000000000aaa",
 			"application/vnd.in-toto+json",
 		)]
+		with ec.oci.image_manifest as _mock_statement_image_manifest
 		with ec.oci.blob as _mock_blob_not_intoto
 		with ec.oci.parsed_blob as _mock_parsed_blob_not_intoto
 
@@ -103,6 +107,7 @@ test_statements_by_predicate_filters_correctly if {
 
 	result := intoto.statements_by_predicate(intoto.predicate_test_result) with input.image.ref as "registry.io/repo/image@sha256:abc123"
 		with ec.oci.image_referrers as mock_referrers
+		with ec.oci.image_manifest as _mock_statement_image_manifest
 		with ec.oci.blob as _mock_blob_mixed_predicates
 		with ec.oci.parsed_blob as _mock_parsed_blob_mixed_predicates
 
@@ -137,6 +142,8 @@ _referrer(digest, artifact_type) := {
 	"artifactType": artifact_type,
 	"ref": sprintf("registry.io/repo/image@%s", [digest]),
 }
+
+_mock_statement_image_manifest(ref) := {"layers": [{"digest": split(ref, "@")[1]}]}
 
 _mock_blob_test_result(_) := json.marshal({
 	"_type": "https://in-toto.io/Statement/v1",

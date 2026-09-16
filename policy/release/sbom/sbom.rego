@@ -58,16 +58,16 @@ deny contains result if {
 # METADATA
 # title: SBOM signature verification failed
 # description: >-
-#   Report when signature verification fails for SBOMs discovered via OCI
-#   referrers or image-tag refs. The SBOM is excluded (fail-closed), but
-#   the user should know why.
+#   Report when signature verification fails for attached SBOM attestations or
+#   SBOMs discovered via OCI referrers or image-tag refs. The SBOM is excluded
+#   (fail-closed), but the user should know why.
 # custom:
 #   short_name: signature_verification
 #   failure_msg: "%s"
 #   solution: >-
 #     Check that the SBOM was signed with the key or certificate configured
-#     in the "sbom" entry of the signing_identities rule data, or that the
-#     signing identity matches.
+#     in the "sbom" entry of the xref:signing_identities.adoc#_signing_identities_structure[signing_identities]
+#     rule data, or that the signing identity matches.
 #   collections:
 #   - redhat
 #   - redhat_security

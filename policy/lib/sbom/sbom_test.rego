@@ -50,11 +50,13 @@ test_cyclonedx_sboms if {
 	expected := ["sbom from attestation", {"sbom": "from oci blob", "bomFormat": "CycloneDX"}]
 	assertions.assert_equal(sbom.cyclonedx_sboms, expected) with input.attestations as attestations
 		with input.image as _cyclonedx_image
+		with ec.sigstore.verify_attestation as _mock_verify_cyclonedx_attestation
 		with ec.oci.blob as mock_ec_oci_cyclonedx_blob
 		with ec.oci.parsed_blob as mock_ec_oci_parsed_cyclonedx_blob
 		with ec.oci.descriptor as {"mediaType": "application/vnd.oci.image.manifest.v1+json"}
 		with ec.oci.image_referrers as []
 		with ec.oci.image_tag_refs as []
+		with data.rule_data__configuration__ as {"signing_identities": {"sbom": _mock_sbom_opts}}
 }
 
 # test from attestation and fallback to oci image
@@ -95,11 +97,13 @@ test_spdx_sboms if {
 	expected := ["sbom from attestation", {"sbom": "from oci blob", "SPDXID": "SPDXRef-DOCUMENT"}]
 	assertions.assert_equal(sbom.spdx_sboms, expected) with input.attestations as attestations
 		with input.image as _spdx_image
+		with ec.sigstore.verify_attestation as _mock_verify_spdx_attestation
 		with ec.oci.blob as mock_ec_oci_spdx_blob
 		with ec.oci.parsed_blob as mock_ec_oci_parsed_spdx_blob
 		with ec.oci.descriptor as {"mediaType": "application/vnd.oci.image.manifest.v1+json"}
 		with ec.oci.image_referrers as []
 		with ec.oci.image_tag_refs as []
+		with data.rule_data__configuration__ as {"signing_identities": {"sbom": _mock_sbom_opts}}
 }
 
 test_ignore_unrelated_sboms if {
@@ -205,6 +209,7 @@ test_cyclonedx_sboms_from_referrers if {
 	]
 	expected := [{"sbom": "from oci blob", "bomFormat": "CycloneDX"}]
 	assertions.assert_equal(sbom.cyclonedx_sboms, expected) with input.attestations as []
+		with sbom._verified_sbom_attestations as []
 		with input.image as _cyclonedx_image
 		with ec.oci.image_referrers as mock_referrers
 		with ec.oci.image_tag_refs as []
@@ -227,6 +232,7 @@ test_spdx_sboms_from_referrers if {
 	}]
 	expected := [{"sbom": "from oci blob", "SPDXID": "SPDXRef-DOCUMENT"}]
 	assertions.assert_equal(sbom.spdx_sboms, expected) with input.attestations as []
+		with sbom._verified_sbom_attestations as []
 		with input.image as _spdx_image
 		with ec.oci.image_referrers as mock_referrers
 		with ec.oci.image_tag_refs as []
@@ -244,6 +250,7 @@ test_cyclonedx_sboms_from_tag_refs if {
 	]
 	expected := [{"sbom": "from oci blob", "bomFormat": "CycloneDX"}]
 	assertions.assert_equal(sbom.cyclonedx_sboms, expected) with input.attestations as []
+		with sbom._verified_sbom_attestations as []
 		with input.image as _cyclonedx_image
 		with ec.oci.image_referrers as []
 		with ec.oci.image_tag_refs as mock_tag_refs
@@ -259,6 +266,7 @@ test_spdx_sboms_from_tag_refs if {
 	mock_tag_refs := ["registry.io/repository/image:sha256-284e3029.sbom"]
 	expected := [{"sbom": "from oci blob", "SPDXID": "SPDXRef-DOCUMENT"}]
 	assertions.assert_equal(sbom.spdx_sboms, expected) with input.attestations as []
+		with sbom._verified_sbom_attestations as []
 		with input.image as _spdx_image
 		with ec.oci.image_referrers as []
 		with ec.oci.image_tag_refs as mock_tag_refs
@@ -281,6 +289,7 @@ test_no_sboms_from_unrelated_referrers if {
 		"ref": "registry.io/repository/image@sha256:e5f6a7b800000000000000000000000000000000000000000000000e5f6a7b8",
 	}]
 	assertions.assert_equal(sbom.all_sboms, []) with input.attestations as []
+		with sbom._verified_sbom_attestations as []
 		with input.image as _cyclonedx_image
 		with ec.oci.image_referrers as mock_referrers
 		with ec.oci.image_tag_refs as []
@@ -295,6 +304,7 @@ test_no_sboms_from_non_sbom_tag_refs if {
 		"registry.io/repository/image:sha256-284e3029.att",
 	]
 	assertions.assert_equal(sbom.all_sboms, []) with input.attestations as []
+		with sbom._verified_sbom_attestations as []
 		with input.image as _cyclonedx_image
 		with ec.oci.image_referrers as []
 		with ec.oci.image_tag_refs as mock_tag_refs
@@ -555,6 +565,7 @@ test_referrer_sbom_excluded_when_verification_fails if {
 		"ref": "registry.io/repository/image@sha256:a1b2c3d400000000000000000000000000000000000000000000000a1b2c3d4",
 	}]
 	assertions.assert_equal(sbom.all_sboms, []) with input.attestations as []
+		with sbom._verified_sbom_attestations as []
 		with input.image as _cyclonedx_image
 		with ec.oci.image_referrers as mock_referrers
 		with ec.oci.image_tag_refs as []
@@ -568,6 +579,7 @@ test_referrer_sbom_excluded_when_verification_fails if {
 test_tag_ref_sbom_excluded_when_verification_fails if {
 	mock_tag_refs := ["registry.io/repository/image:sha256-284e3029.sbom"]
 	assertions.assert_equal(sbom.all_sboms, []) with input.attestations as []
+		with sbom._verified_sbom_attestations as []
 		with input.image as _cyclonedx_image
 		with ec.oci.image_referrers as []
 		with ec.oci.image_tag_refs as mock_tag_refs
@@ -634,6 +646,7 @@ test_keyless_sbom_verification if {
 	}
 	expected := [{"sbom": "from oci blob", "bomFormat": "CycloneDX"}]
 	assertions.assert_equal(sbom.cyclonedx_sboms, expected) with input.attestations as []
+		with sbom._verified_sbom_attestations as []
 		with input.image as _cyclonedx_image
 		with ec.oci.image_referrers as mock_referrers
 		with ec.oci.image_tag_refs as []
@@ -643,19 +656,77 @@ test_keyless_sbom_verification if {
 		with data.rule_data__configuration__ as {"signing_identities": {"sbom": keyless_opts}}
 }
 
-# Trusted paths (input.attestations and pipelinerun SBOM_BLOB_URL) are
-# unaffected by the "sbom" signing identity -- they work regardless of whether
-# an identity is configured, since they don't go through the verified wrappers.
-test_trusted_paths_unaffected_by_sbom_opts if {
+test_attestation_sbom_discovered_by_policy_verifier if {
+	expected := ["sbom from attestation"]
+
+	assertions.assert_equal(sbom.cyclonedx_sboms, expected) with input.attestations as []
+		with input.image as _cyclonedx_image
+		with ec.sigstore.verify_attestation as _mock_verify_cyclonedx_attestation
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
+		with data.rule_data__configuration__ as {"signing_identities": {"sbom": _mock_sbom_opts}}
+}
+
+# Attached SBOM attestations are excluded when the "sbom" signing identity is
+# not configured.
+test_attestation_sbom_requires_signing_identity if {
 	attestations := [{"statement": {
 		"predicateType": "https://cyclonedx.org/bom",
 		"predicate": {"bomFormat": "CycloneDX", "from": "attestation"},
 	}}]
 
-	# No "sbom" signing identity configured; trusted path SBOMs still accepted.
-	expected := [{"bomFormat": "CycloneDX", "from": "attestation"}]
+	assertions.assert_empty(sbom.cyclonedx_sboms) with input.attestations as attestations
+		with input.image as _cyclonedx_image
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
+}
+
+test_attestation_sbom_signature_verification_failure if {
+	attestations := [{"statement": {
+		"predicateType": "https://spdx.dev/Document",
+		"predicate": {"SPDXID": "SPDXRef-DOCUMENT"},
+	}}]
+
+	assertions.assert_empty(sbom.spdx_sboms) with input.attestations as attestations
+		with input.image as _spdx_image
+		with ec.sigstore.verify_attestation as _mock_verify_attestation_failure
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
+		with data.rule_data__configuration__ as {"signing_identities": {"sbom": _mock_sbom_opts}}
+}
+
+# A mixed verification result can retain successfully parsed attestations while
+# reporting failure for another attestation. Reject the entire result so partial
+# verification cannot admit an SBOM.
+test_attestation_sbom_partial_verification_failure if {
+	assertions.assert_empty(sbom.cyclonedx_sboms) with input.attestations as []
+		with input.image as _cyclonedx_image
+		with ec.sigstore.verify_attestation as _mock_verify_attestation_partial_failure
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
+		with data.rule_data__configuration__ as {"signing_identities": {"sbom": _mock_sbom_opts}}
+}
+
+# The digest-pinned SBOM_BLOB_URL in verified provenance remains trusted and
+# does not require the "sbom" signing identity.
+test_pipelinerun_sbom_unaffected_by_sbom_opts if {
+	attestations := [{"statement": {
+		"predicateType": "https://slsa.dev/provenance/v0.2",
+		"predicate": {
+			"buildType": lib.tekton_pipeline_run,
+			"buildConfig": {"tasks": [{"results": [
+				{"name": "IMAGE_DIGEST", "type": "string", "value": "sha256:284e3029000000000000000000000000000000000000000000000000284e3029"}, # regal ignore:line-length
+				{"name": "IMAGE_URL", "type": "string", "value": "registry.io/repository/image:latest"},
+				{"name": "SBOM_BLOB_URL", "type": "string", "value": "registry.io/repository/image@sha256:f0cacc1a"},
+			]}]},
+		},
+	}}]
+
+	expected := [{"sbom": "from oci blob", "bomFormat": "CycloneDX"}]
 	assertions.assert_equal(sbom.cyclonedx_sboms, expected) with input.attestations as attestations
 		with input.image as _cyclonedx_image
+		with ec.oci.blob as mock_ec_oci_cyclonedx_blob
+		with ec.oci.descriptor as {"mediaType": "application/vnd.oci.image.manifest.v1+json"}
 		with ec.oci.image_referrers as []
 		with ec.oci.image_tag_refs as []
 }
@@ -751,6 +822,7 @@ test_verification_error_surfaced_for_referrers if {
 	errors := sbom.signature_verification_errors with input.image as _cyclonedx_image
 		with ec.oci.image_referrers as mock_referrers
 		with ec.oci.image_tag_refs as []
+		with ec.sigstore.verify_attestation as _mock_verify_attestation_success
 		with ec.sigstore.verify_image as _mock_verify_image_failure
 		with data.rule_data__configuration__ as {"signing_identities": {"sbom": _mock_sbom_opts}}
 	count(errors) == 1
@@ -763,6 +835,7 @@ test_verification_error_surfaced_for_tag_refs if {
 	errors := sbom.signature_verification_errors with input.image as _cyclonedx_image
 		with ec.oci.image_referrers as []
 		with ec.oci.image_tag_refs as mock_tag_refs
+		with ec.sigstore.verify_attestation as _mock_verify_attestation_success
 		with ec.sigstore.verify_image as _mock_verify_image_failure
 		with data.rule_data__configuration__ as {"signing_identities": {"sbom": _mock_sbom_opts}}
 	count(errors) == 1
@@ -783,6 +856,7 @@ test_no_verification_errors_when_verify_succeeds if {
 	errors := sbom.signature_verification_errors with input.image as _cyclonedx_image
 		with ec.oci.image_referrers as mock_referrers
 		with ec.oci.image_tag_refs as []
+		with ec.sigstore.verify_attestation as _mock_verify_attestation_success
 		with ec.sigstore.verify_image as _mock_verify_image_success
 		with data.rule_data__configuration__ as {"signing_identities": {"sbom": _mock_sbom_opts}}
 	count(errors) == 0
@@ -801,9 +875,21 @@ test_unrelated_referrer_excluded_from_verification_errors if {
 	errors := sbom.signature_verification_errors with input.image as _cyclonedx_image
 		with ec.oci.image_referrers as mock_referrers
 		with ec.oci.image_tag_refs as []
+		with ec.sigstore.verify_attestation as _mock_verify_attestation_success
 		with ec.sigstore.verify_image as _mock_verify_image_failure
 		with data.rule_data__configuration__ as {"signing_identities": {"sbom": _mock_sbom_opts}}
 	count(errors) == 0
+}
+
+test_verification_error_surfaced_for_attestations if {
+	errors := sbom.signature_verification_errors with input.image as _cyclonedx_image
+		with ec.oci.image_referrers as []
+		with ec.oci.image_tag_refs as []
+		with ec.sigstore.verify_attestation as _mock_verify_attestation_failure
+		with data.rule_data__configuration__ as {"signing_identities": {"sbom": _mock_sbom_opts}}
+	count(errors) == 1
+	some error in errors
+	contains(error, "SBOM attestation signature verification failed")
 }
 
 test_no_verification_errors_when_no_opts if {
@@ -825,6 +911,45 @@ test_no_verification_errors_when_no_opts if {
 }
 
 _mock_sbom_opts := {"public_key": "test-signing-key", "ignore_rekor": true}
+
+_mock_verify_cyclonedx_attestation(_, _) := {
+	"success": true,
+	"errors": [],
+	"attestations": [{"statement": {
+		"predicateType": "https://cyclonedx.org/bom",
+		"predicate": "sbom from attestation",
+	}}],
+}
+
+_mock_verify_spdx_attestation(_, _) := {
+	"success": true,
+	"errors": [],
+	"attestations": [{"statement": {
+		"predicateType": "https://spdx.dev/Document",
+		"predicate": "sbom from attestation",
+	}}],
+}
+
+_mock_verify_attestation_failure(_, _) := {
+	"success": false,
+	"errors": ["verification failed"],
+	"attestations": [],
+}
+
+_mock_verify_attestation_success(_, _) := {
+	"success": true,
+	"errors": [],
+	"attestations": [],
+}
+
+_mock_verify_attestation_partial_failure(_, _) := {
+	"success": false,
+	"errors": ["parsing another attestation failed"],
+	"attestations": [{"statement": {
+		"predicateType": "https://cyclonedx.org/bom",
+		"predicate": "partially verified sbom",
+	}}],
+}
 
 _mock_verify_image_success(_, _) := {"errors": []}
 

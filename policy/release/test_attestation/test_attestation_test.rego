@@ -19,6 +19,7 @@ package test_attestation_test
 import rego.v1
 
 import data.lib.assertions
+import data.lib.time as lib_time
 import data.test_attestation
 
 _image_ref := "registry.io/repo/image@sha256:abc123"
@@ -107,6 +108,10 @@ _mock_image_manifest_multi(ref) := {"layers": [{"digest": _layer_digest_2}]} if 
 }
 
 _default_timestamp := "2025-01-01T00:00:00Z"
+
+_before_test_identity_effective_on := time.parse_rfc3339_ns("2027-01-14T23:59:59Z")
+
+_after_test_identity_effective_on := time.parse_rfc3339_ns("2027-01-15T00:00:01Z")
 
 _make_statement(predicate) := json.marshal({
 	"_type": "https://in-toto.io/Statement/v0.1",
@@ -267,10 +272,22 @@ _mock_blob_custom_config(_) := _make_statement({
 	"failures": 1,
 })
 
-# Test Case 10: empty configuration (fallback to "unknown test")
+# Test Case 10: missing configuration
 _mock_blob_no_config(_) := _make_statement({
 	"result": "FAILED",
 	"failures": 1,
+})
+
+_mock_blob_invalid_timestamp(_) := json.marshal({
+	"_type": "https://in-toto.io/Statement/v0.1",
+	"predicateType": "https://in-toto.io/attestation/test-result/v0.1",
+	"subject": [{"name": "registry.io/repo/image", "digest": {"sha256": "abc123"}}],
+	"predicate": {
+		"timestamp": "not-a-date",
+		"configuration": [{"name": "invalid-timestamp-test"}],
+		"result": "FAILED",
+		"failures": 1,
+	},
 })
 
 # Test Case 13: non-string result value
@@ -480,10 +497,13 @@ test_test_name_from_configuration if {
 	contains(r.msg, "\"my-custom-test\"")
 }
 
-# --- Test Case 10: Empty configuration falls back to "unknown test" ---
+# --- Test Case 10: Missing configuration identity is rejected ---
 
-test_test_name_fallback if {
-	results := test_attestation.deny with input.image.ref as _image_ref
+test_missing_configuration_identity_is_rejected if {
+	assertions.assert_equal_results(test_attestation.deny, {{
+		"code": "test_attestation.test_identity_found",
+		"msg": "Test attestation is missing a valid configuration name",
+	}}) with input.image.ref as _image_ref
 		with ec.oci.image_referrers as _mock_referrers
 		with ec.sigstore.verify_attestation as _mock_verify_success
 		with ec.oci.blob as _mock_blob_no_config
@@ -492,9 +512,30 @@ test_test_name_fallback if {
 		with ec.oci.image_manifests as _mock_manifests
 		with data.rule_data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
 		with data.rule_data.trusted_task_rules_enabled as true
+		with lib_time.effective_current_time_ns as _after_test_identity_effective_on
+}
 
-	some r in results
-	contains(r.msg, "\"unknown test\"")
+test_missing_configuration_identity_preserves_legacy_failure_before_effective_date if {
+	assertions.assert_equal_results(test_attestation.deny, {
+		{
+			"code": "test_attestation.test_identity_found",
+			"msg": "Test attestation is missing a valid configuration name",
+		},
+		{
+			"code": "test_attestation.no_failed_tests",
+			"msg": "Test attestation \"unknown test\" has a failed result, failures: 1",
+			"term": "unknown test",
+		},
+	}) with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers
+		with ec.sigstore.verify_attestation as _mock_verify_success
+		with ec.oci.blob as _mock_blob_no_config
+		with ec.oci.parsed_blob as _mock_blob_no_config_parsed
+		with ec.oci.image_manifest as _mock_image_manifest
+		with ec.oci.image_manifests as _mock_manifests
+		with data.rule_data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
+		with data.rule_data.trusted_task_rules_enabled as true
+		with lib_time.effective_current_time_ns as _before_test_identity_effective_on
 }
 
 # --- Test Case 11: WARNED + FAILED coexistence ---
@@ -595,8 +636,11 @@ _mock_blob_missing_predicate(_) := json.marshal({
 	"predicate": {"timestamp": _default_timestamp},
 })
 
-test_missing_predicate if {
-	results := test_attestation.deny with input.image.ref as _image_ref
+test_missing_result_and_configuration_reports_invalid_identity if {
+	assertions.assert_equal_results(test_attestation.deny, {{
+		"code": "test_attestation.test_identity_found",
+		"msg": "Test attestation is missing a valid configuration name",
+	}}) with input.image.ref as _image_ref
 		with ec.oci.image_referrers as _mock_referrers
 		with ec.sigstore.verify_attestation as _mock_verify_success
 		with ec.oci.blob as _mock_blob_missing_predicate
@@ -605,11 +649,22 @@ test_missing_predicate if {
 		with ec.oci.image_manifests as _mock_manifests
 		with data.rule_data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
 		with data.rule_data.trusted_task_rules_enabled as true
+		with lib_time.effective_current_time_ns as _after_test_identity_effective_on
+}
 
-	count(results) == 1
-	some r in results
-	r.code == "test_attestation.test_data_found"
-	contains(r.msg, "unknown test")
+test_invalid_timestamp_is_rejected if {
+	assertions.assert_equal_results(test_attestation.deny, {{
+		"code": "test_attestation.test_timestamp_found",
+		"msg": "Test attestation is missing a valid RFC 3339 timestamp",
+	}}) with input.image.ref as _image_ref
+		with ec.oci.image_referrers as _mock_referrers
+		with ec.sigstore.verify_attestation as _mock_verify_success
+		with ec.oci.blob as _mock_blob_invalid_timestamp
+		with ec.oci.parsed_blob as _mock_blob_invalid_timestamp_parsed
+		with ec.oci.image_manifest as _mock_image_manifest
+		with ec.oci.image_manifests as _mock_manifests
+		with data.rule_data.trusted_task_rules as _trusted_task_rules.trusted_task_rules
+		with data.rule_data.trusted_task_rules_enabled as true
 }
 
 # --- Test Case 15: Non-array failedTests value (is_array guard) ---
@@ -1096,7 +1151,7 @@ test_dedup_different_test_names_independent if {
 	assertions.assert_equal(deny_terms, {"clair-scan", "sanity-check"})
 }
 
-# --- Dedup: attestation without timestamp is excluded ---
+# --- Dedup: attestation without timestamp is rejected ---
 
 _mock_blob_dedup_no_ts(_) := _make_statement_no_ts({
 	"result": "FAILED",
@@ -1104,8 +1159,11 @@ _mock_blob_dedup_no_ts(_) := _make_statement_no_ts({
 	"failures": 1,
 })
 
-test_dedup_no_timestamp_excluded if {
-	assertions.assert_empty(test_attestation.deny) with input.image.ref as _image_ref
+test_dedup_no_timestamp_rejected if {
+	assertions.assert_equal_results(test_attestation.deny, {{
+		"code": "test_attestation.test_timestamp_found",
+		"msg": "Test attestation is missing a valid RFC 3339 timestamp",
+	}}) with input.image.ref as _image_ref
 		with ec.oci.image_referrers as _mock_referrers
 		with ec.sigstore.verify_attestation as _mock_verify_success
 		with ec.oci.blob as _mock_blob_dedup_no_ts
@@ -1134,8 +1192,11 @@ _mock_blob_dedup_all_no_ts(ref) := _make_statement_no_ts({
 	contains(ref, "1a0e000000000000000000000000000000000000000000000000000000000002")
 }
 
-test_dedup_all_missing_timestamps_excluded if {
-	assertions.assert_empty(test_attestation.deny) with input.image.ref as _image_ref
+test_dedup_all_missing_timestamps_rejected if {
+	assertions.assert_equal_results(test_attestation.deny, {{
+		"code": "test_attestation.test_timestamp_found",
+		"msg": "Test attestation is missing a valid RFC 3339 timestamp",
+	}}) with input.image.ref as _image_ref
 		with ec.oci.image_referrers as _mock_referrers_two
 		with ec.sigstore.verify_attestation as _mock_verify_two
 		with ec.oci.blob as _mock_blob_dedup_all_no_ts
@@ -1169,6 +1230,8 @@ _mock_blob_multi_failed_parsed(ref) := json.unmarshal(_mock_blob_multi_failed(re
 _mock_blob_custom_config_parsed(ref) := json.unmarshal(_mock_blob_custom_config(ref))
 
 _mock_blob_no_config_parsed(ref) := json.unmarshal(_mock_blob_no_config(ref))
+
+_mock_blob_invalid_timestamp_parsed(ref) := json.unmarshal(_mock_blob_invalid_timestamp(ref))
 
 _mock_blob_non_string_result_parsed(ref) := json.unmarshal(_mock_blob_non_string_result(ref))
 
