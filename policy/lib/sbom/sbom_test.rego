@@ -726,6 +726,7 @@ test_pipelinerun_sbom_unaffected_by_sbom_opts if {
 	assertions.assert_equal(sbom.cyclonedx_sboms, expected) with input.attestations as attestations
 		with input.image as _cyclonedx_image
 		with ec.oci.blob as mock_ec_oci_cyclonedx_blob
+		with ec.oci.parsed_blob as mock_ec_oci_parsed_cyclonedx_blob
 		with ec.oci.descriptor as {"mediaType": "application/vnd.oci.image.manifest.v1+json"}
 		with ec.oci.image_referrers as []
 		with ec.oci.image_tag_refs as []
