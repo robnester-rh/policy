@@ -32,6 +32,7 @@ permissions:
 
 jobs:
   push-policy-bundles:
+    if: github.repository == 'conforma/policy'
     runs-on: ubuntu-latest
 
     steps:
